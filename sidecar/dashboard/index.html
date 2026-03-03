@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Operator Dashboard — Personal AI Partner</title>
+    <meta name="description" content="Professional operational dashboard for the Personal AI Operator sidecar service.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <!-- LEFT PANEL — NAVIGATION -->
+    <aside id="nav-panel" class="panel panel--left">
+        <div class="nav-header">
+            <div class="logo-mark">
+                <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+                    <rect x="2" y="2" width="24" height="24" rx="6" stroke="currentColor" stroke-width="2" />
+                    <circle cx="14" cy="14" r="5" fill="currentColor" />
+                    <line x1="14" y1="5" x2="14" y2="9" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                    <line x1="14" y1="19" x2="14" y2="23" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" />
+                    <line x1="5" y1="14" x2="9" y2="14" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                    <line x1="19" y1="14" x2="23" y2="14" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" />
+                </svg>
+            </div>
+            <div class="logo-text">
+                <span class="logo-title">OPERATOR</span>
+                <span class="logo-subtitle">AI Technical Partner</span>
+            </div>
+        </div>
+
+        <nav class="nav-menu">
+            <button class="nav-item active" data-section="ask" id="nav-ask">
+                <span class="nav-icon">💬</span>
+                <span class="nav-label">Ask Operator</span>
+            </button>
+            <button class="nav-item" data-section="analyses" id="nav-analyses">
+                <span class="nav-icon">📊</span>
+                <span class="nav-label">Recent Analyses</span>
+                <span class="nav-badge" id="badge-analyses">0</span>
+            </button>
+            <button class="nav-item" data-section="rules" id="nav-rules">
+                <span class="nav-icon">🧠</span>
+                <span class="nav-label">Learned Rules</span>
+                <span class="nav-badge" id="badge-rules">0</span>
+            </button>
+            <button class="nav-item" data-section="knowledge" id="nav-knowledge">
+                <span class="nav-icon">📚</span>
+                <span class="nav-label">Knowledge Base</span>
+                <span class="nav-badge" id="badge-knowledge">0</span>
+            </button>
+            <button class="nav-item" data-section="cases" id="nav-cases">
+                <span class="nav-icon">🗂️</span>
+                <span class="nav-label">Cases</span>
+                <span class="nav-badge" id="badge-cases">0</span>
+            </button>
+            <button class="nav-item" data-section="governance" id="nav-governance">
+                <span class="nav-icon">🛡️</span>
+                <span class="nav-label">Governance</span>
+            </button>
+            <button class="nav-item" data-section="logs" id="nav-logs">
+                <span class="nav-icon">📋</span>
+                <span class="nav-label">System Logs</span>
+            </button>
+        </nav>
+
+        <div class="nav-footer">
+            <div class="health-indicator" id="health-indicator">
+                <span class="health-dot health-dot--ready"></span>
+                <span class="health-text">READY</span>
+            </div>
+            <span class="version-text">v1.0.0</span>
+        </div>
+    </aside>
+
+    <!-- CENTER PANEL — WORKSPACE -->
+    <main id="center-panel" class="panel panel--center">
+
+        <!-- Conversation State Bar -->
+        <div class="context-bar" id="context-bar">
+            <div class="ctx-item">
+                <span class="ctx-label">Topic</span>
+                <span class="ctx-value" id="ctx-topic">—</span>
+            </div>
+            <div class="ctx-separator"></div>
+            <div class="ctx-item">
+                <span class="ctx-label">Last Decision</span>
+                <span class="ctx-value" id="ctx-decision">—</span>
+            </div>
+            <div class="ctx-separator"></div>
+            <div class="ctx-item">
+                <span class="ctx-label">Mode</span>
+                <span class="ctx-value ctx-mode" id="ctx-mode">OBSERVATION</span>
+            </div>
+        </div>
+
+        <!-- Input Bar -->
+        <div class="input-bar" id="input-bar">
+            <div class="input-wrapper">
+                <input type="text" id="query-input" placeholder="Ask the Operator..." autocomplete="off">
+
+                <!-- Voice Recording Indicator -->
+                <div class="voice-indicator" id="voice-indicator" style="display:none">
+                    <span class="voice-pulse"></span>
+                    <span class="voice-text">Listening...</span>
+                </div>
+
+                <!-- Live Transcript (shown while speaking) -->
+                <div class="live-transcript" id="live-transcript" style="display:none"></div>
+
+                <button class="btn-mic" id="btn-mic" title="Hold to speak">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round">
+                        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+                        <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                        <line x1="12" y1="19" x2="12" y2="23" />
+                        <line x1="8" y1="23" x2="16" y2="23" />
+                    </svg>
+                </button>
+                <button class="btn-send" id="btn-send" title="Send query">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round">
+                        <line x1="22" y1="2" x2="11" y2="13" />
+                        <polygon points="22 2 15 22 11 13 2 9 22 2" />
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="quick-actions">
+                <button class="quick-btn" data-action="advise_solution"
+                    data-prompt="Client wants to bypass credit limit for VIP customers">💡 Credit Limit
+                    Advisory</button>
+                <button class="quick-btn" data-action="generate_audit_report">📋 Audit Report</button>
+                <button class="quick-btn" data-action="analyze_patterns">🔍 Analyze Patterns</button>
+                <button class="quick-btn" data-action="health">❤️ Health Check</button>
+            </div>
+
+            <!-- Voice Quick Commands -->
+            <div class="voice-commands" id="voice-commands" style="display:none">
+                <button class="voice-cmd" data-cmd="show evidence">📎 Show Evidence</button>
+                <button class="voice-cmd" data-cmd="repeat">🔄 Repeat</button>
+                <button class="voice-cmd" data-cmd="next recommendation">➡️ Next</button>
+                <button class="voice-cmd" data-cmd="stop speaking">⏹️ Stop</button>
+            </div>
+        </div>
+
+        <!-- Response Timeline (Ask section) -->
+        <div class="response-timeline section-content active" id="response-timeline" data-section="ask">
+            <div class="welcome-card" id="welcome-card">
+                <div class="welcome-icon">⚡</div>
+                <h2>Operator Ready</h2>
+                <p>Ask a question, request an analysis, or use the quick actions above to get started.</p>
+                <div class="welcome-capabilities">
+                    <span class="cap-tag">ERPNext Consulting</span>
+                    <span class="cap-tag">Impact Analysis</span>
+                    <span class="cap-tag">Mentorship Learning</span>
+                    <span class="cap-tag">Governance Audit</span>
+                    <span class="cap-tag">Knowledge Base</span>
+                    <span class="cap-tag">Support Resolution</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Analyses Section -->
+        <div class="section-content" id="section-analyses" data-section="analyses" style="display:none">
+            <div class="section-header">
+                <h2>Recent Analyses</h2>
+                <p class="section-desc">History of advisory reports and consultations.</p>
+            </div>
+            <div class="section-body" id="analyses-list">
+                <p class="empty-state">No analyses yet. Ask the Operator a question to get started.</p>
+            </div>
+        </div>
+
+        <!-- Rules Section -->
+        <div class="section-content" id="section-rules" data-section="rules" style="display:none">
+            <div class="section-header">
+                <h2>Learned Rules</h2>
+                <p class="section-desc">Decision rules extracted from mentorship sessions.</p>
+            </div>
+            <div class="section-body" id="rules-list">
+                <p class="empty-state">No rules learned yet.</p>
+            </div>
+        </div>
+
+        <!-- Knowledge Section -->
+        <div class="section-content" id="section-knowledge" data-section="knowledge" style="display:none">
+            <div class="section-header">
+                <h2>Knowledge Base</h2>
+                <p class="section-desc">Reusable articles generated from resolved cases.</p>
+            </div>
+            <div class="section-body" id="knowledge-list">
+                <p class="empty-state">Knowledge base is empty. Resolve cases to auto-generate articles.</p>
+            </div>
+        </div>
+
+        <!-- Cases Section -->
+        <div class="section-content" id="section-cases" data-section="cases" style="display:none">
+            <div class="section-header">
+                <h2>Cases</h2>
+                <p class="section-desc">Recorded support issues and configuration problems.</p>
+            </div>
+            <div class="section-body" id="cases-list">
+                <p class="empty-state">No cases recorded.</p>
+            </div>
+        </div>
+
+        <!-- Governance Section -->
+        <div class="section-content" id="section-governance" data-section="governance" style="display:none">
+            <div class="section-header">
+                <h2>Governance &amp; Audit</h2>
+                <p class="section-desc">Decision tiers, override logs, and trust calibration.</p>
+            </div>
+            <div class="section-body" id="governance-content">
+                <div class="governance-grid">
+                    <div class="gov-card">
+                        <div class="gov-card-title">Decision Breakdown</div>
+                        <div class="gov-stat-row"><span>INFO tier</span><span id="gov-info">0</span></div>
+                        <div class="gov-stat-row"><span>REVIEW tier</span><span id="gov-review">0</span></div>
+                        <div class="gov-stat-row"><span>CRITICAL tier</span><span id="gov-critical">0</span></div>
+                    </div>
+                    <div class="gov-card">
+                        <div class="gov-card-title">Acceptance Rate</div>
+                        <div class="gov-large-stat" id="gov-accept-rate">—</div>
+                        <div class="gov-stat-note">Target: 60-80% (balanced adoption)</div>
+                    </div>
+                    <div class="gov-card">
+                        <div class="gov-card-title">Safety Status</div>
+                        <div class="gov-stat-row"><span>Auto-rollbacks</span><span id="gov-rollbacks">0</span></div>
+                        <div class="gov-stat-row"><span>Overrides</span><span id="gov-overrides">0</span></div>
+                        <div class="gov-stat-row"><span>Incidents Avoided</span><span id="gov-incidents">0</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Logs Section -->
+        <div class="section-content" id="section-logs" data-section="logs" style="display:none">
+            <div class="section-header">
+                <h2>System Logs</h2>
+                <p class="section-desc">Real-time event stream from watchers and recovery engine.</p>
+            </div>
+            <div class="section-body" id="logs-content">
+                <div class="logs-stream" id="logs-stream">
+                    <p class="empty-state">Waiting for events...</p>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- RIGHT PANEL — LIVE STATUS -->
+    <aside id="right-panel" class="panel panel--right">
+        <h3 class="panel-title">Live Status</h3>
+
+        <!-- Operator State -->
+        <div class="status-section">
+            <div class="status-row">
+                <span class="status-label">Mode</span>
+                <span class="status-value status-badge badge--teal" id="status-mode">OBSERVATION</span>
+            </div>
+            <div class="status-row">
+                <span class="status-label">Rollout Stage</span>
+                <span class="status-value status-badge badge--amber" id="status-rollout">SHADOW</span>
+            </div>
+            <div class="status-row">
+                <span class="status-label">Connection</span>
+                <span class="status-value status-badge badge--slate" id="status-connection">OFFLINE</span>
+            </div>
+            <div class="status-row">
+                <span class="status-label">Uptime</span>
+                <span class="status-value" id="status-uptime"
+                    style="font-family:var(--font-mono);font-size:12px;color:var(--text-muted)">—</span>
+            </div>
+        </div>
+
+        <hr class="divider">
+
+        <!-- Last Action -->
+        <div class="status-section">
+            <h4 class="section-title">Last Action</h4>
+            <div class="last-action-card" id="last-action-card">
+                <span class="la-label">None yet</span>
+            </div>
+        </div>
+
+        <hr class="divider">
+
+        <!-- Confidence Meter -->
+        <div class="status-section">
+            <h4 class="section-title">Confidence</h4>
+            <div class="confidence-meter">
+                <div class="confidence-bar" id="confidence-bar" style="width: 0%"></div>
+            </div>
+            <div class="confidence-labels">
+                <span>LOW</span>
+                <span id="confidence-value">—</span>
+                <span>HIGH</span>
+            </div>
+        </div>
+
+        <hr class="divider">
+
+        <!-- ERPNext Instance -->
+        <div class="status-section">
+            <h4 class="section-title">ERPNext Instance</h4>
+            <div class="erp-instance-card" id="erp-instance-card">
+                <div class="erp-url" id="erp-url">Not connected</div>
+                <button class="btn-connect-erp" id="btn-connect-erp">Connect</button>
+            </div>
+        </div>
+
+        <hr class="divider">
+
+        <!-- Learning Activity -->
+        <div class="status-section">
+            <h4 class="section-title">Learning Activity</h4>
+            <div id="learning-feed" class="learning-feed">
+                <p class="empty-state">No learned rules yet.</p>
+            </div>
+        </div>
+
+        <hr class="divider">
+
+        <!-- Quick Controls -->
+        <div class="status-section">
+            <h4 class="section-title">Controls</h4>
+            <div class="control-group">
+                <label class="control-label">Mode</label>
+                <select id="ctrl-mode" class="ctrl-select">
+                    <option value="OBSERVATION">Observation</option>
+                    <option value="ADVISORY">Advisory</option>
+                    <option value="ACTIVE">Active</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <label class="control-label">Rollout Stage</label>
+                <select id="ctrl-rollout" class="ctrl-select">
+                    <option value="SHADOW">Shadow</option>
+                    <option value="ASSISTED">Assisted</option>
+                    <option value="CO_PILOT">Co-Pilot</option>
+                    <option value="TRUSTED">Trusted</option>
+                </select>
+            </div>
+            <button class="btn-apply-ctrl" id="btn-apply-ctrl">Apply Controls</button>
+        </div>
+
+        <hr class="divider">
+
+        <!-- Event Log -->
+        <div class="status-section">
+            <h4 class="section-title">Event Log</h4>
+            <div id="event-log" class="event-log">
+                <p class="empty-state">Listening...</p>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Confirmation Modal -->
+    <div class="modal-overlay" id="modal-overlay" style="display:none">
+        <div class="modal-dialog">
+            <h3 class="modal-title" id="modal-title">Confirm Action</h3>
+            <p class="modal-body" id="modal-body">Are you sure?</p>
+            <div class="modal-actions">
+                <button class="btn-modal btn-modal--cancel" id="modal-cancel">Cancel</button>
+                <button class="btn-modal btn-modal--confirm" id="modal-confirm">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ERPNext Connect Modal -->
+    <div class="modal-overlay" id="erp-modal" style="display:none">
+        <div class="modal-dialog">
+            <h3 class="modal-title">Connect to ERPNext</h3>
+            <div class="modal-form">
+                <div class="control-group">
+                    <label class="control-label">Instance URL</label>
+                    <input type="text" id="erp-connect-url" class="ctrl-input" placeholder="https://erp.example.com">
+                </div>
+                <div class="control-group">
+                    <label class="control-label">API Key</label>
+                    <input type="text" id="erp-connect-key" class="ctrl-input" placeholder="api_key">
+                </div>
+                <div class="control-group">
+                    <label class="control-label">API Secret</label>
+                    <input type="password" id="erp-connect-secret" class="ctrl-input" placeholder="api_secret">
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn-modal btn-modal--cancel" id="erp-modal-cancel">Cancel</button>
+                <button class="btn-modal btn-modal--confirm" id="erp-modal-confirm">Connect</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+
+</html>

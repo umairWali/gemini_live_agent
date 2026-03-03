@@ -1,0 +1,11 @@
+node_modules
+dist
+.git
+.env
+.env.local
+sidecar/node_modules
+*.bak
+screenshot_*.png
+audit_test.txt
+judgment_bypass.txt
+watcher_test.txt

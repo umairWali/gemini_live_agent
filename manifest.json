@@ -1,0 +1,21 @@
+{
+  "short_name": "AI Operator",
+  "name": "Personal AI Operator Dashboard",
+  "description": "Secure autonomous partner for technical tasks.",
+  "icons": [
+    {
+      "src": "logo192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "logo512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#020617",
+  "background_color": "#020617"
+}

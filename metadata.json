@@ -1,0 +1,8 @@
+{
+  "name": "Personal AI Operator",
+  "description": "A technical companion and project coordinator that monitors tasks, meetings, and development workflows in real-time.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}

@@ -1,0 +1,520 @@
+{
+  "goals": [
+    {
+      "id": "57632i6v7",
+      "description": "Upgrade Sidecar to Autonomous Partner",
+      "successCriteria": [
+        "System Persistent",
+        "Learning Enabled"
+      ],
+      "constraints": [],
+      "createdAt": 1771230072050,
+      "phases": [],
+      "status": "ACTIVE",
+      "progress": 0
+    },
+    {
+      "id": "7nlz459nk",
+      "description": "Fix bug in server startup",
+      "successCriteria": [
+        "Server starts without error"
+      ],
+      "constraints": [],
+      "createdAt": 1771232108951,
+      "phases": [],
+      "status": "ACTIVE",
+      "progress": 0
+    },
+    {
+      "id": "iaxdp1r7m",
+      "description": "Risky new feature deploy",
+      "successCriteria": [],
+      "constraints": [],
+      "createdAt": 1771232474789,
+      "phases": [],
+      "status": "ACTIVE",
+      "progress": 0
+    }
+  ],
+  "tasks": [],
+  "auditTrail": [
+    {
+      "id": "hvalvwb5v",
+      "text": "MONITOR_PULSE: CPU=19%, RAM=40%",
+      "source": "health_monitor",
+      "timestamp": 1772571062007
+    },
+    {
+      "id": "ak26kdcv7",
+      "text": "MONITOR_PULSE: CPU=7%, RAM=41%",
+      "source": "health_monitor",
+      "timestamp": 1772570941984
+    },
+    {
+      "id": "wbqpaaedj",
+      "text": "MONITOR_PULSE: CPU=78%, RAM=39%",
+      "source": "health_monitor",
+      "timestamp": 1772570821985
+    },
+    {
+      "id": "pg98filqv",
+      "text": "MONITOR_PULSE: CPU=16%, RAM=39%",
+      "source": "health_monitor",
+      "timestamp": 1772570701977
+    },
+    {
+      "id": "dfs8arqcy",
+      "text": "MONITOR_PULSE: CPU=17%, RAM=39%",
+      "source": "health_monitor",
+      "timestamp": 1772570581981
+    },
+    {
+      "id": "hax0ywu6b",
+      "text": "MONITOR_PULSE: CPU=5%, RAM=39%",
+      "source": "health_monitor",
+      "timestamp": 1772570461974
+    },
+    {
+      "id": "kuj4dyj2g",
+      "text": "MONITOR_PULSE: CPU=8%, RAM=39%",
+      "source": "health_monitor",
+      "timestamp": 1772570341964
+    },
+    {
+      "id": "rmfr83yo9",
+      "text": "MONITOR_PULSE: CPU=1%, RAM=38%",
+      "source": "health_monitor",
+      "timestamp": 1772570221949
+    },
+    {
+      "id": "rhdi97gi9",
+      "text": "MONITOR_PULSE: CPU=2%, RAM=38%",
+      "source": "health_monitor",
+      "timestamp": 1772570101936
+    },
+    {
+      "id": "538h795d2",
+      "text": "MONITOR_PULSE: CPU=2%, RAM=38%",
+      "source": "health_monitor",
+      "timestamp": 1772569981921
+    },
+    {
+      "id": "oe671lq69",
+      "text": "MONITOR_PULSE: CPU=5%, RAM=38%",
+      "source": "health_monitor",
+      "timestamp": 1772569861921
+    },
+    {
+      "id": "a0xozts6a",
+      "text": "MONITOR_PULSE: CPU=2%, RAM=38%",
+      "source": "health_monitor",
+      "timestamp": 1772569741906
+    },
+    {
+      "id": "29h01drny",
+      "text": "MONITOR_PULSE: CPU=2%, RAM=39%",
+      "source": "health_monitor",
+      "timestamp": 1772569621893
+    },
+    {
+      "id": "bfyqo017v",
+      "text": "MONITOR_PULSE: CPU=2%, RAM=39%",
+      "source": "health_monitor",
+      "timestamp": 1772569501886
+    },
+    {
+      "id": "zkbk95yd6",
+      "text": "MONITOR_PULSE: CPU=6%, RAM=39%",
+      "source": "health_monitor",
+      "timestamp": 1772569381874
+    },
+    {
+      "id": "r17iol3j1",
+      "text": "MONITOR_PULSE: CPU=2%, RAM=38%",
+      "source": "health_monitor",
+      "timestamp": 1772569261863
+    },
+    {
+      "id": "vs00sjy0f",
+      "text": "MONITOR_PULSE: CPU=2%, RAM=38%",
+      "source": "health_monitor",
+      "timestamp": 1772569141846
+    },
+    {
+      "id": "pjkabrc84",
+      "text": "MONITOR_PULSE: CPU=25%, RAM=38%",
+      "source": "health_monitor",
+      "timestamp": 1772569021842
+    },
+    {
+      "id": "jmvqbskuy",
+      "text": "MONITOR_PULSE: CPU=8%, RAM=38%",
+      "source": "health_monitor",
+      "timestamp": 1772568901822
+    },
+    {
+      "id": "vp8cxy2mn",
+      "text": "MONITOR_PULSE: CPU=7%, RAM=38%",
+      "source": "health_monitor",
+      "timestamp": 1772568781817
+    },
+    {
+      "id": "4qrc17g4h",
+      "text": "MONITOR_PULSE: CPU=7%, RAM=39%",
+      "source": "health_monitor",
+      "timestamp": 1772568661806
+    },
+    {
+      "id": "3wcyb8xvu",
+      "text": "MONITOR_PULSE: CPU=2%, RAM=38%",
+      "source": "health_monitor",
+      "timestamp": 1772568541794
+    },
+    {
+      "id": "3yn2zromx",
+      "text": "MONITOR_PULSE: CPU=2%, RAM=38%",
+      "source": "health_monitor",
+      "timestamp": 1772568421793
+    },
+    {
+      "id": "qsttl5l2y",
+      "text": "MONITOR_PULSE: CPU=2%, RAM=38%",
+      "source": "health_monitor",
+      "timestamp": 1772568301778
+    },
+    {
+      "id": "u843wn5xr",
+      "text": "MONITOR_PULSE: CPU=10%, RAM=38%",
+      "source": "health_monitor",
+      "timestamp": 1772568181767
+    },
+    {
+      "id": "71vteu0tg",
+      "text": "MONITOR_PULSE: CPU=14%, RAM=38%",
+      "source": "health_monitor",
+      "timestamp": 1772568061763
+    },
+    {
+      "id": "07fxjbioa",
+      "text": "MONITOR_PULSE: CPU=2%, RAM=38%",
+      "source": "health_monitor",
+      "timestamp": 1772567941752
+    },
+    {
+      "id": "ovqm2ic1b",
+      "text": "MONITOR_PULSE: CPU=2%, RAM=38%",
+      "source": "health_monitor",
+      "timestamp": 1772567821749
+    },
+    {
+      "id": "ywrzwxtky",
+      "text": "MONITOR_PULSE: CPU=6%, RAM=38%",
+      "source": "health_monitor",
+      "timestamp": 1772567701744
+    },
+    {
+      "id": "zt8phzpbj",
+      "text": "MONITOR_PULSE: CPU=2%, RAM=38%",
+      "source": "health_monitor",
+      "timestamp": 1772567581737
+    },
+    {
+      "id": "882jni6pp",
+      "text": "MONITOR_PULSE: CPU=12%, RAM=38%",
+      "source": "health_monitor",
+      "timestamp": 1772567461735
+    },
+    {
+      "id": "4mhjcv42k",
+      "text": "MONITOR_PULSE: CPU=3%, RAM=38%",
+      "source": "health_monitor",
+      "timestamp": 1772567341719
+    },
+    {
+      "id": "h2f496b0b",
+      "text": "MONITOR_PULSE: CPU=2%, RAM=37%",
+      "source": "health_monitor",
+      "timestamp": 1772567221706
+    },
+    {
+      "id": "n474rrndg",
+      "text": "MONITOR_PULSE: CPU=4%, RAM=36%",
+      "source": "health_monitor",
+      "timestamp": 1772567101700
+    },
+    {
+      "id": "fq5utuyus",
+      "text": "MONITOR_PULSE: CPU=16%, RAM=36%",
+      "source": "health_monitor",
+      "timestamp": 1772566981690
+    },
+    {
+      "id": "c2qvlnc9c",
+      "text": "MONITOR_PULSE: CPU=3%, RAM=35%",
+      "source": "health_monitor",
+      "timestamp": 1772566861691
+    },
+    {
+      "id": "hru3d84z4",
+      "text": "MONITOR_PULSE: CPU=1%, RAM=36%",
+      "source": "health_monitor",
+      "timestamp": 1772566741676
+    },
+    {
+      "id": "p5vxoq7s6",
+      "text": "MONITOR_PULSE: CPU=2%, RAM=36%",
+      "source": "health_monitor",
+      "timestamp": 1772566621662
+    },
+    {
+      "id": "axqpiiju4",
+      "text": "MONITOR_PULSE: CPU=3%, RAM=36%",
+      "source": "health_monitor",
+      "timestamp": 1772566501652
+    },
+    {
+      "id": "da5kf77us",
+      "text": "MONITOR_PULSE: CPU=2%, RAM=36%",
+      "source": "health_monitor",
+      "timestamp": 1772566381640
+    },
+    {
+      "id": "se8xb420b",
+      "text": "MONITOR_PULSE: CPU=13%, RAM=36%",
+      "source": "health_monitor",
+      "timestamp": 1772566261623
+    },
+    {
+      "id": "w5l311348",
+      "text": "MONITOR_PULSE: CPU=2%, RAM=36%",
+      "source": "health_monitor",
+      "timestamp": 1772566141619
+    },
+    {
+      "id": "drltmyti5",
+      "text": "MONITOR_PULSE: CPU=39%, RAM=36%",
+      "source": "health_monitor",
+      "timestamp": 1772566021608
+    },
+    {
+      "id": "9y6y928ix",
+      "text": "MONITOR_PULSE: CPU=6%, RAM=36%",
+      "source": "health_monitor",
+      "timestamp": 1772565901590
+    },
+    {
+      "id": "uzxr3izn5",
+      "text": "MONITOR_PULSE: CPU=11%, RAM=32%",
+      "source": "health_monitor",
+      "timestamp": 1772565781588
+    },
+    {
+      "id": "7u6cwk5xm",
+      "text": "MONITOR_PULSE: CPU=15%, RAM=36%",
+      "source": "health_monitor",
+      "timestamp": 1772565444468
+    },
+    {
+      "id": "2sa3ubiag",
+      "text": "MONITOR_PULSE: CPU=19%, RAM=36%",
+      "source": "health_monitor",
+      "timestamp": 1772565324466
+    },
+    {
+      "id": "32d30cfzk",
+      "text": "MONITOR_PULSE: CPU=2%, RAM=33%",
+      "source": "health_monitor",
+      "timestamp": 1772565204463
+    },
+    {
+      "id": "awfmanbh7",
+      "text": "MONITOR_PULSE: CPU=1%, RAM=33%",
+      "source": "health_monitor",
+      "timestamp": 1772565084458
+    },
+    {
+      "id": "5q6af3fpr",
+      "text": "MONITOR_PULSE: CPU=2%, RAM=34%",
+      "source": "health_monitor",
+      "timestamp": 1772564964443
+    },
+    {
+      "id": "7f5c8lcr0",
+      "text": "MONITOR_PULSE: CPU=10%, RAM=34%",
+      "source": "health_monitor",
+      "timestamp": 1772564844430
+    },
+    {
+      "id": "s652d4l0s",
+      "text": "OPENCLAW_MSG: from=+923337553275 msg=status",
+      "source": "openclaw",
+      "timestamp": 1772564308147
+    },
+    {
+      "id": "gvffv8vjm",
+      "text": "SUCCESS: run_command on echo hello executed.",
+      "source": "executor",
+      "timestamp": 1771232833011
+    },
+    {
+      "id": "ne1b7sq2n",
+      "text": "SUCCESS: read_file on OPERATOR_MANUAL.md executed.",
+      "source": "executor",
+      "timestamp": 1771229587391
+    },
+    {
+      "id": "9i8fwrgac",
+      "text": "SUCCESS: read_file on OPERATOR_MANUAL.md executed.",
+      "source": "executor",
+      "timestamp": 1771228931789
+    },
+    {
+      "id": "ovc7tyl5n",
+      "text": "JUDGMENT: delete_file on audit_test.txt requires manual approval. Reason: Action delete_file is classified as HIGH risk.",
+      "source": "supervisor",
+      "timestamp": 1771228606806
+    },
+    {
+      "id": "pem3drq3n",
+      "text": "SUCCESS: read_file on audit_test.txt executed.",
+      "source": "executor",
+      "timestamp": 1771228586408
+    },
+    {
+      "id": "sp4s67kuy",
+      "text": "JUDGMENT: delete_file on audit_test.txt requires manual approval. Reason: Action delete_file is classified as HIGH risk.",
+      "source": "supervisor",
+      "timestamp": 1771227174779
+    },
+    {
+      "id": "xihy4dc2n",
+      "text": "SUCCESS: read_file on audit_test.txt executed.",
+      "source": "executor",
+      "timestamp": 1771227158754
+    },
+    {
+      "id": "cl9vo3sci",
+      "text": "FAILURE: read_file on error_trigger.txt failed. Category: DEPENDENCY. Strategy: INSTALL_MISSING_PACKAGES",
+      "source": "healer",
+      "timestamp": 1771226739448
+    },
+    {
+      "id": "lsiwzq3yv",
+      "text": "SUCCESS: read_file on audit_test.txt executed.",
+      "source": "executor",
+      "timestamp": 1771226684854
+    },
+    {
+      "id": "x6bs7ol2w",
+      "text": "SUCCESS: run_command on cmd /c dir /b executed.",
+      "source": "executor",
+      "timestamp": 1771226308625
+    },
+    {
+      "id": "djw95ecou",
+      "text": "FAILURE: run_command on ls failed. Category: RUNTIME. Strategy: RESTART_SERVICE",
+      "source": "healer",
+      "timestamp": 1771226299900
+    },
+    {
+      "id": "n0rq8o98w",
+      "text": "SUCCESS: write_file on judgment_bypass.txt executed.",
+      "source": "executor",
+      "timestamp": 1771226275311
+    },
+    {
+      "id": "5jog0w0xz",
+      "text": "JUDGMENT: write_file on judgment_test.txt requires manual approval. Reason: Action write_file is classified as MEDIUM risk.",
+      "source": "supervisor",
+      "timestamp": 1771226265510
+    },
+    {
+      "id": "631sfg1cu",
+      "text": "FAILURE: read_file on error_trigger.txt failed. Category: DEPENDENCY. Strategy: INSTALL_MISSING_PACKAGES",
+      "source": "healer",
+      "timestamp": 1771225842932
+    },
+    {
+      "id": "841ys4g7n",
+      "text": "SUCCESS: read_file on App.tsx executed.",
+      "source": "executor",
+      "timestamp": 1771225835495
+    },
+    {
+      "id": "455cttzz7",
+      "text": "FAILURE: read_file on restricted_access_block.key failed. Category: DEPENDENCY. Strategy: INSTALL_MISSING_PACKAGES",
+      "source": "healer",
+      "timestamp": 1771225304726
+    },
+    {
+      "id": "gp3fhxh84",
+      "text": "SUCCESS: write_file on audit_test.txt executed.",
+      "source": "executor",
+      "timestamp": 1771225287462
+    },
+    {
+      "id": "h76buxjgt",
+      "text": "SUCCESS: open_app on notepad.exe executed.",
+      "source": "executor",
+      "timestamp": 1771225277195
+    },
+    {
+      "id": "9186uan0w",
+      "text": "FAILURE: read_file on missing.txt failed. Category: DEPENDENCY. Strategy: INSTALL_MISSING_PACKAGES",
+      "source": "healer",
+      "timestamp": 1771224975651
+    }
+  ],
+  "vault": [],
+  "lastSeen": 1771232833013,
+  "preferences": {
+    "interruptionTolerance": "MEDIUM",
+    "preferredWorkHours": {
+      "start": 9,
+      "end": 17
+    },
+    "autoApproveLowRisk": true,
+    "trustScore": 84,
+    "learning": {
+      "lastFeedbackRequest": 0,
+      "rejectedSuggestions": [],
+      "approvedSuggestions": [
+        "read_file",
+        "run_command"
+      ]
+    }
+  },
+  "architect": {
+    "metrics": {
+      "totalDecisions": 1,
+      "successfulOutcomes": 0,
+      "badRecommendations": 0,
+      "strictnessMultiplier": 1
+    },
+    "decisionLog": {
+      "iaxdp1r7m": {
+        "brief": {
+          "id": "5a2oi8cot",
+          "goalDescription": "Risky new feature deploy",
+          "expectedBenefit": "User value delivery",
+          "effortEstimate": "MEDIUM",
+          "risks": [
+            "Downtime",
+            "Configuration drift"
+          ],
+          "alignmentScore": 90,
+          "roiScore": 60,
+          "recommendation": "MODIFY",
+          "reasoning": "Significant risks detected. Requires mitigation plan.",
+          "alternatives": [
+            "Prototype first",
+            "Feature flag",
+            "Incremental rollout"
+          ],
+          "timestamp": 1771232474789
+        },
+        "overridden": true
+      }
+    }
+  }
+}
