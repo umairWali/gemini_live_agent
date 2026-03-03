@@ -8,7 +8,7 @@ export const getAI = () => {
 export const summarizeMeeting = async (transcription: string) => {
   const ai = getAI();
   const response = await ai.models.generateContent({
-    model: 'gemini-1.5-flash',
+    model: 'gemini-2.0-flash',
     contents: `Summarize this meeting transcript technically. Identify actors, specific requirements, and potential scope creep: "${transcription}"`,
     config: {
       responseMimeType: "application/json",
@@ -26,7 +26,7 @@ export const summarizeMeeting = async (transcription: string) => {
       }
     }
   });
-  
+
   const text = response.text || "{}";
   return JSON.parse(text);
 };
@@ -34,7 +34,7 @@ export const summarizeMeeting = async (transcription: string) => {
 export const reviewCode = async (code: string, diff: string) => {
   const ai = getAI();
   const response = await ai.models.generateContent({
-    model: 'gemini-1.5-pro',
+    model: 'gemini-2.0-flash',
     contents: `Review the following code changes (diff) for risks, performance hits, and security vulnerabilities: \n\nCODE:\n${code}\n\nDIFF:\n${diff}`,
     config: {
       responseMimeType: "application/json",
@@ -50,7 +50,7 @@ export const reviewCode = async (code: string, diff: string) => {
       }
     }
   });
-  
+
   const text = response.text || "{}";
   return JSON.parse(text);
 };

@@ -122,7 +122,7 @@ wss.on('connection', (ws) => {
                 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
 
                 const session = await ai.live.connect({
-                    model: 'gemini-1.5-flash',
+            model: 'gemini-2.0-flash',
                     config: {
                         responseModalities: [Modality.AUDIO],
                         systemInstruction: "You are the Personal AI Operator's Voice Interface. Be concise, technical, and helpful. You can hear and speak. Help the user with system tasks."
@@ -526,7 +526,7 @@ app.post('/ai/chat', async (req, res) => {
         const ai = new GoogleGenAI({ apiKey });
 
         const chat = ai.chats.create({
-            model: 'gemini-1.5-pro',
+            model: 'gemini-2.0-flash',
             config: {
                 tools: tools || [],
                 systemInstruction: systemPrompt
@@ -622,7 +622,7 @@ app.post('/ai/vision', async (req, res) => {
         const ai = new GoogleGenAI({ apiKey });
 
         const response = await ai.models.generateContent({
-            model: "gemini-1.5-flash",
+            model: "gemini-2.0-flash",
             contents: [
                 {
                     role: 'user',
@@ -673,7 +673,7 @@ app.post('/ai/live', async (req, res) => {
         // Note: In production, you'd handle the WebSocket connection for bidirectional streaming
         // This is a simplified proxy endpoint
         const session = await ai.live.connect({
-            model: 'gemini-1.5-flash',
+            model: 'gemini-2.0-flash',
             config: {
                 responseModalities: [Modality.AUDIO],
                 speechConfig: config?.speechConfig,
