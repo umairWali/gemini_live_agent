@@ -45,8 +45,44 @@ if (!fs.existsSync(distPath)) {
     console.error(`[SIDECAR_ERROR]: Dashboard directory not found at ${distPath}`);
 }
 
+// Serve static assets from dashboard build at both /dashboard and root
 app.use('/dashboard', express.static(distPath));
-app.get('/', (_req: any, res: any) => res.redirect('/dashboard'));
+app.use(express.static(distPath));
+
+// Favicon fallback (prevent 404)
+app.get('/favicon.ico', (_req, res) => {
+    const faviconPath = path.join(distPath, 'favicon.ico');
+    if (fs.existsSync(faviconPath)) {
+        res.sendFile(faviconPath);
+    } else {
+        res.status(204).end();
+    }
+});
+
+// Manifest fallback
+app.get('/manifest.json', (_req, res) => {
+    res.json({
+        name: 'Personal AI Operator',
+        short_name: 'AI Operator',
+        start_url: '/dashboard/',
+        display: 'standalone',
+        background_color: '#020617',
+        theme_color: '#020617',
+        icons: []
+    });
+});
+
+app.get('/', (_req: any, res: any) => res.redirect('/dashboard/'));
+
+// SPA fallback for /dashboard/* routes
+app.get('/dashboard/*', (_req: any, res: any) => {
+    const indexPath = path.join(distPath, 'index.html');
+    if (fs.existsSync(indexPath)) {
+        res.sendFile(indexPath);
+    } else {
+        res.status(404).send('Dashboard not found');
+    }
+});
 
 // Health check endpoint
 app.get('/health', (req, res) => {

@@ -58,7 +58,7 @@ const Terminal: React.FC<TerminalProps> = ({ history, onSend, isProcessing, onEx
     // Use server-side proxy instead of direct API key
     try {
       const token = localStorage.getItem('operator_auth_token');
-      const response = await fetch('/api/live', {
+      const response = await fetch('/ai/live', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
