@@ -38,8 +38,14 @@ app.use(cors());
 app.use(express.json());
 
 // Serve dashboard static files
-app.use('/dashboard', express.static(path.join(__dirname, 'dashboard')));
+const distPath = path.join(__dirname, 'dashboard'); // Default
+app.use('/dashboard', express.static(distPath));
 app.get('/', (_req: any, res: any) => res.redirect('/dashboard'));
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+    res.json({ success: true, status: 'HEALTHY', uptime: process.uptime() });
+});
 
 const recovery = new RecoveryEngine();
 const stateManager = new StateManager();

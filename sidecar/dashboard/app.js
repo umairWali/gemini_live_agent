@@ -9,8 +9,9 @@
     'use strict';
 
     // ── Config ──────────────────────────────────────
-    const API_BASE = 'http://localhost:3000';
-    const WS_URL = 'ws://localhost:3001';
+    // ── Config ──────────────────────────────────────
+    const API_BASE = window.location.origin;
+    const WS_URL = (window.location.protocol === 'https:' ? 'wss:' : 'ws:') + '//' + window.location.host + '/ws/';
     const POLL_INTERVAL = 5000;
 
     // ── State ───────────────────────────────────────
