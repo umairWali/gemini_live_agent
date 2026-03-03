@@ -18,7 +18,7 @@ const Sidebar: React.FC<SidebarProps> = ({ mode, onModeChange }) => {
   ];
 
   return (
-    <aside className="w-20 md:w-24 flex-col items-center py-10 bg-slate-950 border-r border-white/5 shrink-0 z-30 hidden md:flex">
+    <aside className="w-20 md:w-24 flex flex-col items-center py-10 bg-slate-950 border-r border-white/5 shrink-0 z-30">
       <div className="mb-16 p-4 rounded-2xl bg-violet-600/10 border border-violet-500/20 shadow-[0_0_30px_rgba(139,92,246,0.1)] group hover:scale-110 transition-transform cursor-pointer">
         <ClipboardList className="w-7 h-7 text-violet-400" />
       </div>

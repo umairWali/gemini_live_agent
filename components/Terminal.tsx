@@ -58,7 +58,7 @@ const Terminal: React.FC<TerminalProps> = ({ history, onSend, isProcessing, onEx
     // Use server-side proxy instead of direct API key
     try {
       const token = localStorage.getItem('operator_auth_token');
-      const response = await fetch('/ai/live', {
+      const response = await fetch('/api/live', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -113,27 +113,28 @@ const Terminal: React.FC<TerminalProps> = ({ history, onSend, isProcessing, onEx
         {history.map((msg, i) => (
           <div key={i} className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'} fade-in`}>
             <div className={`max-w-[85%] p-5 rounded-3xl border transition-all ${msg.role === 'user'
-              ? 'bg-white/5 border-white/5 text-slate-300'
-              : msg.agentBadge === AgentRole.AUTONOMOUS_ENGINEER
-                ? 'bg-violet-500/10 border-violet-500/20 text-violet-50 shadow-[0_0_50px_rgba(139,92,246,0.1)]'
-                : 'bg-slate-900 border-white/10 text-slate-100 shadow-xl'
+                ? 'bg-white/5 border-white/5 text-slate-300'
+                : msg.agentBadge === AgentRole.AUTONOMOUS_ENGINEER
+                  ? 'bg-violet-500/10 border-violet-500/20 text-violet-50 shadow-[0_0_50px_rgba(139,92,246,0.1)]'
+                  : 'bg-slate-900 border-white/10 text-slate-100 shadow-xl'
               } relative group`}>
 
-              <div className="flex items-center justify-between mb-3 opacity-40 text-[9px] font-black uppercase tracking-widest border-b border-white/5 pb-2">
+              <div className="flex items-center justify-between mb-5 opacity-40 text-[9px] font-black uppercase tracking-[0.5em]">
                 {msg.role === 'user' ? (
-                  'USER'
+                  '[ USER_COMMAND ]'
                 ) : (
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2.5">
                     {getAgentIcon(msg.agentBadge)}
-                    <span>{msg.agentBadge || 'OPERATOR'}</span>
+                    <span className={msg.agentBadge === AgentRole.AUTONOMOUS_ENGINEER ? 'text-violet-400' : ''}>[ {msg.agentBadge || 'OPERATOR'} ]</span>
                   </div>
                 )}
                 {msg.role === 'ai' && (
                   <button
                     onClick={() => onToggleExplain?.(i)}
-                    className={`flex items-center gap-2 px-2 py-0.5 rounded transition-all text-[8px] ${msg.isExplainMode ? 'bg-violet-500/20 text-violet-400' : 'hover:bg-white/5'}`}
+                    className={`flex items-center gap-2 px-3 py-1 rounded-full transition-all text-[8px] ${msg.isExplainMode ? 'bg-violet-500/20 text-violet-400' : 'hover:bg-white/5'}`}
                   >
-                    <span>{msg.isExplainMode ? 'HIDE_LOGIC' : 'DETAILS'}</span>
+                    <BrainCircuit className="w-3 h-3" />
+                    <span>{msg.isExplainMode ? 'HIDE_LOGIC' : 'EXPLAIN'}</span>
                   </button>
                 )}
               </div>
@@ -143,11 +144,12 @@ const Terminal: React.FC<TerminalProps> = ({ history, onSend, isProcessing, onEx
               </p>
 
               {msg.isExplainMode && msg.explanation && (
-                <div className="mt-4 pt-4 border-t border-white/5">
-                  <div className="flex items-center gap-2 mb-2 text-violet-400 opacity-60 text-[8px] font-black uppercase tracking-widest">
-                    <span>REASONING_LOG</span>
+                <div className="mt-6 pt-6 border-t border-white/5 animate-in fade-in slide-in-from-top-2">
+                  <div className="flex items-center gap-2 mb-3 text-violet-400 opacity-60">
+                    <MessageSquareCode className="w-3.5 h-3.5" />
+                    <span className="text-[9px] font-black uppercase tracking-widest">INTERNAL_REASONING_MATRIX</span>
                   </div>
-                  <p className="text-[10px] text-slate-500 leading-relaxed">
+                  <p className="text-[11px] text-slate-400 italic leading-relaxed">
                     {msg.explanation}
                   </p>
                 </div>
@@ -158,10 +160,17 @@ const Terminal: React.FC<TerminalProps> = ({ history, onSend, isProcessing, onEx
 
         {isProcessing && (
           <div className="flex justify-start fade-in">
-            <div className="bg-white/5 p-4 rounded-xl flex items-center gap-4 text-slate-500 border border-white/5">
-              <div className="w-6 h-6 border-2 border-violet-500/20 border-t-violet-500 rounded-full animate-spin" />
-              <div className="flex flex-col">
-                <span className="text-[10px] font-black uppercase tracking-widest text-violet-400 animate-pulse">Processing...</span>
+            <div className="glass-card p-6 rounded-3xl flex items-center gap-6 text-slate-500 shadow-3xl border-l-[4px] border-l-violet-500">
+              <div className="relative">
+                <div className="w-10 h-10 border-[4px] border-violet-500/10 border-t-violet-500 rounded-full animate-spin" />
+              </div>
+              <div className="flex flex-col gap-1">
+                <span className="text-[12px] font-black uppercase tracking-[0.4em] text-violet-400 animate-pulse italic">Synchronizing...</span>
+                <div className="flex gap-4 opacity-50">
+                  {['PLANNER', 'EXECUTOR', 'TESTER'].map(p => (
+                    <span key={p} className="text-[8px] font-black uppercase text-slate-400 tracking-widest">{p}</span>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
@@ -170,27 +179,28 @@ const Terminal: React.FC<TerminalProps> = ({ history, onSend, isProcessing, onEx
       </div>
 
       <div className="mt-4 z-10 flex flex-col">
-        <form onSubmit={handleSubmit} className="flex items-center gap-2 bg-white/5 border border-white/10 p-2 md:p-3 rounded-2xl shadow-xl backdrop-blur-3xl focus-within:border-white/20">
+        <form onSubmit={handleSubmit} className="flex items-center gap-4 bg-white/5 border border-white/10 p-4 rounded-[2rem] transition-all duration-500 shadow-4xl backdrop-blur-3xl focus-within:border-violet-500/30">
+          <TerminalIcon className="w-6 h-6 text-slate-600 ml-4" />
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Command input..."
-            className="flex-1 bg-transparent border-none outline-none text-slate-200 placeholder:text-slate-600 uppercase font-black text-[12px] md:text-[14px] tracking-widest h-10 md:h-12 px-2"
+            placeholder="System Command Input..."
+            className="flex-1 bg-transparent border-none outline-none text-slate-200 placeholder:text-slate-600 uppercase font-black text-[14px] tracking-[0.3em] h-12"
             disabled={isProcessing}
           />
           <button
             type="button"
             onClick={toggleLive}
-            className={`p-2.5 md:p-3.5 rounded-xl transition-all ${isLive ? 'bg-rose-500 text-white' : 'bg-slate-800 text-slate-400'}`}
+            className={`p-4 rounded-full transition-all duration-500 ${isLive ? 'bg-rose-500 text-white shadow-[0_0_30px_rgba(244,63,94,0.3)]' : 'bg-slate-800 text-slate-400 hover:text-violet-400'}`}
           >
-            {isLive ? <Mic className="w-5 h-5" /> : <MicOff className="w-5 h-5" />}
+            {isLive ? <Mic className="w-6 h-6" /> : <MicOff className="w-6 h-6" />}
           </button>
           <button
             type="submit"
             disabled={!input.trim() || isProcessing}
-            className="px-4 md:px-8 h-10 md:h-12 bg-white/10 hover:bg-white/20 disabled:opacity-30 text-white rounded-xl font-black text-[11px] md:text-[12px] uppercase transition-all"
+            className="px-10 h-14 bg-violet-600 hover:bg-violet-500 disabled:opacity-30 text-white rounded-2xl font-black text-[14px] uppercase transition-all shadow-xl active:scale-95"
           >
-            Send
+            Dispatch
           </button>
         </form>
       </div>

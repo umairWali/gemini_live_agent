@@ -516,11 +516,12 @@ const AppContent: React.FC = () => {
 
       if (!response || response.error) {
         const errorMsg = response?.error || 'Unknown error from AI service';
+        addAuditEntry(`AI_ERROR: ${errorMsg}`, 'system');
         setState(prev => ({
           ...prev,
           history: [...prev.history, {
             role: 'ai',
-            text: `System Error: ${errorMsg}. Please try again or check sidecar logs.`,
+            text: `⚠️ System Error: ${errorMsg}. Please try again or check sidecar logs.`,
             timestamp: Date.now(),
             agentBadge: AgentRole.SUPERVISOR
           }].slice(-50)
@@ -554,11 +555,12 @@ const AppContent: React.FC = () => {
     } catch (e: any) {
       const errorMsg = e?.message || 'Unknown error';
       console.error("OS_CORE_RUNTIME_EXCEPTION:", e);
+      addAuditEntry(`CRITICAL_ERROR: ${errorMsg}`, 'system');
       setState(prev => ({
         ...prev,
         history: [...prev.history, {
           role: 'ai',
-          text: `Critical Error: ${errorMsg}. System will attempt to recover.`,
+          text: `⚠️ Critical Error: ${errorMsg}. System will attempt to recover.`,
           timestamp: Date.now(),
           agentBadge: AgentRole.HEALER
         }].slice(-50)
@@ -713,7 +715,7 @@ const AppContent: React.FC = () => {
           </div>
         </div>
       </main>
-      <div className="w-[380px] hidden lg:block">
+      <div className="w-[380px] hidden xl:block">
         <RightPanel state={state} onToggleCheck={() => { playClick(); }} onUpdateStack={() => { playClick(); }} />
       </div>
     </div>
