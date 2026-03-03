@@ -38,7 +38,13 @@ app.use(cors());
 app.use(express.json());
 
 // Serve dashboard static files
-const distPath = path.join(__dirname, 'dashboard'); // Default
+const distPath = path.join(process.cwd(), 'dashboard');
+console.log(`[SIDECAR]: Serving dashboard from ${distPath}`);
+
+if (!fs.existsSync(distPath)) {
+    console.error(`[SIDECAR_ERROR]: Dashboard directory not found at ${distPath}`);
+}
+
 app.use('/dashboard', express.static(distPath));
 app.get('/', (_req: any, res: any) => res.redirect('/dashboard'));
 
