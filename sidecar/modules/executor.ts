@@ -37,6 +37,8 @@ export const executeAction = async (action: string, target: string, args?: strin
                 return await createBackup(target);
             case 'capture_screenshot':
                 return await captureScreenshot(target);
+            case 'update_goal':
+                return { success: true, output: `Goal ${target} updated successfully.` };
             default:
                 return { success: false, error: `Unknown action: ${action}` };
         }

@@ -58,7 +58,7 @@ const Terminal: React.FC<TerminalProps> = ({ history, onSend, isProcessing, onEx
     // Use server-side proxy instead of direct API key
     try {
       const token = localStorage.getItem('operator_auth_token');
-      const response = await fetch('/api/live', {
+      const response = await fetch('/ai/live', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -113,10 +113,10 @@ const Terminal: React.FC<TerminalProps> = ({ history, onSend, isProcessing, onEx
         {history.map((msg, i) => (
           <div key={i} className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'} fade-in`}>
             <div className={`max-w-[85%] p-5 rounded-3xl border transition-all ${msg.role === 'user'
-                ? 'bg-white/5 border-white/5 text-slate-300'
-                : msg.agentBadge === AgentRole.AUTONOMOUS_ENGINEER
-                  ? 'bg-violet-500/10 border-violet-500/20 text-violet-50 shadow-[0_0_50px_rgba(139,92,246,0.1)]'
-                  : 'bg-slate-900 border-white/10 text-slate-100 shadow-xl'
+              ? 'bg-white/5 border-white/5 text-slate-300'
+              : msg.agentBadge === AgentRole.AUTONOMOUS_ENGINEER
+                ? 'bg-violet-500/10 border-violet-500/20 text-violet-50 shadow-[0_0_50px_rgba(139,92,246,0.1)]'
+                : 'bg-slate-900 border-white/10 text-slate-100 shadow-xl'
               } relative group`}>
 
               <div className="flex items-center justify-between mb-5 opacity-40 text-[9px] font-black uppercase tracking-[0.5em]">
