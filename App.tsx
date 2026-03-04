@@ -55,22 +55,11 @@ const OS_TOOL_DECLARATION: FunctionDeclaration = {
   }
 };
 
-const MASTER_SYSTEM_PROMPT = `
-You are the Personal AI Operator (Final Master Build v8.5).
-You behave as a coordinated technical team: Planner, Executor, Tester, Healer, and Supervisor.
+const MASTER_SYSTEM_PROMPT = `You are Personal AI Operator — a smart, helpful AI assistant.
 
-PRIMARY OPERATING PRINCIPLE:
-Anticipate → Plan → Execute → Verify → Heal → Learn
+Your job is to answer the user's questions clearly and helpfully. Respond in the SAME LANGUAGE the user writes in (Urdu, English, or mixed). Never output code blocks or planning steps unless the user explicitly asks for code. Just have a natural, helpful conversation.
 
-OPERATING DIRECTIVES:
-1. MULTI-AGENT COORDINATION: Planner creates sequences. Executor calls os_sidecar_ipc. Tester validates. Healer fixes faults.
-2. SELF-HEALING: On failure, classify the error (DEP, PERM, RUNTIME, LOGIC, NETWORK) and select a recovery strategy (Restart, Resolve, Backoff, Flush).
-3. GOAL ALIGNMENT: Every task must map to a long-term goal.
-4. POLICY GUARD: RISK > 0.8 requires user confirmation. Redact secrets.
-5. AUTONOMY: Respond concisely. Focus on verified execution results.
-
-Command local tools via os_sidecar_ipc. You are persistent.
-`;
+If the user asks about a topic, give a clear direct answer. If they ask you to do a system task, do it. Keep responses concise and friendly.`;
 
 const App: React.FC = () => {
   return (
@@ -149,75 +138,85 @@ const AppContent: React.FC = () => {
   const audioContextRef = useRef<AudioContext | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
 
-  const playbackCtxRef = useRef<AudioContext | null>(null);
-  const playbackScheduleRef = useRef<number>(0);
+  const recognitionRef = useRef<any>(null);
+  const processInputRef = useRef<((input: string, origin?: 'user' | 'system') => Promise<void>) | null>(null);
 
-  const toggleVoice = useCallback(async () => {
-    if (isVoiceActive) {
-      setIsVoiceActive(false);
-      mediaStreamRef.current?.getTracks().forEach(t => t.stop());
-      mediaStreamRef.current = null;
-      audioContextRef.current?.close();
-      audioContextRef.current = null;
-      playbackCtxRef.current?.close();
-      playbackCtxRef.current = null;
-      const mainWs = (window as any).operatorWs;
-      if (mainWs && mainWs.readyState === WebSocket.OPEN) {
-        mainWs.send(JSON.stringify({ type: 'STOP_VOICE' }));
-      }
-      addToast({ type: 'info', title: 'Voice Off', message: 'Session ended' });
+  const speakText = (text: string) => {
+    if (!('speechSynthesis' in window)) return;
+    window.speechSynthesis.cancel(); // Stop any ongoing speech
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'en-US';
+    utterance.rate = 1.0;
+    utterance.pitch = 1.0;
+    // Prefer a natural voice if available
+    const voices = window.speechSynthesis.getVoices();
+    const preferred = voices.find(v => v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('Neural'));
+    if (preferred) utterance.voice = preferred;
+    window.speechSynthesis.speak(utterance);
+  };
+
+  const toggleVoice = useCallback(() => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      addToast({ type: 'error', title: 'Not Supported', message: 'Voice not supported in this browser. Use Chrome.' });
       return;
     }
 
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
-      mediaStreamRef.current = stream;
+    if (isVoiceActive) {
+      // Stop
+      recognitionRef.current?.stop();
+      recognitionRef.current = null;
+      window.speechSynthesis.cancel();
+      setIsVoiceActive(false);
+      addToast({ type: 'info', title: 'Voice Off', message: 'Voice session ended' });
+      return;
+    }
 
-      // Input context: 16kHz for sending to Gemini
-      const inputCtx = new AudioContext({ sampleRate: 16000 });
-      audioContextRef.current = inputCtx;
+    // Start voice recognition
+    const recognition = new SpeechRecognition();
+    recognitionRef.current = recognition;
+    recognition.lang = 'ur-PK,en-US'; // Support both Urdu and English
+    recognition.interimResults = false;
+    recognition.continuous = true;
+    recognition.maxAlternatives = 1;
 
-      // Output context: 24kHz for Gemini audio response
-      const outputCtx = new AudioContext({ sampleRate: 24000 });
-      playbackCtxRef.current = outputCtx;
-      playbackScheduleRef.current = outputCtx.currentTime;
-
-      const mainWs = (window as any).operatorWs;
-      if (!mainWs || mainWs.readyState !== WebSocket.OPEN) {
-        addToast({ type: 'error', title: 'Not Connected', message: 'Refresh page and try again' });
-        stream.getTracks().forEach(t => t.stop());
-        return;
-      }
-
-      // Tell server to open Gemini Live session
-      mainWs.send(JSON.stringify({ type: 'START_VOICE' }));
-
-      // Start mic streaming
-      const source = inputCtx.createMediaStreamSource(stream);
-      const processor = inputCtx.createScriptProcessor(2048, 1, 1);
-      source.connect(processor);
-      processor.connect(inputCtx.destination);
-      processor.onaudioprocess = (e) => {
-        const ws = (window as any).operatorWs;
-        if (!ws || ws.readyState !== WebSocket.OPEN) return;
-        const inputData = e.inputBuffer.getChannelData(0);
-        const pcm = new Int16Array(inputData.length);
-        for (let i = 0; i < inputData.length; i++) {
-          pcm[i] = Math.max(-32768, Math.min(32767, inputData[i] * 32768));
-        }
-        const bytes = new Uint8Array(pcm.buffer);
-        let binary = '';
-        for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
-        ws.send(JSON.stringify({ type: 'VOICE_AUDIO', data: btoa(binary) }));
-      };
-
+    recognition.onstart = () => {
       setIsVoiceActive(true);
-      addToast({ type: 'success', title: 'Voice Active', message: 'Listening... speak now' });
+      addToast({ type: 'success', title: 'Voice Active', message: 'Listening... baat karo' });
+    };
+
+    recognition.onresult = async (event: any) => {
+      const transcript = event.results[event.results.length - 1][0].transcript.trim();
+      if (!transcript) return;
+      console.log('[VOICE_INPUT]:', transcript);
+      // Use ref to avoid forward declaration issue
+      await processInputRef.current?.(transcript, 'user');
+    };
+
+    recognition.onerror = (event: any) => {
+      if (event.error === 'not-allowed') {
+        addToast({ type: 'error', title: 'Mic Denied', message: 'Allow microphone in browser settings' });
+      } else if (event.error !== 'no-speech') {
+        console.error('[VOICE_ERROR]:', event.error);
+      }
+    };
+
+    recognition.onend = () => {
+      // Auto-restart if still active (handles pauses)
+      if (recognitionRef.current) {
+        try { recognitionRef.current.start(); } catch { }
+      }
+    };
+
+    try {
+      recognition.start();
     } catch (e: any) {
-      const msg = e.name === 'NotAllowedError' ? 'Mic permission denied in browser' : e.message;
-      addToast({ type: 'error', title: 'Mic Error', message: msg });
+      addToast({ type: 'error', title: 'Voice Error', message: e.message });
     }
   }, [isVoiceActive, addToast]);
+
+
 
 
   useEffect(() => {
@@ -374,38 +373,19 @@ const AppContent: React.FC = () => {
           pushEvent(data.type, data.source, data.metadata);
         } else if (data.type === 'RECOVERY_SIGNAL') {
           pushEvent(data.type, data.source, data.metadata);
-        } else if (data.type === 'VOICE_RESPONSE') {
-          try {
-            const ctx = playbackCtxRef.current;
-            if (!ctx) return;
-            const binaryString = atob(data.data);
-            const bytes = new Uint8Array(binaryString.length);
-            for (let i = 0; i < binaryString.length; i++) bytes[i] = binaryString.charCodeAt(i);
-            const pcmData = new Int16Array(bytes.buffer);
-            const floatData = new Float32Array(pcmData.length);
-            for (let i = 0; i < pcmData.length; i++) floatData[i] = pcmData[i] / 32768;
-            const buffer = ctx.createBuffer(1, floatData.length, 24000);
-            buffer.getChannelData(0).set(floatData);
-            const source = ctx.createBufferSource();
-            source.buffer = buffer;
-            source.connect(ctx.destination);
-            const startAt = Math.max(ctx.currentTime, playbackScheduleRef.current);
-            source.start(startAt);
-            playbackScheduleRef.current = startAt + buffer.duration;
-          } catch (err) {
-            console.error('[VOICE_PLAYBACK]:', err);
-          }
         } else if (data.type === 'VOICE_TEXT') {
-          addAuditEntry(`VOICE_REPLY: ${data.text}`, 'ai');
-          setState(prev => ({
-            ...prev,
-            history: [...prev.history, {
-              role: 'ai',
-              text: data.text,
-              timestamp: Date.now(),
-              agentBadge: AgentRole.SUPERVISOR
-            }].slice(-50)
-          }));
+          // Voice text from server — show in chat and speak it
+          if (data.text) {
+            setState(prev => ({
+              ...prev,
+              history: [...prev.history, {
+                role: 'ai',
+                text: data.text,
+                timestamp: Date.now(),
+                agentBadge: AgentRole.SUPERVISOR
+              }].slice(-50)
+            }));
+          }
         } else if (data.type === 'SYSTEM_PULSE') {
           setState(p => ({
             ...p,
@@ -605,6 +585,10 @@ const AppContent: React.FC = () => {
           }].slice(-50),
           isSessionStarted: true
         }));
+        // Speak the AI reply if voice mode is on
+        if (isVoiceActive) {
+          speakText(text);
+        }
       }
     } catch (e: any) {
       const errorMsg = e?.message || 'Unknown error';
@@ -624,6 +608,9 @@ const AppContent: React.FC = () => {
       setIsProcessing(false);
     }
   }, [state.osState.bridgeUrl, state.isAutonomous, initChat]);
+
+  // Keep ref in sync so toggleVoice can call processInput without forward reference
+  processInputRef.current = processInput;
 
   const bootDaemon = () => {
     playClick();
@@ -648,7 +635,7 @@ const AppContent: React.FC = () => {
 
 
   return (
-      <div className="flex h-screen w-screen bg-slate-50 text-slate-800 overflow-hidden">
+    <div className="flex h-screen w-screen bg-slate-50 text-slate-800 overflow-hidden">
       <CommandPalette
         isOpen={isCommandOpen}
         onClose={() => setCommandOpen(false)}
@@ -682,11 +669,10 @@ const AppContent: React.FC = () => {
                   addToast({ type: 'info', title: 'Manual Mode', message: 'Autonomous actions disabled' });
                 }
               }}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all ${
-                state.isAutonomous
-                  ? 'bg-violet-600 text-white shadow-md'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-              }`}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all ${state.isAutonomous
+                ? 'bg-violet-600 text-white shadow-md'
+                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
             >
               <Zap className="w-3.5 h-3.5" />
               {state.isAutonomous ? 'Auto Mode' : 'Manual'}
