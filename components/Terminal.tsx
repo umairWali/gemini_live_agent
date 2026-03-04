@@ -70,24 +70,10 @@ const Terminal: React.FC<TerminalProps> = ({
                 alignItems: 'flex-start'
               }}
             >
-              {/* AI avatar */}
-              {msg.role !== 'user' && (
-                <div style={{
-                  width: 30, height: 30, borderRadius: 10,
-                  background: '#e5e7eb', display: 'flex',
-                  alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 2
-                }}>
-                  <Bot size={14} color="#374151" />
-                </div>
-              )}
+              {/* AI avatar removed as requested */}
 
               <div style={{ maxWidth: '76%' }}>
-                {/* Label */}
-                {msg.role !== 'user' && (
-                  <div style={{ fontSize: 10, fontWeight: 600, color: '#9ca3af', marginBottom: 4, letterSpacing: '0.03em' }}>
-                    AI Operator
-                  </div>
-                )}
+                {/* Label removed as requested */}
 
                 {/* Bubble */}
                 <div style={{
@@ -105,31 +91,7 @@ const Terminal: React.FC<TerminalProps> = ({
                   {msg.text}
                 </div>
 
-                {/* Show reasoning toggle */}
-                {msg.role === 'ai' && (
-                  <button
-                    onClick={() => onToggleExplain?.(i)}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: 4,
-                      marginTop: 4, fontSize: 11, color: '#9ca3af',
-                      background: 'none', border: 'none', cursor: 'pointer', padding: '2px 0'
-                    }}
-                  >
-                    <BrainCircuit size={11} />
-                    {msg.isExplainMode ? 'Hide reasoning' : 'Show reasoning'}
-                  </button>
-                )}
-
-                {/* Explanation panel */}
-                {msg.isExplainMode && msg.explanation && (
-                  <div style={{
-                    marginTop: 6, padding: '8px 12px',
-                    background: '#f9fafb', border: '1px solid #e5e7eb',
-                    borderRadius: 10, fontSize: 11, color: '#6b7280', lineHeight: 1.5
-                  }}>
-                    {msg.explanation}
-                  </div>
-                )}
+                {/* Explanation and reasoning toggle removed as requested */}
               </div>
 
               {/* User avatar */}
@@ -149,12 +111,6 @@ const Terminal: React.FC<TerminalProps> = ({
         {/* Typing indicator */}
         {isProcessing && (
           <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-            <div style={{
-              width: 30, height: 30, borderRadius: 10, background: '#e5e7eb',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
-            }}>
-              <Bot size={14} color="#374151" />
-            </div>
             <div style={{
               background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: '4px 18px 18px 18px',
               padding: '12px 16px', display: 'flex', gap: 5, alignItems: 'center'
