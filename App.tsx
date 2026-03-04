@@ -139,6 +139,10 @@ const AppContent: React.FC = () => {
   const mediaStreamRef = useRef<MediaStream | null>(null);
 
   const recognitionRef = useRef<any>(null);
+  const playbackCtxRef = useRef<AudioContext | null>(null);
+  const playbackScheduleRef = useRef<number>(0);
+
+
   const processInputRef = useRef<((input: string, origin?: 'user' | 'system') => Promise<void>) | null>(null);
 
   const speakText = (text: string) => {
@@ -155,64 +159,87 @@ const AppContent: React.FC = () => {
     window.speechSynthesis.speak(utterance);
   };
 
-  const toggleVoice = useCallback(() => {
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-
-    if (!SpeechRecognition) {
-      addToast({ type: 'error', title: 'Not Supported', message: 'Voice not supported in this browser. Use Chrome.' });
+  const toggleVoice = useCallback(async () => {
+    const ws = (window as any).operatorWs as WebSocket;
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+      addToast({ type: 'error', title: 'Connection Error', message: 'WebSocket not connected.' });
       return;
     }
 
     if (isVoiceActive) {
-      // Stop
-      recognitionRef.current?.stop();
-      recognitionRef.current = null;
-      window.speechSynthesis.cancel();
+      // Stop Voice
+      if (mediaStreamRef.current) {
+        mediaStreamRef.current.getTracks().forEach(t => t.stop());
+        mediaStreamRef.current = null;
+      }
+      if (recognitionRef.current) {
+        try { recognitionRef.current.disconnect(); } catch { }
+        recognitionRef.current = null;
+      }
+      if (audioContextRef.current) {
+        try { audioContextRef.current.close(); } catch { }
+        audioContextRef.current = null;
+      }
+      ws.send(JSON.stringify({ type: 'STOP_VOICE' }));
       setIsVoiceActive(false);
       addToast({ type: 'info', title: 'Voice Off', message: 'Voice session ended' });
       return;
     }
 
-    // Start voice recognition
-    const recognition = new SpeechRecognition();
-    recognitionRef.current = recognition;
-    recognition.lang = 'ur-PK,en-US'; // Support both Urdu and English
-    recognition.interimResults = false;
-    recognition.continuous = true;
-    recognition.maxAlternatives = 1;
+    try {
+      // Start Voice
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: { channelCount: 1, sampleRate: 16000 }
+      });
+      mediaStreamRef.current = stream;
 
-    recognition.onstart = () => {
+      const ac = new window.AudioContext({ sampleRate: 16000 });
+      audioContextRef.current = ac;
+      await ac.resume();
+
+      const source = ac.createMediaStreamSource(stream);
+      const processor = ac.createScriptProcessor(4096, 1, 1);
+      recognitionRef.current = processor;
+
+      source.connect(processor);
+      processor.connect(ac.destination);
+
+      processor.onaudioprocess = (e) => {
+        const wsNow = (window as any).operatorWs as WebSocket;
+        if (!wsNow || wsNow.readyState !== WebSocket.OPEN) return;
+
+        const channelData = e.inputBuffer.getChannelData(0);
+        const pcmData = new Int16Array(channelData.length);
+        for (let i = 0; i < channelData.length; i++) {
+          pcmData[i] = Math.max(-1, Math.min(1, channelData[i])) * 0x7FFF;
+        }
+
+        const buffer = new ArrayBuffer(pcmData.length * 2);
+        const view = new DataView(buffer);
+        let offset = 0;
+        for (let i = 0; i < pcmData.length; i++, offset += 2) {
+          view.setInt16(offset, pcmData[i], true);
+        }
+
+        let binary = '';
+        const bytes = new Uint8Array(buffer);
+        for (let i = 0; i < bytes.byteLength; i++) {
+          binary += String.fromCharCode(bytes[i]);
+        }
+        const base64Data = btoa(binary);
+
+        wsNow.send(JSON.stringify({
+          type: 'VOICE_AUDIO',
+          data: base64Data
+        }));
+      };
+
+      ws.send(JSON.stringify({ type: 'START_VOICE' }));
       setIsVoiceActive(true);
       addToast({ type: 'success', title: 'Voice Active', message: 'Listening... baat karo' });
-    };
-
-    recognition.onresult = async (event: any) => {
-      const transcript = event.results[event.results.length - 1][0].transcript.trim();
-      if (!transcript) return;
-      console.log('[VOICE_INPUT]:', transcript);
-      // Use ref to avoid forward declaration issue
-      await processInputRef.current?.(transcript, 'user');
-    };
-
-    recognition.onerror = (event: any) => {
-      if (event.error === 'not-allowed') {
-        addToast({ type: 'error', title: 'Mic Denied', message: 'Allow microphone in browser settings' });
-      } else if (event.error !== 'no-speech') {
-        console.error('[VOICE_ERROR]:', event.error);
-      }
-    };
-
-    recognition.onend = () => {
-      // Auto-restart if still active (handles pauses)
-      if (recognitionRef.current) {
-        try { recognitionRef.current.start(); } catch { }
-      }
-    };
-
-    try {
-      recognition.start();
     } catch (e: any) {
-      addToast({ type: 'error', title: 'Voice Error', message: e.message });
+      console.error('[VOICE_SETUP]:', e);
+      addToast({ type: 'error', title: 'Mic Error', message: e.message || 'Failed to start mic' });
     }
   }, [isVoiceActive, addToast]);
 
@@ -373,8 +400,48 @@ const AppContent: React.FC = () => {
           pushEvent(data.type, data.source, data.metadata);
         } else if (data.type === 'RECOVERY_SIGNAL') {
           pushEvent(data.type, data.source, data.metadata);
+        } else if (data.type === 'VOICE_RESPONSE') {
+          try {
+            if (!playbackCtxRef.current) {
+              playbackCtxRef.current = new window.AudioContext({ sampleRate: 24000 });
+            }
+            const ctx = playbackCtxRef.current;
+            if (ctx.state === 'suspended') await ctx.resume();
+
+            const binaryString = atob(data.data);
+            const bytes = new Uint8Array(binaryString.length);
+            for (let i = 0; i < binaryString.length; i++) bytes[i] = binaryString.charCodeAt(i);
+            const pcmData = new Int16Array(bytes.buffer);
+            const floatData = new Float32Array(pcmData.length);
+            for (let i = 0; i < pcmData.length; i++) floatData[i] = pcmData[i] / 32768;
+
+            const buffer = ctx.createBuffer(1, floatData.length, 24000);
+            buffer.getChannelData(0).set(floatData);
+
+            const source = ctx.createBufferSource();
+            source.buffer = buffer;
+            source.connect(ctx.destination);
+
+            const startAt = Math.max(ctx.currentTime, playbackScheduleRef.current || 0);
+            source.start(startAt);
+            playbackScheduleRef.current = startAt + buffer.duration;
+          } catch (err) {
+            console.error('[VOICE_PLAYBACK]:', err);
+          }
+        } else if (data.type === 'VOICE_INPUT_TEXT') {
+          // Add user's transcribed text
+          if (data.text) {
+            setState(prev => ({
+              ...prev,
+              history: [...prev.history, {
+                role: 'user',
+                text: data.text,
+                timestamp: Date.now()
+              }].slice(-50)
+            }));
+          }
         } else if (data.type === 'VOICE_TEXT') {
-          // Voice text from server — show in chat and speak it
+          // Voice text from server — show in chat
           if (data.text) {
             setState(prev => ({
               ...prev,

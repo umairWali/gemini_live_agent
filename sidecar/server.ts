@@ -117,66 +117,138 @@ wss.on('connection', (ws) => {
             const message = JSON.parse(data.toString());
 
             if (message.type === 'START_VOICE') {
-                console.log('[AI_LIVE]: Starting session for client');
+                // Close existing session if any
+                const existingSession = liveSessions.get(ws);
+                if (existingSession) {
+                    try { existingSession.close(); } catch { }
+                    liveSessions.delete(ws);
+                }
+
+                console.log('[AI_LIVE]: Starting Gemini Live session');
                 const { GoogleGenAI, Modality } = await import('@google/genai');
                 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
 
                 const session = await ai.live.connect({
-                    model: 'gemini-2.0-flash-exp',
+                    model: 'gemini-live-2.5-flash-preview',
                     config: {
-                        responseModalities: [Modality.AUDIO],
-                        systemInstruction: "You are the Personal AI Operator's Voice Interface. Be concise, technical, and helpful. You can hear and speak. Help the user with system tasks."
+                        responseModalities: [Modality.AUDIO, Modality.TEXT],
+                        systemInstruction: 'You are a smart Personal AI Operator voice assistant. Be concise, natural, and helpful. Always respond in the same language the user speaks (Urdu or English). Keep responses brief.',
+                        speechConfig: {
+                            voiceConfig: {
+                                prebuiltVoiceConfig: { voiceName: 'Aoede' }
+                            }
+                        },
+                        inputAudioTranscription: {},
+                        outputAudioTranscription: {}
                     },
                     callbacks: {
                         onmessage: (msg: any) => {
-                            if (msg.serverContent?.modelTurn?.parts?.[0]?.inlineData) {
-                                // Send audio back to client
-                                ws.send(JSON.stringify({
-                                    type: 'VOICE_RESPONSE',
-                                    data: msg.serverContent.modelTurn.parts[0].inlineData.data
-                                }));
-                            }
-                            if (msg.serverContent?.modelTurn?.parts?.[0]?.text) {
-                                // Send text back to client
-                                ws.send(JSON.stringify({
-                                    type: 'VOICE_TEXT',
-                                    text: msg.serverContent.modelTurn.parts[0].text
-                                }));
+                            try {
+                                // --- Audio response chunks ---
+                                const parts = msg.serverContent?.modelTurn?.parts || [];
+                                for (const part of parts) {
+                                    if (part.inlineData?.data) {
+                                        ws.send(JSON.stringify({
+                                            type: 'VOICE_RESPONSE',
+                                            data: part.inlineData.data,
+                                            mimeType: part.inlineData.mimeType || 'audio/pcm;rate=24000'
+                                        }));
+                                    }
+                                    if (part.text) {
+                                        ws.send(JSON.stringify({ type: 'VOICE_TEXT', text: part.text }));
+                                    }
+                                }
+
+                                // --- Output transcript (what AI is saying) ---
+                                if (msg.serverContent?.outputTranscription?.text) {
+                                    ws.send(JSON.stringify({
+                                        type: 'VOICE_TEXT',
+                                        text: msg.serverContent.outputTranscription.text
+                                    }));
+                                }
+
+                                // --- Input transcript (what user said) ---
+                                if (msg.serverContent?.inputTranscription?.text) {
+                                    ws.send(JSON.stringify({
+                                        type: 'VOICE_INPUT_TEXT',
+                                        text: msg.serverContent.inputTranscription.text
+                                    }));
+                                }
+
+                                // --- Turn signals ---
+                                if (msg.serverContent?.turnComplete) {
+                                    ws.send(JSON.stringify({ type: 'VOICE_TURN_COMPLETE' }));
+                                }
+                                if (msg.serverContent?.interrupted) {
+                                    ws.send(JSON.stringify({ type: 'VOICE_INTERRUPTED' }));
+                                }
+                            } catch (parseErr) {
+                                console.error('[AI_LIVE]: onmessage parse error', parseErr);
                             }
                         },
-                        onclose: () => console.log('[AI_LIVE]: Gemini session closed'),
-                        onerror: (err) => {
-                            console.error('[AI_LIVE]: Gemini error', err);
-                            ws.send(JSON.stringify({ type: 'VOICE_ERROR', error: err.message }));
+                        onopen: () => console.log('[AI_LIVE]: Session opened'),
+                        onclose: () => {
+                            console.log('[AI_LIVE]: Session closed by Gemini');
+                            liveSessions.delete(ws);
+                        },
+                        onerror: (err: any) => {
+                            const errMsg = String(err?.message || err || 'Live API error');
+                            console.error('[AI_LIVE]: Error:', errMsg);
+                            if (ws.readyState === WebSocket.OPEN) {
+                                ws.send(JSON.stringify({ type: 'VOICE_ERROR', error: errMsg }));
+                            }
                         }
                     }
                 });
 
                 liveSessions.set(ws, session);
                 ws.send(JSON.stringify({ type: 'VOICE_READY' }));
+                console.log('[AI_LIVE]: VOICE_READY sent to client');
+
             } else if (message.type === 'VOICE_AUDIO') {
+                // Realtime PCM audio chunk from browser mic (base64, 16kHz)
                 const session = liveSessions.get(ws);
                 if (session) {
-                    session.send({
-                        data: message.data, // Base64 audio chunk
-                        mimeType: 'audio/pcm;rate=16000'
-                    });
+                    try {
+                        session.sendRealtimeInput({
+                            media: { data: message.data, mimeType: 'audio/pcm;rate=16000' }
+                        });
+                    } catch (e: any) {
+                        console.error('[AI_LIVE]: sendRealtimeInput error:', e.message);
+                    }
                 }
+
+            } else if (message.type === 'VOICE_TEXT_INPUT') {
+                // Text message sent during an active voice session
+                const session = liveSessions.get(ws);
+                if (session && message.text) {
+                    try {
+                        session.sendClientContent({ turns: message.text, turnComplete: true });
+                    } catch (e: any) {
+                        console.error('[AI_LIVE]: sendClientContent error:', e.message);
+                    }
+                }
+
             } else if (message.type === 'STOP_VOICE') {
                 const session = liveSessions.get(ws);
                 if (session) {
-                    // Current SDK might not have explicit close, but we can remove it
+                    try { session.close(); } catch { }
                     liveSessions.delete(ws);
+                    console.log('[AI_LIVE]: Session stopped by user');
                 }
             }
         } catch (e) {
-            // Silently ignore binary data handled by metadata types or log error
+            // Non-JSON or unexpected messages — ignore silently
         }
     });
 
     ws.on('close', () => {
         clients = clients.filter(c => c !== ws);
-        liveSessions.delete(ws);
+        const session = liveSessions.get(ws);
+        if (session) {
+            try { session.close(); } catch { }
+            liveSessions.delete(ws);
+        }
     });
 });
 
