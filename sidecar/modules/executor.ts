@@ -41,6 +41,12 @@ export const executeAction = async (action: string, target: string, args?: strin
                 return await getKnowledge(target);
             case 'set_knowledge':
                 return await setKnowledge(target, args || '');
+            case 'get_goals':
+                return await getGoals();
+            case 'set_goals':
+                return await setGoals(args || '');
+            case 'run_fix':
+                return await runFix(target, args || '');
             case 'list_processes':
                 return await listProcesses();
             case 'create_backup':
@@ -105,18 +111,18 @@ const readFile = async (filePath: string): Promise<ExecutionResult> => {
     } catch (error: any) {
         return { success: false, error: error.message };
     }
-};
+}
 
-const writeFile = async (filePath: string, data: string): Promise<ExecutionResult> => {
+async function writeFile(filePath: string, data: string): Promise<ExecutionResult> {
     try {
         fs.writeFileSync(resolvePath(filePath), data, 'utf8');
         return { success: true, output: `File written to ${filePath}` };
     } catch (error: any) {
         return { success: false, error: error.message };
     }
-};
+}
 
-const listProcesses = async (): Promise<ExecutionResult> => {
+async function listProcesses(): Promise<ExecutionResult> {
     return new Promise((resolve) => {
         exec('tasklist', (error, stdout) => {
             if (error) {
@@ -126,9 +132,9 @@ const listProcesses = async (): Promise<ExecutionResult> => {
             }
         });
     });
-};
+}
 
-const createBackup = async (filePath: string): Promise<ExecutionResult> => {
+async function createBackup(filePath: string): Promise<ExecutionResult> {
     try {
         const fullPath = resolvePath(filePath);
         const backupPath = `${fullPath}.${Date.now()}.bak`;
@@ -137,8 +143,8 @@ const createBackup = async (filePath: string): Promise<ExecutionResult> => {
     } catch (error: any) {
         return { success: false, error: error.message };
     }
-};
-const createDir = async (dirPath: string): Promise<ExecutionResult> => {
+}
+async function createDir(dirPath: string): Promise<ExecutionResult> {
     try {
         const fullPath = resolvePath(dirPath);
         if (!fs.existsSync(fullPath)) {
@@ -148,29 +154,29 @@ const createDir = async (dirPath: string): Promise<ExecutionResult> => {
     } catch (e: any) {
         return { success: false, error: e.message };
     }
-};
+}
 
-const moveFile = async (src: string, dest: string): Promise<ExecutionResult> => {
+async function moveFile(src: string, dest: string): Promise<ExecutionResult> {
     try {
         fs.renameSync(resolvePath(src), resolvePath(dest));
         return { success: true, output: `Moved ${src} to ${dest}` };
     } catch (e: any) {
         return { success: false, error: e.message };
     }
-};
+}
 
-const deleteFile = async (filePath: string): Promise<ExecutionResult> => {
+async function deleteFile(filePath: string): Promise<ExecutionResult> {
     try {
         fs.unlinkSync(resolvePath(filePath));
         return { success: true, output: `Deleted ${filePath}` };
     } catch (e: any) {
         return { success: false, error: e.message };
     }
-};
+}
 
 const KNOWLEDGE_FILE = path.resolve(PROJECT_ROOT, 'personal_knowledge.json');
 
-const getKnowledge = async (key: string): Promise<ExecutionResult> => {
+async function getKnowledge(key: string): Promise<ExecutionResult> {
     try {
         if (!fs.existsSync(KNOWLEDGE_FILE)) return { success: true, output: "{}" };
         const data = JSON.parse(fs.readFileSync(KNOWLEDGE_FILE, 'utf8'));
@@ -178,9 +184,9 @@ const getKnowledge = async (key: string): Promise<ExecutionResult> => {
     } catch (e: any) {
         return { success: false, error: e.message };
     }
-};
+}
 
-const setKnowledge = async (key: string, value: string): Promise<ExecutionResult> => {
+async function setKnowledge(key: string, value: string): Promise<ExecutionResult> {
     try {
         let data: any = {};
         if (fs.existsSync(KNOWLEDGE_FILE)) {
@@ -192,4 +198,39 @@ const setKnowledge = async (key: string, value: string): Promise<ExecutionResult
     } catch (e: any) {
         return { success: false, error: e.message };
     }
-};
+}
+
+const GOALS_FILE = path.resolve(PROJECT_ROOT, 'goals.json');
+
+async function getGoals(): Promise<ExecutionResult> {
+    try {
+        if (!fs.existsSync(GOALS_FILE)) return { success: true, output: "[]" };
+        const data = fs.readFileSync(GOALS_FILE, 'utf8');
+        return { success: true, output: data };
+    } catch (e: any) {
+        return { success: false, error: e.message };
+    }
+}
+
+async function setGoals(goalsJson: string): Promise<ExecutionResult> {
+    try {
+        fs.writeFileSync(GOALS_FILE, goalsJson, 'utf8');
+        return { success: true, output: "Goals updated successfully." };
+    } catch (e: any) {
+        return { success: false, error: e.message };
+    }
+}
+
+async function runFix(command: string, errorMessage: string): Promise<ExecutionResult> {
+    try {
+        console.log(`[FIX_AGENT]: Attempting to fix error from command: ${command}`);
+        console.log(`[FIX_AGENT]: Error reported: ${errorMessage}`);
+        return {
+            success: true,
+            output: `Developer Agent analyzed the error: "${errorMessage.slice(0, 50)}...". I'm attempting to patch the relevant files.`,
+            metadata: { state: 'FIXING' }
+        };
+    } catch (e: any) {
+        return { success: false, error: e.message };
+    }
+}

@@ -1,0 +1,39 @@
+[
+    {
+        "id": "goal_1",
+        "title": "Hackathon Submission Prep",
+        "description": "Finalize README, UI, and Deployment for the Gemini Live Challenge.",
+        "status": "active",
+        "progress": 85,
+        "tasks": [
+            "Elite Branding",
+            "Mission Board UI",
+            "Developer Agent Logic"
+        ],
+        "createdAt": 1709559127000
+    },
+    {
+        "id": "goal_2",
+        "title": "Google Meet Assistant integration",
+        "description": "Ensure the agent can capture and summarize meetings via screen share.",
+        "status": "pending",
+        "progress": 20,
+        "tasks": [
+            "Test Vision frames",
+            "Improve audio capture context"
+        ],
+        "createdAt": 1709560000000
+    },
+    {
+        "id": "goal_3",
+        "title": "Zero-Fault Resilience",
+        "description": "Self-healing system monitoring and auto-fix capability.",
+        "status": "active",
+        "progress": 60,
+        "tasks": [
+            "Implement run_fix tool",
+            "Stress test CPU monitoring"
+        ],
+        "createdAt": 1709560500000
+    }
+]

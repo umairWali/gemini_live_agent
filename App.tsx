@@ -1,72 +1,34 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
-  WorkMode, TaskCategory, OperatorTask, AppState, AgentRole,
-  WatcherEvent, RecoveryAttempt, Message, ErrorCategory, TelemetryPoint,
-  AuditTrailEntry
+  WorkMode, TaskCategory, AppState, AgentRole, WatcherEvent, RecoveryAttempt,
+  Message, ErrorCategory, TelemetryPoint, AuditTrailEntry, Goal
 } from './types';
+import MissionBoard from './components/MissionBoard';
 import ChatSidebar from './components/ChatSidebar';
 import Terminal from './components/Terminal';
 import RightPanel from './components/RightPanel';
 import AppHeader from './components/AppHeader';
-import { Zap, PlayCircle, HeartPulse } from 'lucide-react';
-import type { FunctionDeclaration } from "@google/genai";
-
-// UI/UX Components
-import { ToastProvider, useToast } from './components/Toast';
-import { CommandPalette, useCommandPalette } from './components/CommandPalette';
 import { ErrorBoundary } from './components/ErrorBoundary';
-import { PageLoader, SkeletonMessage } from './components/Skeletons';
+import { ToastProvider, useToast } from './components/Toast';
+import { useCommandPalette } from './components/CommandPalette';
 import { useSoundEffects } from './hooks/useSoundEffects';
+import { LucideIcon, Radio } from 'lucide-react';
 
-// Local Type definitions to replace @google/genai imports
-const Type = {
-  OBJECT: 'OBJECT' as any,
-  STRING: 'STRING' as any,
-  NUMBER: 'NUMBER' as any,
-  ARRAY: 'ARRAY' as any,
-  BOOLEAN: 'BOOLEAN' as any,
-};
+const MASTER_SYSTEM_PROMPT = `You are Personal Operator — a smart, autonomous AI assistant.
 
-// Simplified Chat interface for server-side proxy
-interface ChatClient {
-  sendMessage: (params: { message: string }) => Promise<{
-    text?: string;
-    functionCalls?: any[];
-  }>;
-}
-
-const OS_TOOL_DECLARATION: FunctionDeclaration = {
-  name: 'os_sidecar_ipc',
-  parameters: {
-    type: Type.OBJECT,
-    description: 'Privileged Native Sidecar Interface. Controls system-level actions via privileged bridge.',
-    properties: {
-      action: {
-        type: Type.STRING,
-        description: 'Command: open_app, run_command, read_file, write_file, watch_dir, list_processes, create_backup, apply_repair, update_goal, vault_access'
-      },
-      target: { type: Type.STRING, description: 'Application name, file path, command, or identifier.' },
-      args: { type: Type.STRING, description: 'Optional data, parameters, or content for the action.' },
-      risk: { type: Type.STRING, description: 'Risk assessment: LOW (safe), MEDIUM (reversible), HIGH (destructive/production).' },
-      explanation: { type: Type.STRING, description: 'Brief technical rationale for the action.' }
-    },
-    required: ['action', 'target', 'risk']
-  }
-};
-
-const MASTER_SYSTEM_PROMPT = `You are Personal Operator — a smart, helpful AI assistant.
-
-Your job is to answer the user's questions clearly and helpfully. Respond in the SAME LANGUAGE the user writes in (Urdu, English, or mixed). 
+Your job is to manage the user's projects, fix their code, participate in their meetings, and remember their personal preferences.
 
 ELITE CAPABILITIES:
-1. VISION: You can see the user's screen if they enable screen sharing. Use this to help them with what they are looking at.
-2. TOOLS: You have a tool called 'execute_action'. Use it to run commands, read/write/move/delete files, or create directories on the user's PC when requested.
-3. PERSONAL MEMORY: Use 'get_knowledge' and 'set_knowledge' (via execute_action) to remember user preferences across sessions.
-4. SYSTEM GUARD: You monitor CPU/RAM. If you detect high load, you MUST proactively alert the user and offer to help (e.g., closing non-essential processes).
+1. VISION: If the user shares their screen (especially during Google Meet/Teams), you can see what is happening. Use this to prepare meeting minutes, record tasks, and identify people.
+2. MISSION BOARD (GOALS): Use 'get_goals' and 'set_goals' to manage a persistent checklist of user goals. You should proactively update these as tasks are completed.
+3. DEVELOPER AGENT: If the user mentions a code error or a failing build, use 'run_fix' to analyze and attempt an autonomous patch of the codebase.
+4. DAILY BRIEFING: At the start of every session, you should greet the user and provide a concise summary of their active goals, system status, and any pending reminders.
+5. TOOLS: You can run commands, read/write/move/delete files, or create directories on the user's PC using 'execute_action'.
+6. MEMORY: Use 'get_knowledge' and 'set_knowledge' to store user preferences and long-term facts.
+7. GUARD: Monitor CPU/RAM and alert the user if thresholds are exceeded.
 
-Keep responses natural, helpful, and concise.`;
-
+Respond in the SAME LANGUAGE the user writes in (Urdu, English, or mixed). Keep responses natural, professional, and proactive.`;
 
 const App: React.FC = () => {
   return (
@@ -80,19 +42,19 @@ const App: React.FC = () => {
 
 const AppContent: React.FC = () => {
   const { addToast } = useToast();
-  const { isOpen: isCommandOpen, setIsOpen: setCommandOpen } = useCommandPalette();
   const { playSuccess, playError, playNotification, playClick, haptic } = useSoundEffects(true);
   const [isDark, setIsDark] = useState(true);
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
+
   const [state, setState] = useState<AppState>(() => {
-    const saved = localStorage.getItem('operator_master_prod_v8_final');
+    const saved = localStorage.getItem('operator_master_prod_v10');
     if (saved) {
       const parsed = JSON.parse(saved);
       return {
         ...parsed,
         osState: { ...parsed.osState, bridgeUrl: '' },
-        isSessionStarted: false // Reset on load
+        isSessionStarted: false
       };
     }
     return {
@@ -117,10 +79,8 @@ const AppContent: React.FC = () => {
         activeQueue: []
       },
       tasks: [], checklists: [], activeStack: [],
-      goals: [
-        { id: '1', title: 'System Autonomy Transition', progress: 82, status: 'active' },
-        { id: '2', title: 'Zero-Fault Resilience', progress: 45, status: 'active' }
-      ],
+      goals: [],
+      activeProjects: ['Main Project'],
       vault: [{ id: 'v1', key: 'AWS_PROD_SECRET', value: '******************', timestamp: Date.now() }],
       auditTrail: [],
       agentActivities: Object.values(AgentRole).map(role => ({ agent: role as AgentRole, status: 'idle', message: 'Standby', timestamp: Date.now() })),
@@ -138,83 +98,76 @@ const AppContent: React.FC = () => {
   });
 
   const [isProcessing, setIsProcessing] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(true);
-  const [authPassword, setAuthPassword] = useState('');
-  const chatRef = useRef<ChatClient | null>(null);
   const [isVoiceActive, setIsVoiceActive] = useState(false);
+  const [audioLevel, setAudioLevel] = useState(0);
   const voiceSocketRef = useRef<WebSocket | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
+  const playbackCtxRef = useRef<AudioContext | null>(null);
+  const analyzerRef = useRef<AnalyserNode | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
+  const playbackScheduleRef = useRef<number>(0);
 
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const screenStreamRef = useRef<MediaStream | null>(null);
   const screenCaptureIntervalRef = useRef<any>(null);
 
-  const toggleScreenShare = useCallback(async () => {
-    const ws = (window as any).operatorWs as WebSocket;
-    if (!ws || ws.readyState !== WebSocket.OPEN) {
-      addToast({ type: 'error', title: 'Connection Error', message: 'WebSocket not connected.' });
-      return;
-    }
-    if (isScreenSharing) {
-      setIsScreenSharing(false);
-      if (screenCaptureIntervalRef.current) clearInterval(screenCaptureIntervalRef.current);
-      if (screenStreamRef.current) screenStreamRef.current.getTracks().forEach(t => t.stop());
-      return;
-    }
-    try {
-      const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
-      screenStreamRef.current = stream;
-      setIsScreenSharing(true);
-      const video = document.createElement('video');
-      video.srcObject = stream;
-      video.play();
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      // Set low res
-      canvas.width = 640;
-      canvas.height = 480;
-      screenCaptureIntervalRef.current = setInterval(() => {
-        if (!ctx || video.videoWidth === 0) return;
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        const base64Jpeg = canvas.toDataURL('image/jpeg', 0.5);
-        const base64Data = base64Jpeg.replace(/^data:image\/jpeg;base64,/, '');
-        ws.send(JSON.stringify({ type: 'VOICE_VISION_FRAME', data: base64Data }));
-      }, 1000); // 1 FPS
+  useEffect(() => {
+    localStorage.setItem('operator_master_prod_v10', JSON.stringify(state));
+  }, [state]);
 
-      stream.getVideoTracks()[0].onended = () => {
-        setIsScreenSharing(false);
-        if (screenCaptureIntervalRef.current) clearInterval(screenCaptureIntervalRef.current);
-      };
-    } catch (err: any) {
-      console.error(err);
-      addToast({ type: 'error', title: 'Screen Share Failed', message: err.message });
-    }
-  }, [isScreenSharing]);
-
-  const recognitionRef = useRef<any>(null);
-  const playbackCtxRef = useRef<AudioContext | null>(null);
-  const playbackScheduleRef = useRef<number>(0);
-  const analyzerRef = useRef<AnalyserNode | null>(null);
-  const [audioLevel, setAudioLevel] = useState(0);
-
-  const processInputRef = useRef<((input: string, origin?: 'user' | 'system') => Promise<void>) | null>(null);
+  const addAuditEntry = (text: string, source: any) => {
+    setState(prev => ({
+      ...prev,
+      auditTrail: [{ id: Date.now().toString(), text, source, timestamp: Date.now() }, ...prev.auditTrail].slice(0, 50)
+    }));
+  };
 
   const speakText = (text: string) => {
     if (!('speechSynthesis' in window)) return;
-    window.speechSynthesis.cancel(); // Stop any ongoing speech
+    window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = 'en-US';
-    utterance.rate = 1.0;
-    utterance.pitch = 1.0;
-    // Prefer a natural voice if available
-    const voices = window.speechSynthesis.getVoices();
-    const preferred = voices.find(v => v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('Neural'));
-    if (preferred) utterance.voice = preferred;
     window.speechSynthesis.speak(utterance);
   };
 
-  const toggleVoice = useCallback(async () => {
+  const processInput = async (txt: string, origin: 'user' | 'system' = 'user') => {
+    if (!txt.trim() || isProcessing) return;
+    setIsProcessing(true);
+
+    if (origin === 'user') {
+      setState(p => ({
+        ...p,
+        history: [...p.history, { role: 'user', text: txt, timestamp: Date.now() }].slice(-50)
+      }));
+    }
+
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: txt,
+          history: state.history,
+          systemPrompt: MASTER_SYSTEM_PROMPT
+        })
+      });
+      const data = await response.json();
+      if (data.reply) {
+        setState(p => ({
+          ...p,
+          history: [...p.history, { role: 'ai', text: data.reply, timestamp: Date.now(), agentBadge: AgentRole.EXECUTOR }].slice(-50)
+        }));
+        if (isVoiceActive) speakText(data.reply);
+      }
+    } catch (e) {
+      console.error(e);
+      addToast({ type: 'error', title: 'AI Error', message: 'Failed to communicate with bridge.' });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const toggleVoice = useCallback(() => {
     const ws = (window as any).operatorWs as WebSocket;
     if (!ws || ws.readyState !== WebSocket.OPEN) {
       addToast({ type: 'error', title: 'Connection Error', message: 'WebSocket not connected.' });
@@ -222,240 +175,113 @@ const AppContent: React.FC = () => {
     }
 
     if (isVoiceActive) {
-      // Stop Voice
-      if (mediaStreamRef.current) {
-        mediaStreamRef.current.getTracks().forEach(t => t.stop());
-        mediaStreamRef.current = null;
-      }
-      if (recognitionRef.current) {
-        try { recognitionRef.current.disconnect(); } catch { }
-        recognitionRef.current = null;
-      }
-      if (audioContextRef.current) {
-        try { audioContextRef.current.close(); } catch { }
-        audioContextRef.current = null;
-      }
-      ws.send(JSON.stringify({ type: 'STOP_VOICE' }));
       setIsVoiceActive(false);
-      addToast({ type: 'info', title: 'Voice Off', message: 'Voice session ended' });
+      if (audioContextRef.current) audioContextRef.current.close().catch(() => { });
+      if (mediaStreamRef.current) mediaStreamRef.current.getTracks().forEach(t => t.stop());
+      return;
+    }
+
+    navigator.mediaDevices.getUserMedia({ audio: { sampleRate: 24000, channelCount: 1 } })
+      .then(stream => {
+        mediaStreamRef.current = stream;
+        const ctx = new window.AudioContext({ sampleRate: 24000 });
+        audioContextRef.current = ctx;
+        const source = ctx.createMediaStreamSource(stream);
+        const processor = ctx.createScriptProcessor(4096, 1, 1);
+
+        processor.onaudioprocess = (e) => {
+          if (ws.readyState === WebSocket.OPEN) {
+            const inputData = e.inputBuffer.getChannelData(0);
+            const pcmData = new Int16Array(inputData.length);
+            for (let i = 0; i < inputData.length; i++) {
+              pcmData[i] = Math.max(-1, Math.min(1, inputData[i])) * 32767;
+            }
+            ws.send(pcmData.buffer);
+          }
+        };
+
+        source.connect(processor);
+        processor.connect(ctx.destination);
+        setIsVoiceActive(true);
+        addToast({ type: 'success', title: 'Voice Active', message: 'Microphone stream started.' });
+      })
+      .catch(err => {
+        addToast({ type: 'error', title: 'Microphone Error', message: err.message });
+      });
+  }, [isVoiceActive, addToast]);
+
+  const toggleScreenShare = useCallback(async () => {
+    const ws = (window as any).operatorWs as WebSocket;
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+
+    if (isScreenSharing) {
+      setIsScreenSharing(false);
+      if (screenStreamRef.current) screenStreamRef.current.getTracks().forEach(t => t.stop());
+      if (screenCaptureIntervalRef.current) clearInterval(screenCaptureIntervalRef.current);
       return;
     }
 
     try {
-      // Start Voice
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: { channelCount: 1, sampleRate: 16000 }
-      });
-      mediaStreamRef.current = stream;
+      const stream = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: 5 } });
+      screenStreamRef.current = stream;
+      setIsScreenSharing(true);
 
-      const ac = new window.AudioContext({ sampleRate: 16000 });
-      audioContextRef.current = ac;
-      await ac.resume();
+      const video = document.createElement('video');
+      video.srcObject = stream;
+      video.play();
 
-      const source = ac.createMediaStreamSource(stream);
-      const processor = ac.createScriptProcessor(4096, 1, 1);
-      recognitionRef.current = processor;
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
 
-      source.connect(processor);
-      processor.connect(ac.destination);
-
-      processor.onaudioprocess = (e) => {
-        const wsNow = (window as any).operatorWs as WebSocket;
-        if (!wsNow || wsNow.readyState !== WebSocket.OPEN) return;
-
-        const channelData = e.inputBuffer.getChannelData(0);
-        const pcmData = new Int16Array(channelData.length);
-        for (let i = 0; i < channelData.length; i++) {
-          pcmData[i] = Math.max(-1, Math.min(1, channelData[i])) * 0x7FFF;
+      screenCaptureIntervalRef.current = setInterval(() => {
+        if (ctx && video.readyState === video.HAVE_ENOUGH_DATA) {
+          canvas.width = 640;
+          canvas.height = 360;
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          const jpeg = canvas.toDataURL('image/jpeg', 0.6);
+          ws.send(JSON.stringify({ type: 'SCREEN_FRAME', data: jpeg }));
         }
+      }, 500);
 
-        const buffer = new ArrayBuffer(pcmData.length * 2);
-        const view = new DataView(buffer);
-        let offset = 0;
-        for (let i = 0; i < pcmData.length; i++, offset += 2) {
-          view.setInt16(offset, pcmData[i], true);
-        }
-
-        let binary = '';
-        const bytes = new Uint8Array(buffer);
-        for (let i = 0; i < bytes.byteLength; i++) {
-          binary += String.fromCharCode(bytes[i]);
-        }
-        const base64Data = btoa(binary);
-
-        wsNow.send(JSON.stringify({
-          type: 'VOICE_AUDIO',
-          data: base64Data
-        }));
+      stream.getVideoTracks()[0].onended = () => {
+        setIsScreenSharing(false);
+        if (screenCaptureIntervalRef.current) clearInterval(screenCaptureIntervalRef.current);
       };
-
-      ws.send(JSON.stringify({ type: 'START_VOICE' }));
-      setIsVoiceActive(true);
-      addToast({ type: 'success', title: 'Voice Active', message: 'Listening... baat karo' });
-    } catch (e: any) {
-      console.error('[VOICE_SETUP]:', e);
-      addToast({ type: 'error', title: 'Mic Error', message: e.message || 'Failed to start mic' });
+    } catch (e) {
+      console.error(e);
     }
-  }, [isVoiceActive, addToast]);
-
-
-
+  }, [isScreenSharing]);
 
   useEffect(() => {
-    // Simulate initial loading
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-      addToast({
-        type: 'success',
-        title: 'System Ready',
-        message: 'Personal AI Operator initialized successfully'
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${protocol}//${window.location.host}/ws/`;
+    const ws = new WebSocket(wsUrl);
+    (window as any).operatorWs = ws;
+
+    ws.onopen = () => {
+      setState(p => ({ ...p, osState: { ...p.osState, connected: true } }));
+      // Fetch goals
+      fetch('/api/execute', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'get_goals', target: '' })
+      }).then(r => r.json()).then(d => {
+        if (d.success) setState(p => ({ ...p, goals: JSON.parse(d.output) }));
       });
-      playSuccess();
-    }, 1500);
 
-    return () => clearTimeout(timer);
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem('operator_master_prod_v8_final', JSON.stringify(state));
-    // Keep historyRef up to date so sendMessage always sends latest history
-    historyRef.current = state.history;
-  }, [state]);
-
-  // Keyboard shortcuts - moved after processInput to avoid reference error
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Ctrl+A - Toggle Autonomous Mode
-      if ((e.ctrlKey || e.metaKey) && e.key === 'a' && !e.shiftKey) {
-        e.preventDefault();
-        playClick();
-        haptic('medium');
-        const newState = !state.isAutonomous;
-        setState(p => ({ ...p, isAutonomous: newState }));
-
-        if (newState) {
-          addToast({
-            type: 'warning',
-            title: 'Autonomous Mode Enabled',
-            message: 'AI will now act independently on detected events'
-          });
-          // Use setTimeout to avoid circular dependency
-          setTimeout(() => {
-            // Trigger autonomous mode message
-            const event = new CustomEvent('autonomous-toggle', { detail: { enabled: true } });
-            window.dispatchEvent(event);
-          }, 0);
-        } else {
-          addToast({
-            type: 'info',
-            title: 'Manual Mode',
-            message: 'Autonomous actions disabled'
-          });
-        }
-      }
-
-      // Ctrl+T - Theme toggle
-      if ((e.ctrlKey || e.metaKey) && e.key === 't') {
-        e.preventDefault();
-        setIsDark(prev => !prev);
-        addToast({
-          type: 'info',
-          title: isDark ? 'Light Mode' : 'Dark Mode',
-          message: `Theme switched to ${isDark ? 'light' : 'dark'} mode`
-        });
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [state.isAutonomous, isDark, addToast, playClick, haptic]);
-
-  // Persistent Heartbeat & Metric Tracking
-  useEffect(() => {
-    const daemonInterval = setInterval(() => {
-      setState(prev => {
-        if (!prev.daemon.isBooted) return prev;
-
-        const updatedProcesses = prev.daemon.processes.map(p => ({
-          ...p,
-          cpu: Math.min(100, Math.max(0.1, p.cpu + (Math.random() - 0.5) * 0.15)),
-          mem: Math.min(16384, Math.max(20, p.mem + (Math.random() - 0.5) * 4))
+      // Briefing
+      setTimeout(() => {
+        ws.send(JSON.stringify({
+          type: 'VOICE_INPUT_TEXT',
+          text: 'SYSTEM: Perform an elite daily briefing now. Greet me, summarize my mission board, and check system pulse.'
         }));
-
-        const totalCpu = updatedProcesses.reduce((acc, curr) => acc + curr.cpu, 0);
-        const healthStatus: 'optimal' | 'degraded' | 'critical' | 'blocked' = totalCpu > 2.0 ? 'degraded' : 'optimal';
-
-        return {
-          ...prev,
-          systemHealth: healthStatus,
-          daemon: {
-            ...prev.daemon,
-            processes: updatedProcesses,
-            services: prev.daemon.services.map(s => ({ ...s, uptime: s.uptime + 1, lastHeartbeat: Date.now() }))
-          }
-        };
-      });
-    }, 1000);
-    return () => clearInterval(daemonInterval);
-  }, [state.daemon.isBooted]);
-
-  // Autonomous Watcher Feedback Loop
-  useEffect(() => {
-    const unhandled = state.daemon.events.filter(e => e.status === 'UNPROCESSED');
-    if (unhandled.length > 0 && state.isAutonomous && !isProcessing) {
-      const event = unhandled[0];
-      setState(p => ({
-        ...p,
-        daemon: {
-          ...p.daemon,
-          events: p.daemon.events.map(e => e.id === event.id ? { ...e, status: 'PLANNING' } : e)
-        }
-      }));
-      processInput(`[IPC_EVENT_DETECTED]: Source: ${event.source}, Type: ${event.type}.Metadata: ${JSON.stringify(event.metadata)}. Propose plan aligned with core GOALS.`, 'system');
-    }
-  }, [state.daemon.events, state.isAutonomous, isProcessing]);
-
-  const historyRef = useRef<any[]>([]);
-
-  const initChat = useCallback(() => {
-    chatRef.current = {
-      sendMessage: async ({ message }: { message: string }) => {
-        const response = await fetch(`${state.osState.bridgeUrl} /ai/chat`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            message,
-            history: historyRef.current,
-            systemPrompt: MASTER_SYSTEM_PROMPT
-          })
-        });
-        return await response.json();
-      }
+      }, 2000);
     };
-  }, [state.osState.bridgeUrl]);
 
-  useEffect(() => {
-    initChat();
-
-    // WebSocket with reconnection logic
-    let ws: WebSocket | null = null;
-    let reconnectAttempts = 0;
-    const maxReconnectAttempts = 10;
-    let reconnectTimeout: NodeJS.Timeout | null = null;
-
-    const connectWebSocket = () => {
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const wsUrl = `${protocol}//${window.location.host}/ws/`;
-      ws = new WebSocket(wsUrl);
-      (window as any).operatorWs = ws;
-
-      ws.onmessage = async (event) => {
+    ws.onmessage = async (event) => {
+      if (typeof event.data === 'string') {
         const data = JSON.parse(event.data);
-        if (data.type === 'FS_CHANGE') {
-          pushEvent(data.type, data.source, data.metadata);
-        } else if (data.type === 'RECOVERY_SIGNAL') {
-          pushEvent(data.type, data.source, data.metadata);
-        } else if (data.type === 'VOICE_RESPONSE') {
+        if (data.type === 'VOICE_RESPONSE') {
           try {
             if (!playbackCtxRef.current) {
               playbackCtxRef.current = new window.AudioContext({ sampleRate: 24000 });
@@ -463,13 +289,12 @@ const AppContent: React.FC = () => {
               analyzer.fftSize = 256;
               analyzerRef.current = analyzer;
               analyzer.connect(playbackCtxRef.current.destination);
-
               const dataArray = new Uint8Array(analyzer.frequencyBinCount);
               const updateLevel = () => {
                 if (analyzerRef.current) {
                   analyzerRef.current.getByteFrequencyData(dataArray);
                   const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
-                  setAudioLevel(average);
+                  setAudioLevel(average * 2);
                   requestAnimationFrame(updateLevel);
                 }
               };
@@ -477,373 +302,69 @@ const AppContent: React.FC = () => {
             }
             const ctx = playbackCtxRef.current;
             if (ctx.state === 'suspended') await ctx.resume();
-
             const binaryString = atob(data.data);
             const bytes = new Uint8Array(binaryString.length);
             for (let i = 0; i < binaryString.length; i++) bytes[i] = binaryString.charCodeAt(i);
             const pcmData = new Int16Array(bytes.buffer);
             const floatData = new Float32Array(pcmData.length);
             for (let i = 0; i < pcmData.length; i++) floatData[i] = pcmData[i] / 32768;
-
             const buffer = ctx.createBuffer(1, floatData.length, 24000);
             buffer.getChannelData(0).set(floatData);
-
             const source = ctx.createBufferSource();
             source.buffer = buffer;
             source.connect(analyzerRef.current!);
-
             const startAt = Math.max(ctx.currentTime, playbackScheduleRef.current || 0);
             source.start(startAt);
             playbackScheduleRef.current = startAt + buffer.duration;
-          } catch (err) {
-            console.error('[VOICE_PLAYBACK]:', err);
-          }
-        } else if (data.type === 'VOICE_INPUT_TEXT') {
-          // Add user's transcribed text
-          if (data.text) {
-            let parsedEmotion: 'normal' | 'happy' | 'angry' = 'normal';
-            const lowerText = data.text.toLowerCase();
-            if (/(angry|hate|stupid|idiot|mad|frustrat|bad|worst|gussa|bakwas)/.test(lowerText)) {
-              parsedEmotion = 'angry';
-            } else if (/(happy|great|awesome|cool|love|good|best|fantastic|khush|zabardast|acha)/.test(lowerText)) {
-              parsedEmotion = 'happy';
-            }
-
-            setState(prev => ({
-              ...prev,
-              emotionState: parsedEmotion,
-              history: [...prev.history, {
-                role: 'user',
-                text: data.text,
-                timestamp: Date.now()
-              }].slice(-50)
+          } catch (err) { }
+        } else if (data.type === 'VOICE_TEXT' || data.type === 'VOICE_PROACTIVE_ALERT' || data.type === 'VOICE_INPUT_TEXT') {
+          const role = data.type === 'VOICE_INPUT_TEXT' ? 'user' : 'ai';
+          if (data.text && !data.text.startsWith('SYSTEM:')) {
+            setState(p => ({
+              ...p,
+              history: [...p.history, { role, text: data.text, timestamp: Date.now(), agentBadge: role === 'ai' ? AgentRole.SUPERVISOR : undefined }].slice(-50)
             }));
-          }
-        } else if (data.type === 'VOICE_TEXT') {
-          // Voice text from server — show in chat
-          if (data.text) {
-            setState(prev => ({
-              ...prev,
-              history: [...prev.history, {
-                role: 'ai',
-                text: data.text,
-                timestamp: Date.now(),
-                agentBadge: AgentRole.SUPERVISOR
-              }].slice(-50)
-            }));
+            if (data.type === 'VOICE_PROACTIVE_ALERT') speakText(data.text);
           }
         } else if (data.type === 'SYSTEM_PULSE') {
-          setState(p => ({
-            ...p,
-            realtimeMetrics: data.metrics,
-            systemHealth: data.metrics.cpu > 85 ? 'critical' : data.metrics.cpu > 60 ? 'degraded' : 'optimal'
-          }));
-        } else if (data.type === 'VOICE_PROACTIVE_ALERT') {
-          // Speak proactive alert and add to chat
-          speakText(data.text);
-          setState(prev => ({
-            ...prev,
-            history: [...prev.history, {
-              role: 'ai',
-              text: data.text,
-              timestamp: Date.now(),
-              agentBadge: AgentRole.SUPERVISOR
-            }].slice(-50)
-          }));
-        }
-      };
-
-      ws.onopen = () => {
-        reconnectAttempts = 0; // Reset on successful connection
-        setState(p => ({ ...p, osState: { ...p.osState, connected: true } }));
-        addAuditEntry("SIDE CAR: Real-time event bus connected.", "bridge");
-      };
-
-      ws.onclose = () => {
-        setState(p => ({ ...p, osState: { ...p.osState, connected: false } }));
-        addAuditEntry("SIDE CAR: Event bus disconnected. Attempting reconnect...", "system");
-
-        // Exponential backoff reconnection
-        if (reconnectAttempts < maxReconnectAttempts) {
-          const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000); // Max 30s delay
-          reconnectAttempts++;
-          reconnectTimeout = setTimeout(connectWebSocket, delay);
-        }
-      };
-
-      ws.onerror = (error) => {
-        console.error('[WEBSOCKET_ERROR]:', error);
-        addAuditEntry("SIDE CAR: WebSocket error occurred.", "system");
-      };
-    };
-
-    connectWebSocket();
-
-    return () => {
-      if (reconnectTimeout) clearTimeout(reconnectTimeout);
-      ws?.close();
-    };
-  }, [initChat]);
-
-  const addAuditEntry = (text: string, source: AuditTrailEntry['source']) => {
-    setState(p => ({
-      ...p,
-      auditTrail: [{ id: Math.random().toString(36).substr(2, 9), text, source, timestamp: Date.now() }, ...p.auditTrail].slice(0, 100)
-    }));
-  };
-
-  const pushEvent = (type: WatcherEvent['type'], source: string, metadata: any) => {
-    const event: WatcherEvent = { id: Math.random().toString(36).substr(2, 9), type, source, timestamp: Date.now(), metadata, status: 'UNPROCESSED' };
-    setState(p => ({
-      ...p,
-      daemon: { ...p.daemon, events: [event, ...p.daemon.events].slice(0, 50) }
-    }));
-    addAuditEntry(`WATCHER_${type}: Signal detected at ${source}.`, 'system');
-  };
-
-  const handleNativeFailure = async (action: string, target: string, error: string) => {
-    addAuditEntry(`RECOVERY: Failure in "${action}". Initializing strategy engine.`, 'ai');
-
-    let category: ErrorCategory = 'RUNTIME';
-    if (error.includes('PERMISSION') || error.includes('EACCES')) category = 'PERMISSION';
-    if (error.includes('ENOENT') || error.includes('NOT_FOUND')) category = 'DEPENDENCY';
-    if (error.includes('TIMEOUT') || error.includes('ECONN')) category = 'NETWORK';
-
-    const strategies = {
-      PERMISSION: 'REQUEST_ELEVATED_PRIVILEGE_WRAPPER',
-      DEPENDENCY: 'AUTO_RESOLVE_MISSING_DEPS',
-      NETWORK: 'EXPONENTIAL_BACKOFF_RETRY',
-      RUNTIME: 'FLUSH_BUFFER_AND_RESTART',
-      LOGIC: 'ROLLBACK_LAST_SNAPSHOT'
-    };
-
-    const strategy = strategies[category];
-
-    const attempt: RecoveryAttempt = {
-      id: Math.random().toString(36).substr(2, 9),
-      targetId: target,
-      errorCategory: category,
-      strategy,
-      outcome: 'PENDING',
-      timestamp: Date.now()
-    };
-
-    setState(p => ({
-      ...p,
-      daemon: { ...p.daemon, recoveryLog: [attempt, ...p.daemon.recoveryLog].slice(0, 50) },
-      usage: { ...p.usage, fixAttempts: { ...p.usage.fixAttempts, [target]: (p.usage.fixAttempts[target] || 0) + 1 } }
-    }));
-
-    await processInput(`[HEALER_SIGNAL]: Native fault in ${action}. Category: ${category}. Strategy identified: ${strategy}. Execute repair and verify.`, 'system');
-  };
-
-  const dispatchToSidecar = async (fc: any) => {
-    const { action, target, risk, args, explanation } = fc.args;
-    const riskMap = { LOW: 0.1, MEDIUM: 0.5, HIGH: 0.9 };
-    const currentRisk = riskMap[risk as keyof typeof riskMap] || 0.5;
-
-    // Policy Enforcement
-    if (currentRisk > state.policies.riskThreshold) {
-      addAuditEntry(`POLICY_GUARD: HIGH_RISK action "${action}" rejected by Supervisor.`, 'system');
-      return { success: false, error: 'POLICY_VIOLATION: Risk exceeds autonomous limit (0.8).' };
-    }
-
-    const startTime = Date.now();
-    try {
-      // REAL IPC Bridge
-      const token = localStorage.getItem('operator_auth_token');
-      const response = await fetch(`${state.osState.bridgeUrl}/execute`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(fc)
-      });
-      const result = await response.json();
-
-      const duration = Date.now() - startTime;
-      setState(p => ({
-        ...p,
-        telemetry: [{ id: Math.random().toString(36).substr(2, 9), action, duration, success: result.success, resourceUsage: { cpu: 0.1, mem: 32 }, timestamp: Date.now() }, ...p.telemetry].slice(0, 100)
-      }));
-
-      if (!result.success) {
-        await handleNativeFailure(action, target, result.error || 'UNSPECIFIED_IPC_ERROR');
-      }
-
-      if (action === 'update_goal') {
-        setState(p => ({ ...p, goals: p.goals.map(g => g.id === target ? { ...g, progress: parseInt(args || '0') } : g) }));
-      }
-
-      addAuditEntry(`IPC_BRIDGE: ${action} on ${target} -> ${result.success ? 'SUCCESS' : 'FAILED'}`, 'bridge');
-      return result;
-    } catch (e) {
-      addAuditEntry(`IPC_BRIDGE_ERROR: Connection to sidecar failed. Ensure daemon is running.`, 'system');
-      return { success: false, error: 'SIDECAR_NOT_REACHABLE' };
-    }
-  };
-
-  const processInput = useCallback(async (input: string, origin: 'user' | 'system' = 'user') => {
-    if (!chatRef.current) {
-      addAuditEntry('ERROR: Chat service not initialized.', 'system');
-      return;
-    }
-
-    // Only add USER messages to the visible chat history (not internal system signals)
-    if (origin === 'user') {
-      setState(prev => ({
-        ...prev,
-        history: [...prev.history, {
-          role: 'user',
-          text: input,
-          timestamp: Date.now()
-        }].slice(-50)
-      }));
-    }
-
-    setIsProcessing(true);
-    try {
-      const response = await chatRef.current.sendMessage({ message: input });
-
-      if (!response || (response as any).error) {
-        const errorMsg = (response as any)?.error || 'Unknown error from AI service';
-        addAuditEntry(`AI_ERROR: ${errorMsg}`, 'system');
-        setState(prev => ({
-          ...prev,
-          history: [...prev.history, {
-            role: 'ai',
-            text: `Sorry, I encountered an error: ${errorMsg}. Please try again.`,
-            timestamp: Date.now(),
-            agentBadge: AgentRole.SUPERVISOR
-          }].slice(-50)
-        }));
-        return;
-      }
-
-      const text = response.text || '';
-
-      // Execute any function calls (IPC)
-      if (response.functionCalls && response.functionCalls.length > 0) {
-        for (const fc of response.functionCalls) {
-          const result = await dispatchToSidecar(fc);
-          addAuditEntry(`IPC_ACK: ${fc.name} -> ${result.success ? 'OK' : result.error}`, 'bridge');
+          setState(p => ({ ...p, realtimeMetrics: data.metrics }));
         }
       }
+    };
 
-      // Only show AI response if there is actual text to display
-      if (text.trim()) {
-        setState(prev => ({
-          ...prev,
-          history: [...prev.history, {
-            role: 'ai',
-            text,
-            timestamp: Date.now(),
-            agentBadge: AgentRole.SUPERVISOR,
-            explanation: 'Planner: Goal verified. Executor: Tools ready. Healer: Standby. Risk: 0.4 (Within Policy).'
-          }].slice(-50),
-          isSessionStarted: true
-        }));
-        // Speak the AI reply if voice mode is on
-        if (isVoiceActive) {
-          speakText(text);
-        }
-      }
-    } catch (e: any) {
-      const errorMsg = e?.message || 'Unknown error';
-      console.error('OS_CORE_RUNTIME_EXCEPTION:', e);
-      addAuditEntry(`CRITICAL_ERROR: ${errorMsg}`, 'system');
-      setState(prev => ({
-        ...prev,
-        history: [...prev.history, {
-          role: 'ai',
-          text: `I ran into a problem: ${errorMsg}. Attempting to recover...`,
-          timestamp: Date.now(),
-          agentBadge: AgentRole.HEALER
-        }].slice(-50)
-      }));
-      initChat();
-    } finally {
-      setIsProcessing(false);
-    }
-  }, [state.osState.bridgeUrl, state.isAutonomous, initChat]);
-
-  // Keep ref in sync so toggleVoice can call processInput without forward reference
-  processInputRef.current = processInput;
-
-  const bootDaemon = () => {
-    playClick();
-    haptic('medium');
-    setState(p => ({
-      ...p,
-      daemon: {
-        ...p.daemon,
-        isBooted: true,
-        services: p.daemon.services.map(s => ({ ...s, status: 'RUNNING', lastHeartbeat: Date.now() }))
-      }
-    }));
-    addAuditEntry("BOOT: Background orchestrator active.", "bridge");
-    addToast({
-      type: 'success',
-      title: 'Daemon Started',
-      message: 'Background services are now running'
-    });
-    playSuccess();
-    processInput("SYSTEM_BOOT: OS Sidecar IPC listener online. Monitoring heartbeats.", 'system');
-  };
-
+    return () => ws.close();
+  }, []);
 
   return (
-    <div className="flex h-screen w-screen bg-slate-50 text-slate-800 overflow-hidden">
-      <CommandPalette
-        isOpen={isCommandOpen}
-        onClose={() => setCommandOpen(false)}
-        onToggleTheme={() => setIsDark(!isDark)}
-        onToggleNotifications={() => setNotificationsEnabled(!notificationsEnabled)}
-        isDark={isDark}
-        notificationsEnabled={notificationsEnabled}
-      />
-
-      <ChatSidebar
-        isDark={isDark}
-        savedSessions={state.savedSessions || []}
-        onSelectSession={(id) => {
-          const session = state.savedSessions?.find(s => s.id === id);
-          if (session) {
-            playClick();
-            setState(prev => ({ ...prev, history: session.history }));
-          }
-        }}
-        onNewChat={() => {
-          if (!isProcessing) {
-            playClick();
+    <div className={`flex w-screen h-screen overflow-hidden ${isDark ? 'bg-black text-white' : 'bg-slate-50 text-slate-900'}`} style={{ fontFamily: 'Inter, sans-serif' }}>
+      <div className={`flex flex-col border-r transition-colors w-72 h-full overflow-hidden ${isDark ? 'bg-black border-white/5' : 'bg-white border-slate-200'} z-20 shrink-0`}>
+        <ChatSidebar
+          isDark={isDark}
+          savedSessions={state.savedSessions || []}
+          onSelectSession={(id) => {
+            const s = state.savedSessions?.find(s => s.id === id);
+            if (s) setState(p => ({ ...p, history: s.history }));
+          }}
+          onNewChat={() => {
             if (state.history.length > 0) {
-              const firstUserMsg = state.history.find(m => m.role === 'user');
-              const title = firstUserMsg ? firstUserMsg.text.slice(0, 30) + '...' : 'New Session';
-              const newSession = { id: Date.now().toString(), title, history: [...state.history], timestamp: Date.now() };
-              setState(prev => ({ ...prev, savedSessions: [newSession, ...(prev.savedSessions || [])], history: [] }));
-            } else {
-              setState(prev => ({ ...prev, history: [] }));
+              const title = state.history[0].text.slice(0, 20) + '...';
+              setState(p => ({ ...p, savedSessions: [{ id: Date.now().toString(), title, history: p.history, timestamp: Date.now() }, ...(p.savedSessions || [])], history: [] }));
             }
-          }
-        }}
-      />
-      <main className={`flex-1 flex flex-col relative overflow-hidden transition-colors ${isDark ? 'bg-black' : 'bg-slate-50'}`}>
+          }}
+        />
+        <div className="p-4 overflow-y-auto custom-scrollbar flex-1 border-t border-white/5">
+          <MissionBoard goals={state.goals} isDark={isDark} />
+        </div>
+      </div>
 
-        <AppHeader isDark={isDark} isVoiceActive={isVoiceActive} emotionState={state.emotionState} audioLevel={audioLevel} />
-
-        {/* Chat */}
-        <div className="flex-1 flex flex-col overflow-hidden">
+      <main className="flex-1 flex flex-col relative overflow-hidden">
+        <AppHeader isDark={isDark} isVoiceActive={isVoiceActive} emotionState={state.emotionState || 'normal'} audioLevel={audioLevel} />
+        <div className="flex-1 overflow-hidden">
           <Terminal
             history={state.history}
-            onSend={(txt) => { playClick(); processInput(txt); }}
+            onSend={processInput}
             isProcessing={isProcessing}
-            onExecute={(id) => { playClick(); processInput(`MANUAL_SIGNAL: ${id}`); }}
-            onToggleExplain={(i) => {
-              playClick();
-              const h = [...state.history];
-              h[i].isExplainMode = !h[i].isExplainMode;
-              setState(p => ({ ...p, history: h }));
-            }}
+            onExecute={(id) => processInput(`MANUAL_SIGNAL: ${id}`, 'system')}
             isVoiceActive={isVoiceActive}
             onToggleVoice={toggleVoice}
             isDark={isDark}
@@ -852,6 +373,8 @@ const AppContent: React.FC = () => {
           />
         </div>
       </main>
+
+      <RightPanel state={state} isDark={isDark} onModeChange={() => { }} onAutonomousToggle={() => setState(p => ({ ...p, isAutonomous: !p.isAutonomous }))} />
     </div>
   );
 };

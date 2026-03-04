@@ -150,7 +150,7 @@ wss.on('connection', (ws) => {
                                         properties: {
                                             action: {
                                                 type: "STRING",
-                                                enum: ["run_command", "write_file", "read_file", "move_file", "delete_file", "create_dir", "get_knowledge", "set_knowledge"],
+                                                enum: ["run_command", "write_file", "read_file", "move_file", "delete_file", "create_dir", "get_knowledge", "set_knowledge", "get_goals", "set_goals", "run_fix"],
                                                 description: "The action to perform."
                                             },
                                             target: { type: "STRING", description: "Command, file path, or knowledge key." },

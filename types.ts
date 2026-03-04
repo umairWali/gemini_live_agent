@@ -104,13 +104,6 @@ export interface TelemetryPoint {
   timestamp: number;
 }
 
-export interface Goal {
-  id: string;
-  title: string;
-  progress: number;
-  status: 'active' | 'completed' | 'paused';
-}
-
 export interface VaultEntry {
   id: string;
   key: string;
@@ -143,6 +136,23 @@ export interface Message {
   explanation?: string;
 }
 
+export interface Goal {
+    id: string;
+    title: string;
+    description: string;
+    status: 'pending' | 'active' | 'completed' | 'paused';
+    progress: number;
+    tasks: string[];
+    createdAt: number;
+}
+
+export interface ProjectTask {
+    id: string;
+    projectId: string;
+    title: string;
+    status: 'todo' | 'doing' | 'done';
+}
+
 export interface AppState {
   currentMode: WorkMode;
   isAutonomous: boolean;
@@ -153,6 +163,7 @@ export interface AppState {
   activeStack: string[];
   agentActivities: AgentActivity[];
   goals: Goal[];
+  activeProjects: string[];
   vault: VaultEntry[];
   auditTrail: AuditTrailEntry[];
   history: Message[];
