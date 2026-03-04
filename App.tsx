@@ -382,7 +382,34 @@ const AppContent: React.FC = () => {
       }
     };
 
-    return () => ws.close();
+    const auditTimer = setInterval(async () => {
+      try {
+        const res = await fetch('/api/audit');
+        const data = await res.json();
+        if (data.success && data.logs) {
+          const newLogs = data.logs;
+          // Check if latest log is a security threat and is new
+          const lastLog = newLogs[newLogs.length - 1];
+          if (lastLog && (lastLog.text.includes('SECURITY ALERT') || lastLog.text.includes('CRITICAL'))) {
+            // Only toast if it's within the last 5 seconds
+            const logTime = new Date(lastLog.timestamp).getTime();
+            if (Date.now() - logTime < 6000) {
+              addToast({
+                type: 'error',
+                title: 'Firewall Blockage',
+                message: 'A critical system modification was intercepted and blocked.'
+              });
+            }
+          }
+          setState(p => ({ ...p, auditTrail: newLogs }));
+        }
+      } catch (e) { }
+    }, 5000);
+
+    return () => {
+      ws.close();
+      clearInterval(auditTimer);
+    };
   }, []);
 
   return (

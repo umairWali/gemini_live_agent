@@ -8,6 +8,61 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const PROJECT_ROOT = path.resolve(__dirname, '../../');
+const AUDIT_LOG_FILE = path.resolve(PROJECT_ROOT, 'audit_trail.json');
+
+class SecurityGuard {
+    private static BANNED_PATTERNS = [
+        'rm -rf', 'chmod', 'chown', 'sudo', 'mkfs', 'dd if=',
+        'mv /', 'rm /', '> /etc/', '> /var/', 'shutdown', 'reboot'
+    ];
+
+    private static PROTECTED_EXTENSIONS = [
+        '.py', '.java', '.class', '.pyc', '.sh', '.exe', '.bat', '.env'
+    ];
+
+    static isSafeCommand(cmd: string): boolean {
+        const lowerCmd = cmd.toLowerCase();
+        return !this.BANNED_PATTERNS.some(pattern => lowerCmd.includes(pattern));
+    }
+
+    static isSafePath(filePath: string, allowWrite: boolean = false): boolean {
+        const normalized = path.normalize(filePath);
+
+        // Prevent path traversal
+        if (normalized.includes('..')) return false;
+
+        // Lockdown sensitive files
+        if (allowWrite) {
+            const ext = path.extname(normalized).toLowerCase();
+            if (this.PROTECTED_EXTENSIONS.includes(ext)) {
+                // Only allow if it's within a sandbox (e.g., temp_scripts/)
+                if (!normalized.includes('temp_scripts')) return false;
+            }
+        }
+        return true;
+    }
+}
+
+const writeAuditLog = (action: string, target: string, success: boolean, error?: string) => {
+    try {
+        const entry = {
+            timestamp: new Date().toISOString(),
+            action,
+            target,
+            success,
+            error
+        };
+        let logs: any[] = [];
+        if (fs.existsSync(AUDIT_LOG_FILE)) {
+            const content = fs.readFileSync(AUDIT_LOG_FILE, 'utf8');
+            logs = content ? JSON.parse(content) : [];
+        }
+        logs.push(entry);
+        fs.writeFileSync(AUDIT_LOG_FILE, JSON.stringify(logs.slice(-500), null, 2));
+    } catch (e) {
+        console.error('Failed to write audit log:', e);
+    }
+};
 
 export const resolvePath = (p: string) => path.isAbsolute(p) ? p : path.resolve(PROJECT_ROOT, p);
 
@@ -21,44 +76,77 @@ export interface ExecutionResult {
 export const executeAction = async (action: string, target: string, args?: string): Promise<ExecutionResult> => {
     console.log(`[EXECUTOR]: Action=${action}, Target=${target}`);
 
+    // SECURITY CHECK
+    if (action === 'run_command' && !SecurityGuard.isSafeCommand(target)) {
+        writeAuditLog(action, target, false, "CRITICAL: Banned command pattern detected!");
+        return { success: false, error: "SECURITY ALERT: This command is blocked for system safety." };
+    }
+
+    if (['write_file', 'delete_file', 'move_file'].includes(action)) {
+        if (!SecurityGuard.isSafePath(target, true)) {
+            writeAuditLog(action, target, false, "SECURITY: Unauthorized file modification attempt.");
+            return { success: false, error: "SECURITY ALERT: Modification of protected system files (.py, .java, etc.) is locked." };
+        }
+    }
+
+    let result: ExecutionResult = { success: false, error: 'Initialization failed' };
     try {
         switch (action) {
             case 'open_app':
-                return await openApp(target);
+                result = await openApp(target);
+                break;
             case 'run_command':
-                return await runCommand(target);
+                result = await runCommand(target);
+                break;
             case 'read_file':
-                return await readFile(target);
+                result = await readFile(target);
+                break;
             case 'write_file':
-                return await writeFile(target, args || '');
+                result = await writeFile(target, args || '');
+                break;
             case 'move_file':
-                return await moveFile(target, args || '');
+                result = await moveFile(target, args || '');
+                break;
             case 'delete_file':
-                return await deleteFile(target);
+                result = await deleteFile(target);
+                break;
             case 'create_dir':
-                return await createDir(target);
+                result = await createDir(target);
+                break;
             case 'get_knowledge':
-                return await getKnowledge(target);
+                result = await getKnowledge(target);
+                break;
             case 'set_knowledge':
-                return await setKnowledge(target, args || '');
+                result = await setKnowledge(target, args || '');
+                break;
             case 'get_goals':
-                return await getGoals();
+                result = await getGoals();
+                break;
             case 'set_goals':
-                return await setGoals(args || '');
+                result = await setGoals(args || '');
+                break;
             case 'run_fix':
-                return await runFix(target, args || '');
+                result = await runFix(target, args || '');
+                break;
             case 'list_processes':
-                return await listProcesses();
+                result = await listProcesses();
+                break;
             case 'create_backup':
-                return await createBackup(target);
+                result = await createBackup(target);
+                break;
             case 'capture_screenshot':
-                return await captureScreenshot(target);
+                result = await captureScreenshot(target);
+                break;
             case 'update_goal':
-                return { success: true, output: `Goal ${target} updated successfully.` };
+                result = { success: true, output: `Goal ${target} updated successfully.` };
+                break;
             default:
-                return { success: false, error: `Unknown action: ${action}` };
+                result = { success: false, error: `Unknown action: ${action}` };
         }
+        writeAuditLog(action, target, result.success, result.error);
+        return result;
     } catch (error: any) {
+        writeAuditLog(action, target, false, error.message);
         return { success: false, error: error.message };
     }
 };

@@ -12,7 +12,7 @@ interface RightPanelProps {
 }
 
 const RightPanel: React.FC<RightPanelProps> = ({ state }) => {
-  const [activeTab, setActiveTab] = useState<'SYSTEM' | 'AGENTS' | 'MEMORY' | 'VERIFIER'>('SYSTEM');
+  const [activeTab, setActiveTab] = useState<'SYSTEM' | 'AGENTS' | 'MEMORY' | 'SECURITY'>('SYSTEM');
 
   const verifierFeatures: VerifierFeature[] = [
     {
@@ -64,7 +64,7 @@ const RightPanel: React.FC<RightPanelProps> = ({ state }) => {
           { id: 'SYSTEM', icon: Monitor },
           { id: 'AGENTS', icon: Activity },
           { id: 'MEMORY', icon: Brain },
-          { id: 'VERIFIER', icon: ClipboardCheck }
+          { id: 'SECURITY', icon: ClipboardCheck }
         ].map(tab => (
           <button
             key={tab.id}
@@ -78,42 +78,52 @@ const RightPanel: React.FC<RightPanelProps> = ({ state }) => {
       </div>
 
       <div className="flex-1 overflow-y-auto p-8 space-y-12 custom-scrollbar">
-        {activeTab === 'VERIFIER' && (
-          <section className="space-y-10 animate-in fade-in duration-500">
-            <h2 className="text-[12px] font-black uppercase tracking-[0.4em] text-slate-500 flex items-center gap-4"><ShieldCheck className="w-5 h-5" /> Operational_Verifier</h2>
-            <div className="space-y-5">
-              {verifierFeatures.map((v, i) => (
-                <div key={i} className="p-6 bg-white/5 border border-white/10 rounded-3xl space-y-4 hover:border-violet-500/30 transition-all group">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-black text-slate-200 uppercase tracking-tight group-hover:text-violet-400 transition-colors">{v.name}</span>
-                    <span className="px-3 py-1 bg-violet-500/10 text-violet-400 border border-violet-500/20 rounded-full text-[9px] font-black">{v.status}</span>
-                  </div>
-                  <div className="space-y-2 text-[10px] font-bold text-slate-600">
-                    <p><span className="text-slate-500 uppercase">Path:</span> {v.executionPath}</p>
-                    <p><span className="text-slate-500 uppercase">Proof:</span> {v.proof}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
+        {activeTab === 'SECURITY' && (
+          <div className="space-y-10 animate-in fade-in duration-500">
+            <h2 className="text-[12px] font-black uppercase tracking-[0.4em] text-rose-500 flex items-center gap-4"><ShieldCheck className="w-5 h-5" /> Security_Protocol</h2>
 
-            <div className="p-6 bg-violet-500/5 border border-violet-500/10 rounded-[2.5rem] text-center">
-              <p className="text-[9px] font-black text-violet-400 uppercase tracking-[0.3em] mb-4">Implementation Audit</p>
-              <div className="flex justify-around items-center">
-                <div className="text-center">
-                  <p className="text-2xl font-black text-violet-400">5</p>
-                  <p className="text-[8px] font-bold text-slate-600 uppercase">REAL</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-2xl font-black text-sky-400">3</p>
-                  <p className="text-[8px] font-bold text-slate-600 uppercase">SIM</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-2xl font-black text-slate-700">0</p>
-                  <p className="text-[8px] font-bold text-slate-600 uppercase">OFF</p>
-                </div>
+            {/* Live Audit Trail */}
+            <div className="space-y-4">
+              <p className="text-[10px] font-black uppercase text-slate-500 tracking-widest pl-2 flex items-center gap-2">
+                <Zap className="w-3 h-3 text-amber-500" /> Active_Firewall_Logs
+              </p>
+              <div className="bg-black/60 border border-white/5 rounded-3xl p-4 font-mono text-[10px] space-y-3 max-h-[400px] overflow-y-auto custom-scrollbar">
+                {state.auditTrail.length === 0 ? (
+                  <div className="text-slate-700 italic py-4 text-center">No active threats detected.</div>
+                ) : (
+                  [...state.auditTrail].reverse().map((entry, idx) => (
+                    <div key={idx} className={`p-3 rounded-xl border ${entry.text.includes('SECURITY ALERT') || entry.text.includes('CRITICAL') ? 'bg-rose-500/10 border-rose-500/30' : 'bg-white/5 border-white/5'}`}>
+                      <div className="flex justify-between items-center mb-1">
+                        <span className={`${entry.text.includes('SECURITY') ? 'text-rose-400' : 'text-sky-400'} font-black uppercase`}>
+                          {entry.text.includes('SECURITY') ? 'BLOCKAGE' : 'AUTHORIZED'}
+                        </span>
+                        <span className="opacity-30 text-[8px]">{new Date(entry.timestamp).toLocaleTimeString()}</span>
+                      </div>
+                      <p className="text-slate-300 leading-relaxed truncate">{entry.text}</p>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
-          </section>
+
+            <section className="space-y-8">
+              <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 pl-2">System_Hardening</h3>
+              <div className="space-y-4">
+                {verifierFeatures.map((v, i) => (
+                  <div key={i} className="p-5 bg-white/5 border border-white/5 rounded-2xl space-y-2 hover:border-violet-500/20 transition-all">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-black text-slate-300 uppercase">{v.name}</span>
+                      <div className="flex items-center gap-1.5 px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/30 rounded-full">
+                        <div className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
+                        <span className="text-[8px] font-black text-emerald-500">LOCKED</span>
+                      </div>
+                    </div>
+                    <p className="text-[9px] font-bold text-slate-600 line-clamp-1">{v.trigger}</p>
+                  </div>
+                ))}
+              </div>
+            </section>
+          </div>
         )}
 
         {activeTab === 'SYSTEM' && (

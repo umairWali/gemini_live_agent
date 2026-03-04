@@ -89,6 +89,20 @@ app.get('/health', (req, res) => {
     res.json({ success: true, status: 'HEALTHY', uptime: process.uptime() });
 });
 
+// Security Audit Logs
+app.get('/api/audit', (_req, res) => {
+    const auditPath = path.resolve(process.cwd(), 'audit_trail.json');
+    try {
+        if (!fs.existsSync(auditPath)) {
+            return res.json({ success: true, logs: [] });
+        }
+        const data = fs.readFileSync(auditPath, 'utf8');
+        res.json({ success: true, logs: JSON.parse(data) });
+    } catch (e: any) {
+        res.status(500).json({ success: false, error: e.message });
+    }
+});
+
 const recovery = new RecoveryEngine();
 const stateManager = new StateManager();
 const judgment = new JudgmentEngine();
