@@ -26,11 +26,11 @@ const AppHeader: React.FC<AppHeaderProps> = ({ isDark, isVoiceActive, emotionSta
     }
 
     return (
-        <header className={`h-[72px] shrink-0 flex items-center justify-between px-8 border-b transition-all duration-700 ${isDark ? 'bg-[#0f1115] border-white/5 text-white shadow-sm' : 'bg-white border-slate-100 text-slate-800 shadow-sm'} z-10 w-full`}>
+        <header className={`h-[72px] shrink-0 flex items-center justify-center px-8 border-b transition-all duration-700 ${isDark ? 'bg-[#0f1115] border-white/5 text-white shadow-sm' : 'bg-white border-slate-100 text-slate-800 shadow-sm'} z-10 w-full`}>
             <div className="flex items-center gap-4">
                 {/* Animated Avatar / Logo */}
                 <div
-                    className={`relative w-10 h-10 rounded-2xl flex items-center justify-center transition-all duration-75 ${gradientBg || (isDark ? 'bg-white/5 border border-white/10' : 'bg-slate-50 border border-slate-200')} shadow-inner overflow-hidden`}
+                    className={`relative w-10 h-10 rounded-2xl flex items-center justify-center transition-all duration-75 ${gradientBg || (isDark ? 'bg-white/5 border border-white/10' : 'bg-slate-50 border border-slate-200')} shadow-inner overflow-hidden shadow-violet-500/20`}
                     style={{
                         transform: `scale(${1 + (audioLevel / 500)})`,
                         boxShadow: audioLevel > 10 ? `0 0 ${audioLevel / 2}px ${accentColor.includes('violet') ? 'rgba(139,92,246,0.5)' : accentColor.includes('red') ? 'rgba(239,68,68,0.5)' : 'rgba(16,185,129,0.5)'}` : 'none'
@@ -50,23 +50,18 @@ const AppHeader: React.FC<AppHeaderProps> = ({ isDark, isVoiceActive, emotionSta
                 </div>
 
                 <div className="flex flex-col">
-                    <h1 className="text-sm font-black tracking-[0.15em] uppercase flex items-center gap-2">
+                    <h1 className="text-sm font-black tracking-[0.25em] uppercase flex items-center gap-2">
                         Personal Operator
                     </h1>
                 </div>
             </div>
 
-            <div className="flex items-center gap-6">
-                {/* Live Audio / Online Status */}
+            {/* Status indicator moved to right absolute or just removed for cleaner center look */}
+            <div className="absolute right-8 flex items-center gap-6">
                 {isVoiceActive ? (
                     <div className="flex items-center gap-2.5 px-4 py-2 rounded-full border border-rose-500/30 bg-rose-500/10 text-rose-500">
                         <Radio className="w-4 h-4 animate-pulse" />
-                        <div className="flex items-end gap-0.5 h-3">
-                            <div className="w-1 bg-rose-500 animate-[bounce_1s_infinite] h-full" />
-                            <div className="w-1 bg-rose-500 animate-[bounce_1.2s_infinite] h-2/3" />
-                            <div className="w-1 bg-rose-500 animate-[bounce_0.8s_infinite] h-5/6" />
-                        </div>
-                        <span className="text-xs font-bold uppercase tracking-widest ml-1">Live Audio</span>
+                        <span className="text-[10px] font-bold uppercase tracking-widest ml-1">Live</span>
                     </div>
                 ) : null}
             </div>

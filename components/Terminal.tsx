@@ -53,12 +53,12 @@ const Terminal: React.FC<TerminalProps> = ({
       {/* Chat Messages */}
       <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3 custom-scrollbar">
         {visibleHistory.length === 0 && (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', textAlign: 'center', opacity: isDark ? 0.7 : 0.5, paddingTop: 48 }}>
-            <div style={{ width: 56, height: 56, borderRadius: 16, background: isDark ? '#1f2937' : '#e5e7eb', border: isDark ? '1px solid #374151' : 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 12 }}>
-              <Bot size={24} color={isDark ? '#9ca3af' : "#6b7280"} />
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', textAlign: 'center', opacity: isDark ? 0.9 : 0.7, paddingTop: 48 }}>
+            <div style={{ width: 80, height: 80, borderRadius: 24, background: isDark ? '#1f2937' : '#e5e7eb', border: isDark ? '1px solid #374151' : 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16, overflow: 'hidden', boxShadow: '0 10px 25px -5px rgba(139, 92, 246, 0.3)' }}>
+              <img src="/logo.png" alt="Logo" style={{ width: '100%', height: '100%', objectCover: 'cover' }} />
             </div>
-            <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: isDark ? '#f3f4f6' : '#374151' }}>Personal AI Operator</p>
-            <p style={{ margin: '6px 0 0', fontSize: 12, color: isDark ? '#9ca3af' : '#6b7280', maxWidth: 240 }}>Type a message or use the mic to speak.</p>
+            <p style={{ margin: 0, fontSize: 16, fontWeight: 800, color: isDark ? '#f3f4f6' : '#374151', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Personal Operator</p>
+            <p style={{ margin: '8px 0 0', fontSize: 13, color: isDark ? '#9ca3af' : '#6b7280', maxWidth: 280, lineHeight: 1.5 }}>Type a message or use the mic to speak.</p>
           </div>
         )}
 
