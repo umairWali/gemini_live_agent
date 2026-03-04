@@ -31,6 +31,16 @@ export const executeAction = async (action: string, target: string, args?: strin
                 return await readFile(target);
             case 'write_file':
                 return await writeFile(target, args || '');
+            case 'move_file':
+                return await moveFile(target, args || '');
+            case 'delete_file':
+                return await deleteFile(target);
+            case 'create_dir':
+                return await createDir(target);
+            case 'get_knowledge':
+                return await getKnowledge(target);
+            case 'set_knowledge':
+                return await setKnowledge(target, args || '');
             case 'list_processes':
                 return await listProcesses();
             case 'create_backup':
@@ -126,5 +136,60 @@ const createBackup = async (filePath: string): Promise<ExecutionResult> => {
         return { success: true, output: `Backup created at ${backupPath}`, metadata: { backupPath } };
     } catch (error: any) {
         return { success: false, error: error.message };
+    }
+};
+const createDir = async (dirPath: string): Promise<ExecutionResult> => {
+    try {
+        const fullPath = resolvePath(dirPath);
+        if (!fs.existsSync(fullPath)) {
+            fs.mkdirSync(fullPath, { recursive: true });
+        }
+        return { success: true, output: `Directory created: ${dirPath}` };
+    } catch (e: any) {
+        return { success: false, error: e.message };
+    }
+};
+
+const moveFile = async (src: string, dest: string): Promise<ExecutionResult> => {
+    try {
+        fs.renameSync(resolvePath(src), resolvePath(dest));
+        return { success: true, output: `Moved ${src} to ${dest}` };
+    } catch (e: any) {
+        return { success: false, error: e.message };
+    }
+};
+
+const deleteFile = async (filePath: string): Promise<ExecutionResult> => {
+    try {
+        fs.unlinkSync(resolvePath(filePath));
+        return { success: true, output: `Deleted ${filePath}` };
+    } catch (e: any) {
+        return { success: false, error: e.message };
+    }
+};
+
+const KNOWLEDGE_FILE = path.resolve(PROJECT_ROOT, 'personal_knowledge.json');
+
+const getKnowledge = async (key: string): Promise<ExecutionResult> => {
+    try {
+        if (!fs.existsSync(KNOWLEDGE_FILE)) return { success: true, output: "{}" };
+        const data = JSON.parse(fs.readFileSync(KNOWLEDGE_FILE, 'utf8'));
+        return { success: true, output: JSON.stringify(data[key] || "No info found.") };
+    } catch (e: any) {
+        return { success: false, error: e.message };
+    }
+};
+
+const setKnowledge = async (key: string, value: string): Promise<ExecutionResult> => {
+    try {
+        let data: any = {};
+        if (fs.existsSync(KNOWLEDGE_FILE)) {
+            data = JSON.parse(fs.readFileSync(KNOWLEDGE_FILE, 'utf8'));
+        }
+        data[key] = value;
+        fs.writeFileSync(KNOWLEDGE_FILE, JSON.stringify(data, null, 2));
+        return { success: true, output: `Knowledge updated: ${key}` };
+    } catch (e: any) {
+        return { success: false, error: e.message };
     }
 };

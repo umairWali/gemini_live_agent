@@ -5,9 +5,10 @@ interface AppHeaderProps {
     isDark: boolean;
     isVoiceActive: boolean;
     emotionState?: 'normal' | 'happy' | 'angry';
+    audioLevel?: number;
 }
 
-const AppHeader: React.FC<AppHeaderProps> = ({ isDark, isVoiceActive, emotionState = 'normal' }) => {
+const AppHeader: React.FC<AppHeaderProps> = ({ isDark, isVoiceActive, emotionState = 'normal', audioLevel = 0 }) => {
 
     // Emotion-based styling
     let accentColor = 'text-violet-500';
@@ -28,8 +29,19 @@ const AppHeader: React.FC<AppHeaderProps> = ({ isDark, isVoiceActive, emotionSta
         <header className={`h-[72px] shrink-0 flex items-center justify-between px-8 border-b transition-all duration-700 ${isDark ? 'bg-[#0f1115] border-white/5 text-white shadow-sm' : 'bg-white border-slate-100 text-slate-800 shadow-sm'} z-10 w-full`}>
             <div className="flex items-center gap-4">
                 {/* Animated Avatar / Logo */}
-                <div className={`relative w-10 h-10 rounded-2xl flex items-center justify-center transition-all duration-700 ${gradientBg || (isDark ? 'bg-white/5 border border-white/10' : 'bg-slate-50 border border-slate-200')} shadow-inner`}>
-                    <Bot className={`w-5 h-5 transition-colors duration-700 ${isVoiceActive ? `${accentColor} animate-pulse` : 'text-slate-400'}`} />
+                <div
+                    className={`relative w-10 h-10 rounded-2xl flex items-center justify-center transition-all duration-75 ${gradientBg || (isDark ? 'bg-white/5 border border-white/10' : 'bg-slate-50 border border-slate-200')} shadow-inner`}
+                    style={{
+                        transform: `scale(${1 + (audioLevel / 500)})`,
+                        boxShadow: audioLevel > 10 ? `0 0 ${audioLevel / 2}px ${accentColor.includes('violet') ? 'rgba(139,92,246,0.5)' : accentColor.includes('red') ? 'rgba(239,68,68,0.5)' : 'rgba(16,185,129,0.5)'}` : 'none'
+                    }}
+                >
+                    <Bot
+                        className={`w-5 h-5 transition-colors duration-700 ${isVoiceActive ? `${accentColor}` : 'text-slate-400'}`}
+                        style={{
+                            transform: `scale(${1 + (audioLevel / 200)})`,
+                        }}
+                    />
                     {isVoiceActive && (
                         <div className={`absolute inset-0 rounded-2xl ring-2 ${ringColor} ring-offset-2 ring-offset-transparent animate-ping opacity-20`} />
                     )}

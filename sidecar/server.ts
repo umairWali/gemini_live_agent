@@ -148,9 +148,13 @@ wss.on('connection', (ws) => {
                                     parameters: {
                                         type: "OBJECT",
                                         properties: {
-                                            action: { type: "STRING", enum: ["run_command", "write_file", "read_file"] },
-                                            target: { type: "STRING", description: "Command to execute or file path." },
-                                            args: { type: "STRING", description: "File content if action is write_file." }
+                                            action: {
+                                                type: "STRING",
+                                                enum: ["run_command", "write_file", "read_file", "move_file", "delete_file", "create_dir", "get_knowledge", "set_knowledge"],
+                                                description: "The action to perform."
+                                            },
+                                            target: { type: "STRING", description: "Command, file path, or knowledge key." },
+                                            args: { type: "STRING", description: "Content, destination path, or knowledge value." }
                                         },
                                         required: ["action", "target"]
                                     }
@@ -871,9 +875,21 @@ const startMonitoring = () => {
             // Record to state
             stateManager.addAuditEntry(`MONITOR_PULSE: CPU=${cpu}%, RAM=${ramUsage}%`, 'health_monitor');
 
+            broadcast({
+                type: 'SYSTEM_PULSE',
+                metrics: { cpu, ram: ramUsage }
+            });
+
             // Autonomous Action if overloaded
             if (cpu > 85 || ramUsage > 90) {
                 console.warn(`[MONITOR]: HIGH LOAD DETECTED! CPU=${cpu}% RAM=${ramUsage}%`);
+
+                // Broadcase a specific proactive alert for the Voice UI
+                broadcast({
+                    type: 'VOICE_PROACTIVE_ALERT',
+                    text: `Bhai, system load kafi zyada ho raha ha. CPU ${cpu} percent ha aur RAM ${ramUsage} percent. Pura system hang ho sakta ha. Kya main kuch process band kar doon?`
+                });
+
                 broadcast({
                     type: 'SYSTEM_ALERT',
                     source: 'health_monitor',
@@ -885,7 +901,7 @@ const startMonitoring = () => {
                 stateManager.addAuditEntry(`ALERT: System resource threshold exceeded. Initiating safe-mode checks.`, 'recovery');
             }
         });
-    }, 120000);
+    }, 15000); // 15 seconds for more responsive demo loop
 };
 
 server.listen(port, () => {

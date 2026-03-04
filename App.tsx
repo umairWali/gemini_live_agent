@@ -61,9 +61,11 @@ Your job is to answer the user's questions clearly and helpfully. Respond in the
 
 ELITE CAPABILITIES:
 1. VISION: You can see the user's screen if they enable screen sharing. Use this to help them with what they are looking at.
-2. TOOLS: You have a tool called 'execute_action'. Use it to run commands, read files, or write files on the user's PC when requested.
+2. TOOLS: You have a tool called 'execute_action'. Use it to run commands, read/write/move/delete files, or create directories on the user's PC when requested.
+3. PERSONAL MEMORY: Use 'get_knowledge' and 'set_knowledge' (via execute_action) to remember user preferences across sessions.
+4. SYSTEM GUARD: You monitor CPU/RAM. If you detect high load, you MUST proactively alert the user and offer to help (e.g., closing non-essential processes).
 
-Keep responses natural and helpful.`;
+Keep responses natural, helpful, and concise.`;
 
 
 const App: React.FC = () => {
@@ -193,6 +195,8 @@ const AppContent: React.FC = () => {
   const recognitionRef = useRef<any>(null);
   const playbackCtxRef = useRef<AudioContext | null>(null);
   const playbackScheduleRef = useRef<number>(0);
+  const analyzerRef = useRef<AnalyserNode | null>(null);
+  const [audioLevel, setAudioLevel] = useState(0);
 
   const processInputRef = useRef<((input: string, origin?: 'user' | 'system') => Promise<void>) | null>(null);
 
@@ -455,6 +459,21 @@ const AppContent: React.FC = () => {
           try {
             if (!playbackCtxRef.current) {
               playbackCtxRef.current = new window.AudioContext({ sampleRate: 24000 });
+              const analyzer = playbackCtxRef.current.createAnalyser();
+              analyzer.fftSize = 256;
+              analyzerRef.current = analyzer;
+              analyzer.connect(playbackCtxRef.current.destination);
+
+              const dataArray = new Uint8Array(analyzer.frequencyBinCount);
+              const updateLevel = () => {
+                if (analyzerRef.current) {
+                  analyzerRef.current.getByteFrequencyData(dataArray);
+                  const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
+                  setAudioLevel(average);
+                  requestAnimationFrame(updateLevel);
+                }
+              };
+              updateLevel();
             }
             const ctx = playbackCtxRef.current;
             if (ctx.state === 'suspended') await ctx.resume();
@@ -471,7 +490,7 @@ const AppContent: React.FC = () => {
 
             const source = ctx.createBufferSource();
             source.buffer = buffer;
-            source.connect(ctx.destination);
+            source.connect(analyzerRef.current!);
 
             const startAt = Math.max(ctx.currentTime, playbackScheduleRef.current || 0);
             source.start(startAt);
@@ -518,6 +537,18 @@ const AppContent: React.FC = () => {
             ...p,
             realtimeMetrics: data.metrics,
             systemHealth: data.metrics.cpu > 85 ? 'critical' : data.metrics.cpu > 60 ? 'degraded' : 'optimal'
+          }));
+        } else if (data.type === 'VOICE_PROACTIVE_ALERT') {
+          // Speak proactive alert and add to chat
+          speakText(data.text);
+          setState(prev => ({
+            ...prev,
+            history: [...prev.history, {
+              role: 'ai',
+              text: data.text,
+              timestamp: Date.now(),
+              agentBadge: AgentRole.SUPERVISOR
+            }].slice(-50)
           }));
         }
       };
@@ -798,7 +829,7 @@ const AppContent: React.FC = () => {
       />
       <main className={`flex-1 flex flex-col relative overflow-hidden transition-colors ${isDark ? 'bg-black' : 'bg-slate-50'}`}>
 
-        <AppHeader isDark={isDark} isVoiceActive={isVoiceActive} emotionState={state.emotionState} />
+        <AppHeader isDark={isDark} isVoiceActive={isVoiceActive} emotionState={state.emotionState} audioLevel={audioLevel} />
 
         {/* Chat */}
         <div className="flex-1 flex flex-col overflow-hidden">
