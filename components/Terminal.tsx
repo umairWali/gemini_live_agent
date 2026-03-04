@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Mic, MicOff, Send, Zap, ShieldCheck, BrainCircuit, Search, Code, CheckCircle, User, Bot } from 'lucide-react';
+import { Mic, MicOff, Send, BrainCircuit, User, Bot } from 'lucide-react';
 import { AgentRole, Message } from '../types';
 
 interface TerminalProps {
@@ -13,10 +13,13 @@ interface TerminalProps {
   onToggleVoice?: () => void;
 }
 
-const Terminal: React.FC<TerminalProps> = ({ history, onSend, isProcessing, onExecute, onToggleExplain, isVoiceActive, onToggleVoice }) => {
+const Terminal: React.FC<TerminalProps> = ({
+  history, onSend, isProcessing, onExecute, onToggleExplain, isVoiceActive, onToggleVoice
+}) => {
   const [input, setInput] = useState('');
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const prevLengthRef = useRef(0);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -30,115 +33,139 @@ const Terminal: React.FC<TerminalProps> = ({ history, onSend, isProcessing, onEx
     }
   };
 
-  const getAgentLabel = (role?: AgentRole) => {
-    switch (role) {
-      case AgentRole.PLANNER: return 'Planner';
-      case AgentRole.EXECUTOR: return 'Executor';
-      case AgentRole.TESTER: return 'Tester';
-      case AgentRole.HEALER: return 'Healer';
-      case AgentRole.AUTONOMOUS_ENGINEER: return 'AI Engineer';
-      case AgentRole.SUPERVISOR: return 'AI Operator';
-      default: return 'AI Operator';
-    }
-  };
-
-  const getAgentColor = (role?: AgentRole) => {
-    switch (role) {
-      case AgentRole.AUTONOMOUS_ENGINEER: return 'text-violet-600';
-      case AgentRole.HEALER: return 'text-rose-500';
-      case AgentRole.SUPERVISOR: return 'text-blue-600';
-      default: return 'text-slate-500';
-    }
-  };
-
-  // Filter out internal IPC system messages from the chat view
+  // Filter internal system messages
   const visibleHistory = history.filter(msg => {
-    if (msg.role === 'ai' && msg.text) {
-      const t = msg.text;
-      if (t.startsWith('[IPC_ACK]') || t.startsWith('[HEALER_SIGNAL]') || t.startsWith('PROTOCOL_LOCK')) return false;
-    }
-    if (msg.role === 'user' && msg.text) {
-      const t = msg.text;
-      if (t.startsWith('[IPC_ACK]') || t.startsWith('[HEALER_SIGNAL]') || t.startsWith('[VISION_SIGNAL]')) return false;
-    }
+    const t = msg.text || '';
+    if (t.startsWith('[IPC_ACK]') || t.startsWith('[HEALER_SIGNAL]') ||
+      t.startsWith('PROTOCOL_LOCK') || t.startsWith('[VISION_SIGNAL]') ||
+      t.startsWith('MANUAL_SIGNAL') || t.startsWith('SYSTEM_BOOT') ||
+      t.startsWith('[IPC_EVENT_DETECTED]')) return false;
     return true;
   });
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-white" style={{ fontFamily: 'Inter, sans-serif' }}>
-      {/* Chat Area */}
-      <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4 custom-scrollbar">
+    <div className="flex-1 flex flex-col h-full" style={{ background: '#f7f8fa', fontFamily: 'Inter, sans-serif' }}>
+      {/* Chat Messages */}
+      <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3 custom-scrollbar">
         {visibleHistory.length === 0 && (
-          <div className="flex flex-col items-center justify-center h-full text-center opacity-40 gap-3 pt-16">
-            <div className="w-16 h-16 rounded-2xl bg-violet-100 flex items-center justify-center">
-              <Bot className="w-8 h-8 text-violet-500" />
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', textAlign: 'center', opacity: 0.5, paddingTop: 48 }}>
+            <div style={{ width: 56, height: 56, borderRadius: 16, background: '#e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 12 }}>
+              <Bot size={24} color="#6b7280" />
             </div>
-            <p className="text-sm font-semibold text-slate-500">Personal AI Operator</p>
-            <p className="text-xs text-slate-400 max-w-xs">Type a command or tap the mic to speak. Your AI assistant is ready.</p>
+            <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: '#374151' }}>Personal AI Operator</p>
+            <p style={{ margin: '6px 0 0', fontSize: 12, color: '#6b7280', maxWidth: 240 }}>Type a message or use the mic to speak.</p>
           </div>
         )}
 
-        {visibleHistory.map((msg, i) => (
-          <div key={i} className={`flex gap-3 fade-in ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-            {msg.role !== 'user' && (
-              <div className="w-8 h-8 rounded-xl bg-violet-100 flex items-center justify-center flex-shrink-0 mt-1">
-                <Bot className="w-4 h-4 text-violet-600" />
-              </div>
-            )}
-
-            <div className={`max-w-[78%] ${msg.role === 'user' ? '' : 'flex-1'}`}>
+        {visibleHistory.map((msg, i) => {
+          const isNew = i >= prevLengthRef.current;
+          return (
+            <div
+              key={i}
+              className={isNew ? 'msg-new' : ''}
+              style={{
+                display: 'flex',
+                gap: 10,
+                justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start',
+                alignItems: 'flex-start'
+              }}
+            >
+              {/* AI avatar */}
               {msg.role !== 'user' && (
-                <div className={`text-[10px] font-semibold mb-1.5 ${getAgentColor(msg.agentBadge)}`}>
-                  {getAgentLabel(msg.agentBadge)}
+                <div style={{
+                  width: 30, height: 30, borderRadius: 10,
+                  background: '#e5e7eb', display: 'flex',
+                  alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 2
+                }}>
+                  <Bot size={14} color="#374151" />
                 </div>
               )}
 
-              <div className={`msg-bubble rounded-2xl px-4 py-3 text-sm leading-relaxed ${
-                msg.role === 'user'
-                  ? 'bg-violet-600 text-white rounded-tr-sm font-medium'
-                  : 'bg-slate-50 border border-slate-100 text-slate-800 rounded-tl-sm'
-              }`}>
-                <p className="whitespace-pre-wrap">{msg.text}</p>
-              </div>
+              <div style={{ maxWidth: '76%' }}>
+                {/* Label */}
+                {msg.role !== 'user' && (
+                  <div style={{ fontSize: 10, fontWeight: 600, color: '#9ca3af', marginBottom: 4, letterSpacing: '0.03em' }}>
+                    AI Operator
+                  </div>
+                )}
 
-              {msg.role === 'ai' && (
-                <div className="flex items-center gap-2 mt-1.5">
+                {/* Bubble */}
+                <div style={{
+                  borderRadius: msg.role === 'user' ? '18px 4px 18px 18px' : '4px 18px 18px 18px',
+                  padding: '10px 14px',
+                  fontSize: 14,
+                  lineHeight: 1.6,
+                  background: msg.role === 'user' ? '#1f2937' : '#ffffff',
+                  color: msg.role === 'user' ? '#ffffff' : '#111827',
+                  border: msg.role === 'user' ? 'none' : '1px solid #e5e7eb',
+                  boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+                  whiteSpace: 'pre-wrap',
+                  wordBreak: 'break-word'
+                }}>
+                  {msg.text}
+                </div>
+
+                {/* Show reasoning toggle */}
+                {msg.role === 'ai' && (
                   <button
                     onClick={() => onToggleExplain?.(i)}
-                    className="flex items-center gap-1 text-[10px] text-slate-400 hover:text-violet-500 transition-colors font-medium"
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 4,
+                      marginTop: 4, fontSize: 11, color: '#9ca3af',
+                      background: 'none', border: 'none', cursor: 'pointer', padding: '2px 0'
+                    }}
                   >
-                    <BrainCircuit className="w-3 h-3" />
+                    <BrainCircuit size={11} />
                     {msg.isExplainMode ? 'Hide reasoning' : 'Show reasoning'}
                   </button>
-                </div>
-              )}
+                )}
 
-              {msg.isExplainMode && msg.explanation && (
-                <div className="mt-2 p-3 bg-violet-50 border border-violet-100 rounded-xl">
-                  <p className="text-[11px] text-violet-700 leading-relaxed italic">{msg.explanation}</p>
+                {/* Explanation panel */}
+                {msg.isExplainMode && msg.explanation && (
+                  <div style={{
+                    marginTop: 6, padding: '8px 12px',
+                    background: '#f9fafb', border: '1px solid #e5e7eb',
+                    borderRadius: 10, fontSize: 11, color: '#6b7280', lineHeight: 1.5
+                  }}>
+                    {msg.explanation}
+                  </div>
+                )}
+              </div>
+
+              {/* User avatar */}
+              {msg.role === 'user' && (
+                <div style={{
+                  width: 30, height: 30, borderRadius: 10,
+                  background: '#1f2937', display: 'flex',
+                  alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 2
+                }}>
+                  <User size={14} color="#ffffff" />
                 </div>
               )}
             </div>
+          );
+        })}
 
-            {msg.role === 'user' && (
-              <div className="w-8 h-8 rounded-xl bg-violet-600 flex items-center justify-center flex-shrink-0 mt-1">
-                <User className="w-4 h-4 text-white" />
-              </div>
-            )}
-          </div>
-        ))}
-
+        {/* Typing indicator */}
         {isProcessing && (
-          <div className="flex gap-3 justify-start fade-in">
-            <div className="w-8 h-8 rounded-xl bg-violet-100 flex items-center justify-center flex-shrink-0">
-              <Bot className="w-4 h-4 text-violet-600" />
+          <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+            <div style={{
+              width: 30, height: 30, borderRadius: 10, background: '#e5e7eb',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
+            }}>
+              <Bot size={14} color="#374151" />
             </div>
-            <div className="bg-slate-50 border border-slate-100 rounded-2xl rounded-tl-sm px-4 py-3">
-              <div className="flex items-center gap-1.5">
-                <div className="w-2 h-2 rounded-full bg-violet-400 animate-bounce" style={{ animationDelay: '0ms' }} />
-                <div className="w-2 h-2 rounded-full bg-violet-400 animate-bounce" style={{ animationDelay: '150ms' }} />
-                <div className="w-2 h-2 rounded-full bg-violet-400 animate-bounce" style={{ animationDelay: '300ms' }} />
-              </div>
+            <div style={{
+              background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: '4px 18px 18px 18px',
+              padding: '12px 16px', display: 'flex', gap: 5, alignItems: 'center'
+            }}>
+              {[0, 150, 300].map(delay => (
+                <div key={delay} style={{
+                  width: 7, height: 7, borderRadius: '50%', background: '#9ca3af',
+                  animation: 'bounce 1s infinite',
+                  animationDelay: `${delay}ms`
+                }} />
+              ))}
             </div>
           </div>
         )}
@@ -146,46 +173,74 @@ const Terminal: React.FC<TerminalProps> = ({ history, onSend, isProcessing, onEx
         <div ref={bottomRef} />
       </div>
 
-      {/* Input Area */}
-      <div className="border-t border-slate-100 p-4 bg-white">
-        <form onSubmit={handleSubmit} className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={onToggleVoice}
-            title={isVoiceActive ? 'Stop voice' : 'Start voice'}
-            className={`w-11 h-11 flex items-center justify-center rounded-xl flex-shrink-0 transition-all ${
-              isVoiceActive
-                ? 'bg-red-500 text-white mic-active shadow-lg'
-                : 'bg-slate-100 text-slate-500 hover:bg-violet-100 hover:text-violet-600'
-            }`}
-          >
-            {isVoiceActive ? <Mic className="w-5 h-5" /> : <MicOff className="w-5 h-5" />}
-          </button>
+      {/* Input Bar */}
+      <div style={{
+        borderTop: '1px solid #e5e7eb', padding: '12px 16px',
+        background: '#ffffff', display: 'flex', alignItems: 'center', gap: 10
+      }}>
+        {/* Mic button */}
+        <button
+          type="button"
+          onClick={onToggleVoice}
+          title={isVoiceActive ? 'Stop voice' : 'Start voice'}
+          className={isVoiceActive ? 'mic-active' : ''}
+          style={{
+            width: 40, height: 40, borderRadius: 12, flexShrink: 0,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            border: '1px solid #e5e7eb', cursor: 'pointer',
+            background: isVoiceActive ? '#ef4444' : '#f9fafb',
+            color: isVoiceActive ? '#ffffff' : '#6b7280'
+          }}
+        >
+          {isVoiceActive ? <Mic size={18} /> : <MicOff size={18} />}
+        </button>
 
+        {/* Text input */}
+        <form onSubmit={handleSubmit} style={{ flex: 1, display: 'flex', gap: 8 }}>
           <input
             ref={inputRef}
             value={input}
-            onChange={(e) => setInput(e.target.value)}
+            onChange={e => setInput(e.target.value)}
             placeholder="Type a message..."
             disabled={isProcessing}
-            className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-violet-400 focus:bg-white transition-all"
+            style={{
+              flex: 1, padding: '10px 14px', borderRadius: 12,
+              border: '1px solid #e5e7eb', fontSize: 14, color: '#111827',
+              background: '#f9fafb', outline: 'none',
+              fontFamily: 'Inter, sans-serif'
+            }}
           />
-
           <button
             type="submit"
             disabled={!input.trim() || isProcessing}
-            className="w-11 h-11 flex items-center justify-center bg-violet-600 hover:bg-violet-700 disabled:opacity-40 text-white rounded-xl flex-shrink-0 transition-all shadow"
+            style={{
+              width: 40, height: 40, borderRadius: 12, flexShrink: 0,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: input.trim() && !isProcessing ? '#1f2937' : '#e5e7eb',
+              color: input.trim() && !isProcessing ? '#ffffff' : '#9ca3af',
+              border: 'none', cursor: input.trim() && !isProcessing ? 'pointer' : 'not-allowed'
+            }}
           >
-            <Send className="w-4 h-4" />
+            <Send size={16} />
           </button>
         </form>
-
-        {isVoiceActive && (
-          <p className="text-center text-xs text-red-500 font-medium mt-2 animate-pulse">
-            Mic is active — listening...
-          </p>
-        )}
       </div>
+
+      {isVoiceActive && (
+        <div style={{
+          textAlign: 'center', fontSize: 11, color: '#ef4444',
+          fontWeight: 500, padding: '4px 0 8px', background: '#ffffff'
+        }}>
+          Listening... speak now
+        </div>
+      )}
+
+      <style>{`
+        @keyframes bounce {
+          0%, 80%, 100% { transform: translateY(0); opacity: 0.5; }
+          40% { transform: translateY(-5px); opacity: 1; }
+        }
+      `}</style>
     </div>
   );
 };

@@ -1,16 +1,17 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
 
 :root {
-  --accent: #7c3aed;
-  --accent-light: #ede9fe;
-  --accent-glow: rgba(124, 58, 237, 0.15);
-  --bg: #f5f5f7;
+  --bg: #f7f8fa;
   --bg-secondary: #ffffff;
-  --panel: rgba(255, 255, 255, 0.9);
-  --border: rgba(0, 0, 0, 0.08);
-  --text: #1a1a2e;
+  --border: #e5e7eb;
+  --text: #111827;
   --text-muted: #6b7280;
-  --shadow: 0 4px 24px rgba(0,0,0,0.08);
+  --user-bubble-bg: #1f2937;
+  --user-bubble-text: #ffffff;
+  --ai-bubble-bg: #f3f4f6;
+  --ai-bubble-text: #111827;
+  --accent: #374151;
+  --shadow: 0 1px 8px rgba(0, 0, 0, 0.06);
 }
 
 * {
@@ -23,82 +24,124 @@ body {
   padding: 0;
   font-family: 'Inter', sans-serif;
   background-color: var(--bg);
-  background-image:
-    radial-gradient(circle at 10% 10%, rgba(124, 58, 237, 0.04) 0%, transparent 50%),
-    radial-gradient(circle at 90% 90%, rgba(59, 130, 246, 0.04) 0%, transparent 50%);
   color: var(--text);
   height: 100vh;
   width: 100vw;
   overflow: hidden;
 }
 
-/* Glass Cards - Light mode */
+/* Glass Cards */
 .glass {
-  background: var(--panel);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  background: var(--bg-secondary);
   border: 1px solid var(--border);
   box-shadow: var(--shadow);
 }
 
 .glass-card {
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(0, 0, 0, 0.06);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  transition: box-shadow 0.2s;
 }
 
 .glass-card:hover {
-  background: rgba(255, 255, 255, 0.95);
-  border-color: rgba(124, 58, 237, 0.2);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 32px rgba(124, 58, 237, 0.1);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
 }
-
-/* Animations */
-@keyframes pulse-glow {
-  0% { box-shadow: 0 0 5px var(--accent-glow); }
-  50% { box-shadow: 0 0 20px var(--accent-glow); }
-  100% { box-shadow: 0 0 5px var(--accent-glow); }
-}
-
-.animate-glow { animation: pulse-glow 3s infinite; }
-
-@keyframes slide-up {
-  from { opacity: 0; transform: translateY(16px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.fade-in { animation: slide-up 0.4s forwards; }
 
 /* Custom Scrollbar */
-::-webkit-scrollbar { width: 4px; height: 4px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 10px; }
-::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
 
-/* Custom Scrollbar inside terminal */
-.custom-scrollbar::-webkit-scrollbar { width: 3px; }
-.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-.custom-scrollbar::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 10px; }
+::-webkit-scrollbar-track {
+  background: transparent;
+}
 
-/* Toast notifications */
-.toast-enter { animation: slide-up 0.3s ease-out; }
+::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 10px;
+}
 
-/* Input focus glow */
-input:focus-visible, textarea:focus-visible { outline: none; }
+::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
 
-/* Smooth transitions */
-button { transition: all 0.2s ease; }
-button:active { transform: scale(0.97); }
+.custom-scrollbar::-webkit-scrollbar {
+  width: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #e5e7eb;
+  border-radius: 10px;
+}
+
+/* Input focus */
+input:focus-visible,
+textarea:focus-visible {
+  outline: none;
+}
+
+/* Buttons */
+button {
+  transition: all 0.15s ease;
+}
+
+button:active {
+  transform: scale(0.97);
+}
+
+/* Message bubble — NO animation to prevent blinking */
+.msg-bubble {}
 
 /* Mic pulse animation */
 @keyframes mic-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
-  50% { box-shadow: 0 0 0 12px rgba(239, 68, 68, 0); }
-}
-.mic-active { animation: mic-pulse 1.2s infinite; }
 
-/* Message bubble transition */
-.msg-bubble { transition: box-shadow 0.2s, background 0.2s; }
-.msg-bubble:hover { box-shadow: 0 4px 20px rgba(124, 58, 237, 0.1); }
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.35);
+  }
+
+  50% {
+    box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+  }
+}
+
+.mic-active {
+  animation: mic-pulse 1.2s infinite;
+}
+
+/* Slide up for toasts only */
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.toast-enter {
+  animation: slide-up 0.25s ease-out;
+}
+
+/* Subtle appear for new messages — no blinking */
+@keyframes msg-appear {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.msg-new {
+  animation: msg-appear 0.2s ease-out;
+}
