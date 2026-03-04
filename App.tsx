@@ -722,37 +722,7 @@ const AppContent: React.FC = () => {
           isOverloaded={state.isOverloaded}
         />
 
-        {/* Toolbar */}
-        <div className="h-14 bg-white border-b border-slate-100 flex items-center justify-between px-6 z-10">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => {
-                const newState = !state.isAutonomous;
-                setState(p => ({ ...p, isAutonomous: newState }));
-                playClick();
-                if (newState) {
-                  addToast({ type: 'warning', title: 'Auto Mode On', message: 'AI is acting autonomously' });
-                } else {
-                  addToast({ type: 'info', title: 'Manual Mode', message: 'Autonomous actions disabled' });
-                }
-              }}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all ${state.isAutonomous
-                ? 'bg-violet-600 text-white shadow-md'
-                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                }`}
-            >
-              <Zap className="w-3.5 h-3.5" />
-              {state.isAutonomous ? 'Auto Mode' : 'Manual'}
-            </button>
-          </div>
 
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 border border-emerald-200 rounded-lg">
-              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-[10px] font-semibold text-emerald-600">Connected</span>
-            </div>
-          </div>
-        </div>
 
         {/* Chat */}
         <div className="flex-1 flex flex-col overflow-hidden">
