@@ -149,47 +149,73 @@ const AppContent: React.FC = () => {
   const audioContextRef = useRef<AudioContext | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
 
+  const playbackCtxRef = useRef<AudioContext | null>(null);
+  const playbackScheduleRef = useRef<number>(0);
+
   const toggleVoice = useCallback(async () => {
     if (isVoiceActive) {
       setIsVoiceActive(false);
       mediaStreamRef.current?.getTracks().forEach(t => t.stop());
+      mediaStreamRef.current = null;
       audioContextRef.current?.close();
+      audioContextRef.current = null;
+      playbackCtxRef.current?.close();
+      playbackCtxRef.current = null;
       const mainWs = (window as any).operatorWs;
       if (mainWs && mainWs.readyState === WebSocket.OPEN) {
         mainWs.send(JSON.stringify({ type: 'STOP_VOICE' }));
       }
-      addToast({ type: 'info', title: 'Voice Deactivated', message: 'Live session ended' });
-    } else {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        mediaStreamRef.current = stream;
-        const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
-        audioContextRef.current = audioCtx;
-        const source = audioCtx.createMediaStreamSource(stream);
-        const processor = audioCtx.createScriptProcessor(4096, 1, 1);
-        source.connect(processor);
-        processor.connect(audioCtx.destination);
-        processor.onaudioprocess = (e) => {
-          const inputData = e.inputBuffer.getChannelData(0);
-          const pcmData = new Int16Array(inputData.length);
-          for (let i = 0; i < inputData.length; i++) {
-            pcmData[i] = Math.max(-32768, Math.min(32767, inputData[i] * 32768));
-          }
-          const base64 = btoa(String.fromCharCode(...new Uint8Array(pcmData.buffer)));
-          const mainWs = (window as any).operatorWs;
-          if (mainWs && mainWs.readyState === WebSocket.OPEN) {
-            mainWs.send(JSON.stringify({ type: 'VOICE_AUDIO', data: base64 }));
-          }
-        };
-        const mainWs = (window as any).operatorWs;
-        if (mainWs && mainWs.readyState === WebSocket.OPEN) {
-          mainWs.send(JSON.stringify({ type: 'START_VOICE' }));
-        }
-        setIsVoiceActive(true);
-        addToast({ type: 'success', title: 'Voice Active', message: 'Speak naturally' });
-      } catch (e: any) {
-        addToast({ type: 'error', title: 'Mic Access Error', message: e.message });
+      addToast({ type: 'info', title: 'Voice Off', message: 'Session ended' });
+      return;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+      mediaStreamRef.current = stream;
+
+      // Input context: 16kHz for sending to Gemini
+      const inputCtx = new AudioContext({ sampleRate: 16000 });
+      audioContextRef.current = inputCtx;
+
+      // Output context: 24kHz for Gemini audio response
+      const outputCtx = new AudioContext({ sampleRate: 24000 });
+      playbackCtxRef.current = outputCtx;
+      playbackScheduleRef.current = outputCtx.currentTime;
+
+      const mainWs = (window as any).operatorWs;
+      if (!mainWs || mainWs.readyState !== WebSocket.OPEN) {
+        addToast({ type: 'error', title: 'Not Connected', message: 'Refresh page and try again' });
+        stream.getTracks().forEach(t => t.stop());
+        return;
       }
+
+      // Tell server to open Gemini Live session
+      mainWs.send(JSON.stringify({ type: 'START_VOICE' }));
+
+      // Start mic streaming
+      const source = inputCtx.createMediaStreamSource(stream);
+      const processor = inputCtx.createScriptProcessor(2048, 1, 1);
+      source.connect(processor);
+      processor.connect(inputCtx.destination);
+      processor.onaudioprocess = (e) => {
+        const ws = (window as any).operatorWs;
+        if (!ws || ws.readyState !== WebSocket.OPEN) return;
+        const inputData = e.inputBuffer.getChannelData(0);
+        const pcm = new Int16Array(inputData.length);
+        for (let i = 0; i < inputData.length; i++) {
+          pcm[i] = Math.max(-32768, Math.min(32767, inputData[i] * 32768));
+        }
+        const bytes = new Uint8Array(pcm.buffer);
+        let binary = '';
+        for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+        ws.send(JSON.stringify({ type: 'VOICE_AUDIO', data: btoa(binary) }));
+      };
+
+      setIsVoiceActive(true);
+      addToast({ type: 'success', title: 'Voice Active', message: 'Listening... speak now' });
+    } catch (e: any) {
+      const msg = e.name === 'NotAllowedError' ? 'Mic permission denied in browser' : e.message;
+      addToast({ type: 'error', title: 'Mic Error', message: msg });
     }
   }, [isVoiceActive, addToast]);
 
@@ -349,20 +375,25 @@ const AppContent: React.FC = () => {
         } else if (data.type === 'RECOVERY_SIGNAL') {
           pushEvent(data.type, data.source, data.metadata);
         } else if (data.type === 'VOICE_RESPONSE') {
-          const binaryString = atob(data.data);
-          const bytes = new Uint8Array(binaryString.length);
-          for (let i = 0; i < binaryString.length; i++) bytes[i] = binaryString.charCodeAt(i);
-          const pcmData = new Int16Array(bytes.buffer);
-          const floatData = new Float32Array(pcmData.length);
-          for (let i = 0; i < pcmData.length; i++) floatData[i] = pcmData[i] / 32768;
-
-          if (audioContextRef.current && audioContextRef.current.state === 'running') {
-            const buffer = audioContextRef.current.createBuffer(1, floatData.length, 16000);
+          try {
+            const ctx = playbackCtxRef.current;
+            if (!ctx) return;
+            const binaryString = atob(data.data);
+            const bytes = new Uint8Array(binaryString.length);
+            for (let i = 0; i < binaryString.length; i++) bytes[i] = binaryString.charCodeAt(i);
+            const pcmData = new Int16Array(bytes.buffer);
+            const floatData = new Float32Array(pcmData.length);
+            for (let i = 0; i < pcmData.length; i++) floatData[i] = pcmData[i] / 32768;
+            const buffer = ctx.createBuffer(1, floatData.length, 24000);
             buffer.getChannelData(0).set(floatData);
-            const source = audioContextRef.current.createBufferSource();
+            const source = ctx.createBufferSource();
             source.buffer = buffer;
-            source.connect(audioContextRef.current.destination);
-            source.start();
+            source.connect(ctx.destination);
+            const startAt = Math.max(ctx.currentTime, playbackScheduleRef.current);
+            source.start(startAt);
+            playbackScheduleRef.current = startAt + buffer.duration;
+          } catch (err) {
+            console.error('[VOICE_PLAYBACK]:', err);
           }
         } else if (data.type === 'VOICE_TEXT') {
           addAuditEntry(`VOICE_REPLY: ${data.text}`, 'ai');
@@ -520,29 +551,30 @@ const AppContent: React.FC = () => {
       return;
     }
 
-    // Append the input to history immediately so the user sees what they typed
-    setState(prev => ({
-      ...prev,
-      history: [...prev.history, {
-        role: origin === 'user' ? 'user' : 'ai',
-        text: input,
-        timestamp: Date.now(),
-        agentBadge: origin === 'system' ? AgentRole.AUTONOMOUS_ENGINEER : undefined
-      }].slice(-50)
-    }));
+    // Only add USER messages to the visible chat history (not internal system signals)
+    if (origin === 'user') {
+      setState(prev => ({
+        ...prev,
+        history: [...prev.history, {
+          role: 'user',
+          text: input,
+          timestamp: Date.now()
+        }].slice(-50)
+      }));
+    }
 
     setIsProcessing(true);
     try {
       const response = await chatRef.current.sendMessage({ message: input });
 
-      if (!response || response.error) {
-        const errorMsg = response?.error || 'Unknown error from AI service';
+      if (!response || (response as any).error) {
+        const errorMsg = (response as any)?.error || 'Unknown error from AI service';
         addAuditEntry(`AI_ERROR: ${errorMsg}`, 'system');
         setState(prev => ({
           ...prev,
           history: [...prev.history, {
             role: 'ai',
-            text: `⚠️ System Error: ${errorMsg}. Please try again or check sidecar logs.`,
+            text: `Sorry, I encountered an error: ${errorMsg}. Please try again.`,
             timestamp: Date.now(),
             agentBadge: AgentRole.SUPERVISOR
           }].slice(-50)
@@ -552,37 +584,37 @@ const AppContent: React.FC = () => {
 
       const text = response.text || '';
 
+      // Execute any function calls (IPC)
       if (response.functionCalls && response.functionCalls.length > 0) {
         for (const fc of response.functionCalls) {
           const result = await dispatchToSidecar(fc);
-          // Log IPC result to audit trail only — don't spam the chat
-          addAuditEntry(`IPC_ACK: ${JSON.stringify(result)}`, 'bridge');
+          addAuditEntry(`IPC_ACK: ${fc.name} -> ${result.success ? 'OK' : result.error}`, 'bridge');
         }
       }
 
-      setState(prev => {
-        const newMessage: Message = {
-          role: 'ai',
-          text,
-          timestamp: Date.now(),
-          agentBadge: origin === 'system' ? AgentRole.AUTONOMOUS_ENGINEER : AgentRole.SUPERVISOR,
-          explanation: "Supervisor: Analyzing telemetry. Planner: Goal alignment verified. Executor: OS tools prepared in sandbox. Healer: Ready on fail. Risk: 0.4 (Within Policy)."
-        };
-        return {
+      // Only show AI response if there is actual text to display
+      if (text.trim()) {
+        setState(prev => ({
           ...prev,
-          history: [...prev.history, newMessage].slice(-50),
+          history: [...prev.history, {
+            role: 'ai',
+            text,
+            timestamp: Date.now(),
+            agentBadge: AgentRole.SUPERVISOR,
+            explanation: 'Planner: Goal verified. Executor: Tools ready. Healer: Standby. Risk: 0.4 (Within Policy).'
+          }].slice(-50),
           isSessionStarted: true
-        };
-      });
+        }));
+      }
     } catch (e: any) {
       const errorMsg = e?.message || 'Unknown error';
-      console.error("OS_CORE_RUNTIME_EXCEPTION:", e);
+      console.error('OS_CORE_RUNTIME_EXCEPTION:', e);
       addAuditEntry(`CRITICAL_ERROR: ${errorMsg}`, 'system');
       setState(prev => ({
         ...prev,
         history: [...prev.history, {
           role: 'ai',
-          text: `⚠️ Critical Error: ${errorMsg}. System will attempt to recover.`,
+          text: `I ran into a problem: ${errorMsg}. Attempting to recover...`,
           timestamp: Date.now(),
           agentBadge: AgentRole.HEALER
         }].slice(-50)
