@@ -57,11 +57,7 @@ const Terminal: React.FC<TerminalProps> = ({
             <div className={`w-28 h-28 rounded-[2.5rem] flex items-center justify-center mb-8 overflow-hidden shadow-[0_20px_50px_rgba(139,92,246,0.3)] border-2 ${isDark ? 'bg-slate-900 border-white/10' : 'bg-white border-slate-100'}`}>
               <img src="/logo.png" alt="Logo" className="w-full h-full object-cover scale-110" />
             </div>
-            <h2 className={`text-2xl font-black uppercase tracking-[0.4em] mb-4 ${isDark ? 'text-white' : 'text-slate-900'}`}>Personal_Operator</h2>
-            <p className={`text-[13px] font-bold tracking-widest uppercase opacity-40 max-w-sm leading-loose ${isDark ? 'text-slate-300' : 'text-slate-500'}`}>
-              System Online // Biometric Voice Auth Active<br />
-              Awaiting Directives via Voice or Terminal
-            </p>
+            <h2 className={`text-2xl font-black uppercase tracking-[0.4em] mb-4 ${isDark ? 'text-white' : 'text-slate-900'}`}>Personal Operator</h2>
           </div>
         )}
 
