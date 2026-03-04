@@ -712,19 +712,7 @@ const AppContent: React.FC = () => {
         notificationsEnabled={notificationsEnabled}
       />
 
-      <Sidebar mode={state.currentMode} onModeChange={(m) => { setState(p => ({ ...p, currentMode: m })); playClick(); }} />
-      <main className="flex-1 flex flex-col relative overflow-hidden border-l border-slate-100">
-        <Header
-          mode={state.currentMode}
-          envSignals={state.envSignals}
-          onAddSignal={(s) => pushEvent(s.type as WatcherEvent['type'], s.value, { manual: true })}
-          health={state.systemHealth}
-          isOverloaded={state.isOverloaded}
-        />
-
-
-
-        {/* Chat */}
+      <main className="flex-1 flex flex-col relative overflow-hidden">        {/* Chat */}
         <div className="flex-1 flex flex-col overflow-hidden">
           <Terminal
             history={state.history}
