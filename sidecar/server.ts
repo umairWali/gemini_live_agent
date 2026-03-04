@@ -122,7 +122,7 @@ wss.on('connection', (ws) => {
                 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
 
                 const session = await ai.live.connect({
-            model: 'gemini-2.0-flash',
+                    model: 'gemini-2.0-flash-live-001',
                     config: {
                         responseModalities: [Modality.AUDIO],
                         systemInstruction: "You are the Personal AI Operator's Voice Interface. Be concise, technical, and helpful. You can hear and speak. Help the user with system tasks."

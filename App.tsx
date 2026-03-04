@@ -366,6 +366,15 @@ const AppContent: React.FC = () => {
           }
         } else if (data.type === 'VOICE_TEXT') {
           addAuditEntry(`VOICE_REPLY: ${data.text}`, 'ai');
+          setState(prev => ({
+            ...prev,
+            history: [...prev.history, {
+              role: 'ai',
+              text: data.text,
+              timestamp: Date.now(),
+              agentBadge: AgentRole.SUPERVISOR
+            }].slice(-50)
+          }));
         } else if (data.type === 'SYSTEM_PULSE') {
           setState(p => ({
             ...p,
@@ -543,10 +552,11 @@ const AppContent: React.FC = () => {
 
       const text = response.text || '';
 
-      if (response.functionCalls) {
+      if (response.functionCalls && response.functionCalls.length > 0) {
         for (const fc of response.functionCalls) {
           const result = await dispatchToSidecar(fc);
-          await processInput(`[IPC_ACK]: ${JSON.stringify(result)}`, 'system');
+          // Log IPC result to audit trail only — don't spam the chat
+          addAuditEntry(`IPC_ACK: ${JSON.stringify(result)}`, 'bridge');
         }
       }
 
@@ -606,7 +616,7 @@ const AppContent: React.FC = () => {
 
 
   return (
-    <div className={`flex h-screen w-screen ${isDark ? 'bg-slate-950 text-slate-200' : 'bg-slate-50 text-slate-800'} overflow-hidden selection:bg-violet-500/40 transition-colors duration-300`}>
+      <div className="flex h-screen w-screen bg-slate-50 text-slate-800 overflow-hidden">
       <CommandPalette
         isOpen={isCommandOpen}
         onClose={() => setCommandOpen(false)}
@@ -617,7 +627,7 @@ const AppContent: React.FC = () => {
       />
 
       <Sidebar mode={state.currentMode} onModeChange={(m) => { setState(p => ({ ...p, currentMode: m })); playClick(); }} />
-      <main className="flex-1 flex flex-col relative border-x border-white/5">
+      <main className="flex-1 flex flex-col relative overflow-hidden border-l border-slate-100">
         <Header
           mode={state.currentMode}
           envSignals={state.envSignals}
@@ -626,112 +636,57 @@ const AppContent: React.FC = () => {
           isOverloaded={state.isOverloaded}
         />
 
-        <div className={`h-16 ${isDark ? 'bg-slate-900/30' : 'bg-white/80'} border-b border-white/5 flex items-center justify-between px-8 backdrop-blur-3xl z-10`}>
-          <div className="flex items-center gap-6">
+        {/* Toolbar */}
+        <div className="h-14 bg-white border-b border-slate-100 flex items-center justify-between px-6 z-10">
+          <div className="flex items-center gap-3">
             <button
               onClick={() => {
                 const newState = !state.isAutonomous;
                 setState(p => ({ ...p, isAutonomous: newState }));
                 playClick();
-                haptic('medium');
                 if (newState) {
-                  addToast({ type: 'warning', title: 'Autonomous Mode', message: 'AI acting independently' });
-                  processInput("PROTOCOL_LOCK: Full autonomous mode engaged.");
+                  addToast({ type: 'warning', title: 'Auto Mode On', message: 'AI is acting autonomously' });
                 } else {
                   addToast({ type: 'info', title: 'Manual Mode', message: 'Autonomous actions disabled' });
                 }
               }}
-              className={`flex items-center gap-2.5 px-6 py-2.5 rounded-2xl text-[10px] font-black transition-all ${state.isAutonomous
-                ? 'bg-violet-600 text-white shadow-[0_0_30px_rgba(139,92,246,0.3)] animate-pulse'
-                : `${isDark ? 'bg-slate-800 text-slate-400 opacity-60' : 'bg-slate-200 text-slate-600'}`
-                }`}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all ${
+                state.isAutonomous
+                  ? 'bg-violet-600 text-white shadow-md'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              }`}
             >
-              {state.isAutonomous ? <Zap className="w-3.5 h-3.5 fill-current" /> : <PlayCircle className="w-3.5 h-3.5" />}
-              {state.isAutonomous ? 'OPERATOR_AUTO_PILOT' : 'MANUAL_OVERRIDE'}
+              <Zap className="w-3.5 h-3.5" />
+              {state.isAutonomous ? 'Auto Mode' : 'Manual'}
             </button>
-            <div className="h-4 w-px bg-white/10" />
-
-            {/* New Vision & Voice Buttons */}
-            <div className="flex items-center gap-2">
-              <button
-                onClick={async () => {
-                  playClick();
-                  setIsProcessing(true);
-                  addToast({ type: 'info', title: 'Vision Scan', message: 'Capturing and analyzing screen...' });
-                  try {
-                    const token = localStorage.getItem('operator_auth_token');
-                    const response = await fetch(`${state.osState.bridgeUrl}/ai/vision`, {
-                      method: 'POST',
-                      headers: {
-                        'Content-Type': 'application/json'
-                      },
-                      body: JSON.stringify({ prompt: "Analyze the current screen and tell me what the user is working on." })
-                    });
-                    const data = await response.json();
-                    if (data.success) {
-                      addAuditEntry(`VISION_SCAN: ${data.analysis.slice(0, 100)}...`, 'ai');
-                      processInput(`[VISION_SIGNAL]: The screen contains: ${data.analysis}`, 'system');
-                    } else {
-                      addToast({ type: 'error', title: 'Vision Failed', message: data.error });
-                    }
-                  } catch (e: any) {
-                    addToast({ type: 'error', title: 'Vision Error', message: e.message });
-                  } finally {
-                    setIsProcessing(false);
-                  }
-                }}
-                disabled={isProcessing}
-                className={`p-2.5 rounded-xl border ${isDark ? 'bg-slate-900/50 border-white/5 text-blue-400' : 'bg-white border-slate-200 text-blue-600'} hover:scale-110 transition-all`}
-                title="Vision Scan (Multimodal)"
-              >
-                <Zap className="w-4 h-4" />
-              </button>
-
-              <button
-                onClick={toggleVoice}
-                className={`p-2.5 rounded-xl border ${isDark ? 'bg-slate-900/50 border-white/5' : 'bg-white border-slate-200'} ${isVoiceActive ? 'bg-emerald-600 text-white animate-pulse' : 'text-emerald-400'} hover:scale-110 transition-all`}
-                title="Voice Live Agent"
-              >
-                <HeartPulse className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="h-4 w-px bg-white/10" />
-            <div className={`flex items-center gap-2 px-4 py-2 ${isDark ? 'bg-slate-900/50 border-white/5' : 'bg-slate-100 border-slate-300'} rounded-xl border`}>
-              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
-              <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest">BRIDGE_ACTIVE</span>
-            </div>
           </div>
-          <div className="flex items-center gap-6">
-            <HeartPulse className="w-4 h-4 text-rose-500 animate-pulse" />
-            <span className={`text-[9px] font-black ${isDark ? 'text-slate-600' : 'text-slate-400'} uppercase tracking-[0.5em]`}>
-              Core_Matrix_Stable
-            </span>
+
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 border border-emerald-200 rounded-lg">
+              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-[10px] font-semibold text-emerald-600">Connected</span>
+            </div>
           </div>
         </div>
 
-        <div className="flex-1 flex flex-col p-6 overflow-hidden">
-          <div className="flex-1 glass rounded-3xl overflow-hidden relative shadow-2xl border border-white/5">
-            <Terminal
-              history={state.history}
-              onSend={(txt) => { playClick(); processInput(txt); }}
-              isProcessing={isProcessing}
-              onExecute={(id) => { playClick(); processInput(`MANUAL_SIGNAL: ${id}`); }}
-              onToggleExplain={(i) => {
-                playClick();
-                const h = [...state.history];
-                h[i].isExplainMode = !h[i].isExplainMode;
-                setState(p => ({ ...p, history: h }));
-              }}
-              isVoiceActive={isVoiceActive}
-              onToggleVoice={toggleVoice}
-            />
-          </div>
+        {/* Chat */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <Terminal
+            history={state.history}
+            onSend={(txt) => { playClick(); processInput(txt); }}
+            isProcessing={isProcessing}
+            onExecute={(id) => { playClick(); processInput(`MANUAL_SIGNAL: ${id}`); }}
+            onToggleExplain={(i) => {
+              playClick();
+              const h = [...state.history];
+              h[i].isExplainMode = !h[i].isExplainMode;
+              setState(p => ({ ...p, history: h }));
+            }}
+            isVoiceActive={isVoiceActive}
+            onToggleVoice={toggleVoice}
+          />
         </div>
       </main>
-      <div className="w-[380px] hidden xl:block">
-        <RightPanel state={state} onToggleCheck={() => { playClick(); }} onUpdateStack={() => { playClick(); }} />
-      </div>
     </div>
   );
 };
