@@ -4,17 +4,34 @@ import { Activity, Radio, Mic, Bot } from 'lucide-react';
 interface AppHeaderProps {
     isDark: boolean;
     isVoiceActive: boolean;
+    emotionState?: 'normal' | 'happy' | 'angry';
 }
 
-const AppHeader: React.FC<AppHeaderProps> = ({ isDark, isVoiceActive }) => {
+const AppHeader: React.FC<AppHeaderProps> = ({ isDark, isVoiceActive, emotionState = 'normal' }) => {
+
+    // Emotion-based styling
+    let accentColor = 'text-violet-500';
+    let ringColor = 'ring-violet-500';
+    let gradientBg = '';
+
+    if (emotionState === 'angry') {
+        accentColor = 'text-red-500';
+        ringColor = 'ring-red-500';
+        gradientBg = isDark ? 'bg-red-500/10 border-red-500/20' : 'bg-red-50 border-red-200';
+    } else if (emotionState === 'happy') {
+        accentColor = 'text-emerald-500';
+        ringColor = 'ring-emerald-500';
+        gradientBg = isDark ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-emerald-50 border-emerald-200';
+    }
+
     return (
-        <header className={`h-[72px] shrink-0 flex items-center justify-between px-8 border-b transition-all ${isDark ? 'bg-[#0f1115] border-white/5 text-white shadow-sm' : 'bg-white border-slate-100 text-slate-800 shadow-sm'} z-10 w-full`}>
+        <header className={`h-[72px] shrink-0 flex items-center justify-between px-8 border-b transition-all duration-700 ${isDark ? 'bg-[#0f1115] border-white/5 text-white shadow-sm' : 'bg-white border-slate-100 text-slate-800 shadow-sm'} z-10 w-full`}>
             <div className="flex items-center gap-4">
                 {/* Animated Avatar / Logo */}
-                <div className={`relative w-10 h-10 rounded-2xl flex items-center justify-center ${isDark ? 'bg-white/5 border border-white/10' : 'bg-slate-50 border border-slate-200'} shadow-inner`}>
-                    <Bot className={`w-5 h-5 ${isVoiceActive ? 'text-violet-500 animate-pulse' : 'text-slate-400'}`} />
+                <div className={`relative w-10 h-10 rounded-2xl flex items-center justify-center transition-all duration-700 ${gradientBg || (isDark ? 'bg-white/5 border border-white/10' : 'bg-slate-50 border border-slate-200')} shadow-inner`}>
+                    <Bot className={`w-5 h-5 transition-colors duration-700 ${isVoiceActive ? `${accentColor} animate-pulse` : 'text-slate-400'}`} />
                     {isVoiceActive && (
-                        <div className="absolute inset-0 rounded-2xl ring-2 ring-violet-500 ring-offset-2 ring-offset-transparent animate-ping opacity-20" />
+                        <div className={`absolute inset-0 rounded-2xl ring-2 ${ringColor} ring-offset-2 ring-offset-transparent animate-ping opacity-20`} />
                     )}
                 </div>
 

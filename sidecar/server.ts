@@ -139,10 +139,27 @@ wss.on('connection', (ws) => {
                             }
                         },
                         inputAudioTranscription: {},
-                        outputAudioTranscription: {}
+                        outputAudioTranscription: {},
+                        tools: [{
+                            functionDeclarations: [
+                                {
+                                    name: "execute_action",
+                                    description: "Execute local system commands on user PC, read/write files, or open tools.",
+                                    parameters: {
+                                        type: "OBJECT",
+                                        properties: {
+                                            action: { type: "STRING", enum: ["run_command", "write_file", "read_file"] },
+                                            target: { type: "STRING", description: "Command to execute or file path." },
+                                            args: { type: "STRING", description: "File content if action is write_file." }
+                                        },
+                                        required: ["action", "target"]
+                                    }
+                                }
+                            ]
+                        }]
                     },
                     callbacks: {
-                        onmessage: (msg: any) => {
+                        onmessage: async (msg: any) => {
                             try {
                                 // --- Audio response chunks ---
                                 const parts = msg.serverContent?.modelTurn?.parts || [];
@@ -156,6 +173,31 @@ wss.on('connection', (ws) => {
                                     }
                                     if (part.text) {
                                         ws.send(JSON.stringify({ type: 'VOICE_TEXT', text: part.text }));
+                                    }
+                                    // Extract Function Call
+                                    if (part.functionCall) {
+                                        const { name, args } = part.functionCall;
+                                        if (name === 'execute_action') {
+                                            ws.send(JSON.stringify({ type: 'VOICE_TEXT', text: `[SYSTEM: Running tool ${args.action} on ${args.target}]` }));
+                                            executeAction(args.action, args.target, args.args).then((res) => {
+                                                try {
+                                                    session.sendClientContent({
+                                                        turns: [{
+                                                            role: 'user',
+                                                            parts: [{
+                                                                functionResponse: {
+                                                                    name: 'execute_action',
+                                                                    response: { result: res.output || res.error || "done" }
+                                                                }
+                                                            }]
+                                                        }],
+                                                        turnComplete: true
+                                                    });
+                                                } catch (e) {
+                                                    console.error('[AI_LIVE]: sendClientContent functionResponse error', e);
+                                                }
+                                            });
+                                        }
                                     }
                                 }
 
@@ -226,6 +268,19 @@ wss.on('connection', (ws) => {
                         session.sendClientContent({ turns: message.text, turnComplete: true });
                     } catch (e: any) {
                         console.error('[AI_LIVE]: sendClientContent error:', e.message);
+                    }
+                }
+
+            } else if (message.type === 'VOICE_VISION_FRAME') {
+                // Realtime vision chunk from screen share
+                const session = liveSessions.get(ws);
+                if (session && message.data) {
+                    try {
+                        session.sendRealtimeInput({
+                            media: { data: message.data, mimeType: 'image/jpeg' }
+                        });
+                    } catch (e: any) {
+                        console.error('[AI_LIVE]: sendRealtimeInput vision error:', e.message);
                     }
                 }
 

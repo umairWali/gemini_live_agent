@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Mic, MicOff, Send, BrainCircuit, User, Bot } from 'lucide-react';
+import { Mic, MicOff, Send, User, Bot, Monitor, MonitorOff } from 'lucide-react';
 import { AgentRole, Message } from '../types';
 
 interface TerminalProps {
@@ -12,10 +12,14 @@ interface TerminalProps {
   isVoiceActive?: boolean;
   onToggleVoice?: () => void;
   isDark?: boolean;
+  isScreenSharing?: boolean;
+  onToggleScreenShare?: () => void;
 }
 
 const Terminal: React.FC<TerminalProps> = ({
-  history, onSend, isProcessing, onExecute, onToggleExplain, isVoiceActive, onToggleVoice, isDark = false
+  history, onSend, isProcessing, onExecute, onToggleExplain,
+  isVoiceActive, onToggleVoice, isDark = false,
+  isScreenSharing, onToggleScreenShare
 }) => {
   const [input, setInput] = useState('');
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -152,6 +156,25 @@ const Terminal: React.FC<TerminalProps> = ({
         >
           {isVoiceActive ? <Mic size={18} /> : <MicOff size={18} />}
         </button>
+
+        {/* Screen Share button */}
+        {onToggleScreenShare && (
+          <button
+            type="button"
+            onClick={onToggleScreenShare}
+            title={isScreenSharing ? 'Stop Screen Share' : 'Start Screen Share'}
+            style={{
+              width: 40, height: 40, borderRadius: 12, flexShrink: 0,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              border: isDark ? '1px solid #374151' : '1px solid #e5e7eb', cursor: 'pointer',
+              background: isScreenSharing ? '#8b5cf6' : (isDark ? '#1f2937' : '#f9fafb'),
+              color: isScreenSharing ? '#ffffff' : (isDark ? '#9ca3af' : '#6b7280'),
+              boxShadow: isScreenSharing ? '0 0 15px rgba(139,92,246,0.5)' : 'none'
+            }}
+          >
+            {isScreenSharing ? <Monitor size={18} /> : <MonitorOff size={18} />}
+          </button>
+        )}
 
         {/* Text input */}
         <form onSubmit={handleSubmit} style={{ flex: 1, display: 'flex', gap: 8 }}>

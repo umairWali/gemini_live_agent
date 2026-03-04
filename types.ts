@@ -161,6 +161,7 @@ export interface AppState {
   evolutionLogs: SelfEvolutionLog[];
   telemetry: TelemetryPoint[];
   osState: OSState;
+  emotionState?: 'normal' | 'happy' | 'angry';
   realtimeMetrics: { cpu: number; ram: number };
   githubFeed: any[];
   isSessionStarted: boolean;

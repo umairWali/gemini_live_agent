@@ -18,8 +18,14 @@ The **Personal AI Operator** is a real-time, bidirectional voice agent that acts
 - **Real-Time Voice Streaming**: Uses the Gemini Live API via WebSockets for sub-second bidirectional audio streaming (no browser-based pseudo-TTS).
 - **Interruption Handling**: The agent understands when you interrupt it (barge-in capability) naturally.
 - **Multimodal Feedback**: Streams audio while simultaneously updating a synchronized text UI.
-- **Context-Aware**: Integrates with an internal autonomous event bus.
 - **Bilingual**: Understands and responds in Urdu and English natively.
+- **Cloud Native**: Deployed on Google Cloud Run for high scalability.
+
+### ✨ Elite Features (Gemini Live Power)
+- **🖥️ Live Desktop Vision**: Enable "Screen Share" to let the agent see your desktop in real-time. It uses JPEG frame streaming directly into the Gemini Live session to help you with what you see.
+- **🛠️ Dynamic Tool Calling**: The agent can now execute local system actions (run commands, write files, read docs) by dynamically calling internal sidecar tools during the live session.
+- **🌈 Sentiment-Aware UI**: The interface dynamically shifts its theme and glow effects (Happy/Angry/Normal) based on the real-time sentiment analysis of your voice input.
+- **💾 Session History**: Save and load previous voice sessions from the sidebar to keep track of your conversations.
 
 ---
 

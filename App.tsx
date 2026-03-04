@@ -55,11 +55,16 @@ const OS_TOOL_DECLARATION: FunctionDeclaration = {
   }
 };
 
-const MASTER_SYSTEM_PROMPT = `You are Personal AI Operator — a smart, helpful AI assistant.
+const MASTER_SYSTEM_PROMPT = `You are Personal Operator — a smart, helpful AI assistant.
 
-Your job is to answer the user's questions clearly and helpfully. Respond in the SAME LANGUAGE the user writes in (Urdu, English, or mixed). Never output code blocks or planning steps unless the user explicitly asks for code. Just have a natural, helpful conversation.
+Your job is to answer the user's questions clearly and helpfully. Respond in the SAME LANGUAGE the user writes in (Urdu, English, or mixed). 
 
-If the user asks about a topic, give a clear direct answer. If they ask you to do a system task, do it. Keep responses concise and friendly.`;
+ELITE CAPABILITIES:
+1. VISION: You can see the user's screen if they enable screen sharing. Use this to help them with what they are looking at.
+2. TOOLS: You have a tool called 'execute_action'. Use it to run commands, read files, or write files on the user's PC when requested.
+
+Keep responses natural and helpful.`;
+
 
 const App: React.FC = () => {
   return (
@@ -119,6 +124,7 @@ const AppContent: React.FC = () => {
       agentActivities: Object.values(AgentRole).map(role => ({ agent: role as AgentRole, status: 'idle', message: 'Standby', timestamp: Date.now() })),
       history: [], savedSessions: [], envSignals: [], evolutionLogs: [], telemetry: [],
       osState: { connected: false, platform: 'linux', runningApps: ['Terminal', 'Code', 'Chrome'], bridgeUrl: '' },
+      emotionState: 'normal',
       realtimeMetrics: { cpu: 0, ram: 0 },
       githubFeed: [],
       isSessionStarted: false,
@@ -138,10 +144,55 @@ const AppContent: React.FC = () => {
   const audioContextRef = useRef<AudioContext | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
 
+  const [isScreenSharing, setIsScreenSharing] = useState(false);
+  const screenStreamRef = useRef<MediaStream | null>(null);
+  const screenCaptureIntervalRef = useRef<any>(null);
+
+  const toggleScreenShare = useCallback(async () => {
+    const ws = (window as any).operatorWs as WebSocket;
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+      addToast({ type: 'error', title: 'Connection Error', message: 'WebSocket not connected.' });
+      return;
+    }
+    if (isScreenSharing) {
+      setIsScreenSharing(false);
+      if (screenCaptureIntervalRef.current) clearInterval(screenCaptureIntervalRef.current);
+      if (screenStreamRef.current) screenStreamRef.current.getTracks().forEach(t => t.stop());
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
+      screenStreamRef.current = stream;
+      setIsScreenSharing(true);
+      const video = document.createElement('video');
+      video.srcObject = stream;
+      video.play();
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      // Set low res
+      canvas.width = 640;
+      canvas.height = 480;
+      screenCaptureIntervalRef.current = setInterval(() => {
+        if (!ctx || video.videoWidth === 0) return;
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const base64Jpeg = canvas.toDataURL('image/jpeg', 0.5);
+        const base64Data = base64Jpeg.replace(/^data:image\/jpeg;base64,/, '');
+        ws.send(JSON.stringify({ type: 'VOICE_VISION_FRAME', data: base64Data }));
+      }, 1000); // 1 FPS
+
+      stream.getVideoTracks()[0].onended = () => {
+        setIsScreenSharing(false);
+        if (screenCaptureIntervalRef.current) clearInterval(screenCaptureIntervalRef.current);
+      };
+    } catch (err: any) {
+      console.error(err);
+      addToast({ type: 'error', title: 'Screen Share Failed', message: err.message });
+    }
+  }, [isScreenSharing]);
+
   const recognitionRef = useRef<any>(null);
   const playbackCtxRef = useRef<AudioContext | null>(null);
   const playbackScheduleRef = useRef<number>(0);
-
 
   const processInputRef = useRef<((input: string, origin?: 'user' | 'system') => Promise<void>) | null>(null);
 
@@ -356,7 +407,7 @@ const AppContent: React.FC = () => {
           events: p.daemon.events.map(e => e.id === event.id ? { ...e, status: 'PLANNING' } : e)
         }
       }));
-      processInput(`[IPC_EVENT_DETECTED]: Source: ${event.source}, Type: ${event.type}. Metadata: ${JSON.stringify(event.metadata)}. Propose plan aligned with core GOALS.`, 'system');
+      processInput(`[IPC_EVENT_DETECTED]: Source: ${event.source}, Type: ${event.type}.Metadata: ${JSON.stringify(event.metadata)}. Propose plan aligned with core GOALS.`, 'system');
     }
   }, [state.daemon.events, state.isAutonomous, isProcessing]);
 
@@ -365,7 +416,7 @@ const AppContent: React.FC = () => {
   const initChat = useCallback(() => {
     chatRef.current = {
       sendMessage: async ({ message }: { message: string }) => {
-        const response = await fetch(`${state.osState.bridgeUrl}/ai/chat`, {
+        const response = await fetch(`${state.osState.bridgeUrl} /ai/chat`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -431,8 +482,17 @@ const AppContent: React.FC = () => {
         } else if (data.type === 'VOICE_INPUT_TEXT') {
           // Add user's transcribed text
           if (data.text) {
+            let parsedEmotion: 'normal' | 'happy' | 'angry' = 'normal';
+            const lowerText = data.text.toLowerCase();
+            if (/(angry|hate|stupid|idiot|mad|frustrat|bad|worst|gussa|bakwas)/.test(lowerText)) {
+              parsedEmotion = 'angry';
+            } else if (/(happy|great|awesome|cool|love|good|best|fantastic|khush|zabardast|acha)/.test(lowerText)) {
+              parsedEmotion = 'happy';
+            }
+
             setState(prev => ({
               ...prev,
+              emotionState: parsedEmotion,
               history: [...prev.history, {
                 role: 'user',
                 text: data.text,
@@ -738,7 +798,7 @@ const AppContent: React.FC = () => {
       />
       <main className={`flex-1 flex flex-col relative overflow-hidden transition-colors ${isDark ? 'bg-black' : 'bg-slate-50'}`}>
 
-        <AppHeader isDark={isDark} isVoiceActive={isVoiceActive} />
+        <AppHeader isDark={isDark} isVoiceActive={isVoiceActive} emotionState={state.emotionState} />
 
         {/* Chat */}
         <div className="flex-1 flex flex-col overflow-hidden">
@@ -756,6 +816,8 @@ const AppContent: React.FC = () => {
             isVoiceActive={isVoiceActive}
             onToggleVoice={toggleVoice}
             isDark={isDark}
+            isScreenSharing={isScreenSharing}
+            onToggleScreenShare={toggleScreenShare}
           />
         </div>
       </main>
