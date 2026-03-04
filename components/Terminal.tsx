@@ -53,12 +53,15 @@ const Terminal: React.FC<TerminalProps> = ({
       {/* Chat Messages */}
       <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3 custom-scrollbar">
         {visibleHistory.length === 0 && (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', textAlign: 'center', opacity: isDark ? 0.9 : 0.7, paddingTop: 48 }}>
-            <div style={{ width: 80, height: 80, borderRadius: 24, background: isDark ? '#1f2937' : '#e5e7eb', border: isDark ? '1px solid #374151' : 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16, overflow: 'hidden', boxShadow: '0 10px 25px -5px rgba(139, 92, 246, 0.3)' }}>
-              <img src="/logo.png" alt="Logo" style={{ width: '100%', height: '100%', objectCover: 'cover' }} />
+          <div className="flex flex-col items-center justify-center h-full text-center py-20 animate-in fade-in zoom-in duration-1000">
+            <div className={`w-28 h-28 rounded-[2.5rem] flex items-center justify-center mb-8 overflow-hidden shadow-[0_20px_50px_rgba(139,92,246,0.3)] border-2 ${isDark ? 'bg-slate-900 border-white/10' : 'bg-white border-slate-100'}`}>
+              <img src="/logo.png" alt="Logo" className="w-full h-full object-cover scale-110" />
             </div>
-            <p style={{ margin: 0, fontSize: 16, fontWeight: 800, color: isDark ? '#f3f4f6' : '#374151', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Personal Operator</p>
-            <p style={{ margin: '8px 0 0', fontSize: 13, color: isDark ? '#9ca3af' : '#6b7280', maxWidth: 280, lineHeight: 1.5 }}>Type a message or use the mic to speak.</p>
+            <h2 className={`text-2xl font-black uppercase tracking-[0.4em] mb-4 ${isDark ? 'text-white' : 'text-slate-900'}`}>Personal_Operator</h2>
+            <p className={`text-[13px] font-bold tracking-widest uppercase opacity-40 max-w-sm leading-loose ${isDark ? 'text-slate-300' : 'text-slate-500'}`}>
+              System Online // Biometric Voice Auth Active<br />
+              Awaiting Directives via Voice or Terminal
+            </p>
           </div>
         )}
 
@@ -135,76 +138,47 @@ const Terminal: React.FC<TerminalProps> = ({
       </div>
 
       {/* Input Bar */}
-      <div style={{
-        borderTop: isDark ? '1px solid #1f2937' : '1px solid #e5e7eb', padding: '12px 16px',
-        background: isDark ? '#0f1115' : '#ffffff', display: 'flex', alignItems: 'center', gap: 10
-      }}>
-        {/* Mic button */}
-        <button
-          type="button"
-          onClick={onToggleVoice}
-          title={isVoiceActive ? 'Stop voice' : 'Start voice'}
-          className={isVoiceActive ? 'mic-active' : ''}
-          style={{
-            width: 40, height: 40, borderRadius: 12, flexShrink: 0,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            border: isDark ? '1px solid #374151' : '1px solid #e5e7eb', cursor: 'pointer',
-            background: isVoiceActive ? '#ef4444' : (isDark ? '#1f2937' : '#f9fafb'),
-            color: isVoiceActive ? '#ffffff' : (isDark ? '#9ca3af' : '#6b7280'),
-            boxShadow: isVoiceActive ? '0 0 15px rgba(239,68,68,0.5)' : 'none'
-          }}
-        >
-          {isVoiceActive ? <Mic size={18} /> : <MicOff size={18} />}
-        </button>
-
-        {/* Screen Share button */}
-        {onToggleScreenShare && (
+      <div className={`border-t p-4 flex items-center gap-3 transition-colors ${isDark ? 'bg-black border-white/5' : 'bg-white border-slate-200 shadow-2xl z-10'}`}>
+        <div className="flex gap-2 p-1.5 bg-slate-900/50 rounded-2xl border border-white/5">
+          {/* Mic button */}
           <button
             type="button"
-            onClick={onToggleScreenShare}
-            title={isScreenSharing ? 'Stop Screen Share' : 'Start Screen Share'}
-            style={{
-              width: 40, height: 40, borderRadius: 12, flexShrink: 0,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              border: isDark ? '1px solid #374151' : '1px solid #e5e7eb', cursor: 'pointer',
-              background: isScreenSharing ? '#8b5cf6' : (isDark ? '#1f2937' : '#f9fafb'),
-              color: isScreenSharing ? '#ffffff' : (isDark ? '#9ca3af' : '#6b7280'),
-              boxShadow: isScreenSharing ? '0 0 15px rgba(139,92,246,0.5)' : 'none'
-            }}
+            onClick={onToggleVoice}
+            title={isVoiceActive ? 'Stop voice' : 'Start voice'}
+            className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all active:scale-90 ${isVoiceActive ? 'bg-rose-500 text-white shadow-[0_0_20px_rgba(244,63,94,0.4)]' : 'bg-white/5 text-slate-400 hover:text-white hover:bg-white/10'}`}
           >
-            {isScreenSharing ? <Monitor size={18} /> : <MonitorOff size={18} />}
+            {isVoiceActive ? <Mic size={20} strokeWidth={2.5} /> : <MicOff size={20} />}
           </button>
-        )}
+
+          {/* Screen Share button */}
+          {onToggleScreenShare && (
+            <button
+              type="button"
+              onClick={onToggleScreenShare}
+              title={isScreenSharing ? 'Stop Screen Share' : 'Start Screen Share'}
+              className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all active:scale-90 ${isScreenSharing ? 'bg-sky-500 text-white shadow-[0_0_20px_rgba(14,165,233,0.4)]' : 'bg-white/5 text-slate-400 hover:text-white hover:bg-white/10'}`}
+            >
+              {isScreenSharing ? <Monitor size={20} strokeWidth={2.5} /> : <MonitorOff size={20} />}
+            </button>
+          )}
+        </div>
 
         {/* Text input */}
-        <form onSubmit={handleSubmit} style={{ flex: 1, display: 'flex', gap: 8 }}>
+        <form onSubmit={handleSubmit} className="flex-1 flex gap-3">
           <input
             ref={inputRef}
             value={input}
             onChange={e => setInput(e.target.value)}
-            placeholder="Type a message..."
+            placeholder="Talk to your Operator..."
             disabled={isProcessing}
-            style={{
-              flex: 1, padding: '10px 14px', borderRadius: 12,
-              border: isDark ? '1px solid #374151' : '1px solid #e5e7eb',
-              fontSize: 14, color: isDark ? '#f3f4f6' : '#111827',
-              background: isDark ? '#1f2937' : '#f9fafb', outline: 'none',
-              fontFamily: 'Inter, sans-serif'
-            }}
+            className={`flex-1 px-6 py-3.5 rounded-2xl text-[14px] font-medium outline-none transition-all ${isDark ? 'bg-white/5 border border-white/10 text-white focus:border-violet-500/50' : 'bg-slate-50 border border-slate-200 text-slate-900 focus:border-violet-400'}`}
           />
           <button
             type="submit"
             disabled={!input.trim() || isProcessing}
-            style={{
-              width: 40, height: 40, borderRadius: 12, flexShrink: 0,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: input.trim() && !isProcessing ? '#8b5cf6' : (isDark ? '#1f2937' : '#e5e7eb'),
-              color: input.trim() && !isProcessing ? '#ffffff' : (isDark ? '#6b7280' : '#9ca3af'),
-              border: 'none', cursor: input.trim() && !isProcessing ? 'pointer' : 'not-allowed',
-              boxShadow: input.trim() && !isProcessing ? '0 4px 10px rgba(139,92,246,0.3)' : 'none'
-            }}
+            className={`w-14 h-11 rounded-xl flex items-center justify-center transition-all active:scale-90 ${input.trim() && !isProcessing ? 'bg-white text-slate-900 shadow-xl' : 'bg-white/5 text-slate-600 cursor-not-allowed opacity-50'}`}
           >
-            <Send size={16} />
+            <Send size={18} strokeWidth={3} />
           </button>
         </form>
       </div>

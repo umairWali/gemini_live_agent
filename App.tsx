@@ -386,8 +386,8 @@ const AppContent: React.FC = () => {
   }, []);
 
   return (
-    <div className={`flex w-screen h-screen overflow-hidden ${isDark ? 'bg-black text-white' : 'bg-slate-50 text-slate-900'}`} style={{ fontFamily: 'Inter, sans-serif' }}>
-      <div className={`flex flex-col border-r transition-colors w-72 h-full overflow-hidden ${isDark ? 'bg-black border-white/5' : 'bg-white border-slate-200'} z-20 shrink-0`}>
+    <div className={`flex w-screen h-screen overflow-hidden ${isDark ? 'bg-black text-white' : 'bg-slate-50 text-slate-900'} font-sans tracking-tight`}>
+      <div className={`flex flex-col border-r transition-colors w-72 h-full overflow-hidden ${isDark ? 'bg-slate-950 border-white/5 shadow-2xl' : 'bg-white border-slate-200'} z-20 shrink-0`}>
         <ChatSidebar
           isDark={isDark}
           savedSessions={state.savedSessions || []}
@@ -402,7 +402,7 @@ const AppContent: React.FC = () => {
             }
           }}
         />
-        <div className="p-4 overflow-y-auto custom-scrollbar flex-1 border-t border-white/5">
+        <div className="p-4 overflow-y-auto custom-scrollbar flex-1 border-t border-white/5 space-y-4">
           <MissionBoard goals={state.goals} isDark={isDark} />
         </div>
       </div>

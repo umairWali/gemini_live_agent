@@ -121,18 +121,18 @@ const RightPanel: React.FC<RightPanelProps> = ({ state }) => {
             <h2 className="text-[12px] font-black uppercase tracking-[0.4em] text-slate-500 flex items-center gap-4"><Monitor className="w-5 h-5" /> Orchestrator_HUD</h2>
 
             <div className="grid grid-cols-2 gap-5">
-              <div className="glass-card p-6 rounded-3xl text-center relative overflow-hidden group">
-                <p className="text-[9px] font-black text-slate-600 uppercase mb-2">CPU_LOAD</p>
-                <p className="text-3xl font-black text-violet-400">{state.realtimeMetrics?.cpu || 0}%</p>
-                <div className="h-1 w-12 bg-violet-500/20 mx-auto mt-3 rounded-full overflow-hidden">
-                  <div className="h-full bg-violet-400" style={{ width: `${state.realtimeMetrics?.cpu || 0}%` }} />
+              <div className="bg-slate-50/90 backdrop-blur-md p-6 rounded-3xl text-center relative overflow-hidden group border border-white/20 shadow-[0_8px_32px_rgba(255,255,255,0.1)]">
+                <p className="text-[9px] font-black text-slate-500 uppercase mb-2">CPU_LOAD</p>
+                <p className="text-3xl font-black text-slate-900">{state.realtimeMetrics?.cpu || 0}%</p>
+                <div className="h-1.5 w-12 bg-slate-200 mx-auto mt-3 rounded-full overflow-hidden">
+                  <div className="h-full bg-violet-600 shadow-[0_0_8px_rgba(139,92,246,0.5)]" style={{ width: `${state.realtimeMetrics?.cpu || 0}%` }} />
                 </div>
               </div>
-              <div className="glass-card p-6 rounded-3xl text-center relative overflow-hidden group">
-                <p className="text-[9px] font-black text-slate-600 uppercase mb-2">RAM_USAGE</p>
-                <p className="text-3xl font-black text-sky-400">{state.realtimeMetrics?.ram || 0}%</p>
-                <div className="h-1 w-12 bg-sky-500/20 mx-auto mt-3 rounded-full overflow-hidden">
-                  <div className="h-full bg-sky-400" style={{ width: `${state.realtimeMetrics?.ram || 0}%` }} />
+              <div className="bg-slate-50/90 backdrop-blur-md p-6 rounded-3xl text-center relative overflow-hidden group border border-white/20 shadow-[0_8px_32px_rgba(255,255,255,0.1)]">
+                <p className="text-[9px] font-black text-slate-500 uppercase mb-2">RAM_USAGE</p>
+                <p className="text-3xl font-black text-slate-900">{state.realtimeMetrics?.ram || 0}%</p>
+                <div className="h-1.5 w-12 bg-slate-200 mx-auto mt-3 rounded-full overflow-hidden">
+                  <div className="h-full bg-sky-600 shadow-[0_0_8px_rgba(2,132,199,0.5)]" style={{ width: `${state.realtimeMetrics?.ram || 0}%` }} />
                 </div>
               </div>
             </div>

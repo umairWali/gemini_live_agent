@@ -10,13 +10,13 @@ interface ChatSidebarProps {
 
 const ChatSidebar: React.FC<ChatSidebarProps> = ({ onNewChat, isDark, savedSessions = [], onSelectSession }) => {
     return (
-        <aside className={`w-64 border-r flex flex-col transition-colors ${isDark ? 'bg-gray-900 border-gray-800 text-white' : 'bg-white border-gray-200 text-gray-800'} z-20 shrink-0`}>
-            <div className="p-4">
+        <aside className={`w-64 border-r flex flex-col transition-colors ${isDark ? 'bg-slate-950 border-white/5 text-white shadow-4xl' : 'bg-white border-gray-200 text-gray-800'} z-20 shrink-0`}>
+            <div className="p-6">
                 <button
                     onClick={onNewChat}
-                    className={`w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-semibold transition-all shadow-lg active:scale-95 ${isDark ? 'bg-violet-600 hover:bg-violet-500 text-white shadow-violet-500/20' : 'bg-violet-600 hover:bg-violet-700 text-white shadow-violet-500/30'}`}
+                    className={`group w-full flex items-center justify-center gap-3 px-6 py-3.5 rounded-2xl font-black uppercase tracking-widest text-[11px] transition-all relative overflow-hidden active:scale-95 shadow-[0_8px_30px_rgb(255,255,255,0.1)] ${isDark ? 'bg-white text-slate-900 hover:bg-sky-400 hover:shadow-sky-400/20' : 'bg-slate-900 text-white hover:bg-slate-800 shadow-slate-900/10'}`}
                 >
-                    <Plus size={18} />
+                    <Plus size={16} strokeWidth={3} className="group-hover:rotate-90 transition-transform duration-300" />
                     New Session
                 </button>
             </div>

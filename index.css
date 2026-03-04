@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap');
 
 :root {
   --bg: #f7f8fa;
@@ -28,6 +28,15 @@ body {
   height: 100vh;
   width: 100vw;
   overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+.font-black {
+  font-weight: 900;
+}
+
+.shadow-4xl {
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
 }
 
 /* Glass Cards */
@@ -75,8 +84,12 @@ body {
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #e5e7eb;
+  background: rgba(255, 255, 255, 0.1);
   border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
 }
 
 /* Input focus */

@@ -111,7 +111,7 @@ const NeuralKnowledgeGraph: React.FC<KnowledgeGraphProps> = ({ data, isDark }) =
                     </svg>
                 </div>
 
-                <p className={`mt-6 text-[9px] font-bold text-center tracking-[0.2em] leading-relaxed uppercase opacity-40 px-4 ${isDark ? 'text-slate-300' : 'text-slate-500'}`}>
+                <p className={`mt-6 text-[10px] font-bold text-center tracking-[0.2em] leading-relaxed uppercase px-4 ${isDark ? 'text-slate-200' : 'text-slate-500'}`}>
                     Live Visual memory mapping based on long-term user behavior patterns.
                 </p>
             </div>
