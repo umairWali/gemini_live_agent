@@ -5,10 +5,10 @@ import {
   WatcherEvent, RecoveryAttempt, Message, ErrorCategory, TelemetryPoint,
   AuditTrailEntry
 } from './types';
-import Sidebar from './components/Sidebar';
+import ChatSidebar from './components/ChatSidebar';
 import Terminal from './components/Terminal';
 import RightPanel from './components/RightPanel';
-import Header from './components/Header';
+import AppHeader from './components/AppHeader';
 import { Zap, PlayCircle, HeartPulse } from 'lucide-react';
 import type { FunctionDeclaration } from "@google/genai";
 
@@ -712,7 +712,17 @@ const AppContent: React.FC = () => {
         notificationsEnabled={notificationsEnabled}
       />
 
-      <main className="flex-1 flex flex-col relative overflow-hidden">        {/* Chat */}
+      <ChatSidebar isDark={isDark} onNewChat={() => {
+        if (!isProcessing) {
+          playClick();
+          setState(prev => ({ ...prev, history: [] }));
+        }
+      }} />
+      <main className={`flex-1 flex flex-col relative overflow-hidden transition-colors ${isDark ? 'bg-black' : 'bg-slate-50'}`}>
+
+        <AppHeader isDark={isDark} isVoiceActive={isVoiceActive} />
+
+        {/* Chat */}
         <div className="flex-1 flex flex-col overflow-hidden">
           <Terminal
             history={state.history}
@@ -727,6 +737,7 @@ const AppContent: React.FC = () => {
             }}
             isVoiceActive={isVoiceActive}
             onToggleVoice={toggleVoice}
+            isDark={isDark}
           />
         </div>
       </main>

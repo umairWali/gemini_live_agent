@@ -11,10 +11,11 @@ interface TerminalProps {
   onToggleExplain?: (index: number) => void;
   isVoiceActive?: boolean;
   onToggleVoice?: () => void;
+  isDark?: boolean;
 }
 
 const Terminal: React.FC<TerminalProps> = ({
-  history, onSend, isProcessing, onExecute, onToggleExplain, isVoiceActive, onToggleVoice
+  history, onSend, isProcessing, onExecute, onToggleExplain, isVoiceActive, onToggleVoice, isDark = false
 }) => {
   const [input, setInput] = useState('');
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -44,16 +45,16 @@ const Terminal: React.FC<TerminalProps> = ({
   });
 
   return (
-    <div className="flex-1 flex flex-col h-full" style={{ background: '#f7f8fa', fontFamily: 'Inter, sans-serif' }}>
+    <div className={`flex-1 flex flex-col h-full transition-colors ${isDark ? 'bg-black text-white' : 'bg-[#f7f8fa] text-slate-800'}`} style={{ fontFamily: 'Inter, sans-serif' }}>
       {/* Chat Messages */}
       <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3 custom-scrollbar">
         {visibleHistory.length === 0 && (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', textAlign: 'center', opacity: 0.5, paddingTop: 48 }}>
-            <div style={{ width: 56, height: 56, borderRadius: 16, background: '#e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 12 }}>
-              <Bot size={24} color="#6b7280" />
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', textAlign: 'center', opacity: isDark ? 0.7 : 0.5, paddingTop: 48 }}>
+            <div style={{ width: 56, height: 56, borderRadius: 16, background: isDark ? '#1f2937' : '#e5e7eb', border: isDark ? '1px solid #374151' : 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 12 }}>
+              <Bot size={24} color={isDark ? '#9ca3af' : "#6b7280"} />
             </div>
-            <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: '#374151' }}>Personal AI Operator</p>
-            <p style={{ margin: '6px 0 0', fontSize: 12, color: '#6b7280', maxWidth: 240 }}>Type a message or use the mic to speak.</p>
+            <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: isDark ? '#f3f4f6' : '#374151' }}>Personal AI Operator</p>
+            <p style={{ margin: '6px 0 0', fontSize: 12, color: isDark ? '#9ca3af' : '#6b7280', maxWidth: 240 }}>Type a message or use the mic to speak.</p>
           </div>
         )}
 
@@ -75,16 +76,15 @@ const Terminal: React.FC<TerminalProps> = ({
               <div style={{ maxWidth: '76%' }}>
                 {/* Label removed as requested */}
 
-                {/* Bubble */}
                 <div style={{
                   borderRadius: msg.role === 'user' ? '18px 4px 18px 18px' : '4px 18px 18px 18px',
                   padding: '10px 14px',
                   fontSize: 14,
                   lineHeight: 1.6,
-                  background: msg.role === 'user' ? '#1f2937' : '#ffffff',
-                  color: msg.role === 'user' ? '#ffffff' : '#111827',
-                  border: msg.role === 'user' ? 'none' : '1px solid #e5e7eb',
-                  boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+                  background: msg.role === 'user' ? '#8b5cf6' : (isDark ? '#111827' : '#ffffff'),
+                  color: msg.role === 'user' ? '#ffffff' : (isDark ? '#f3f4f6' : '#111827'),
+                  border: msg.role === 'user' ? 'none' : (isDark ? '1px solid #1f2937' : '1px solid #e5e7eb'),
+                  boxShadow: isDark ? '0 4px 6px rgba(0,0,0,0.3)' : '0 1px 4px rgba(0,0,0,0.05)',
                   whiteSpace: 'pre-wrap',
                   wordBreak: 'break-word'
                 }}>
@@ -98,8 +98,9 @@ const Terminal: React.FC<TerminalProps> = ({
               {msg.role === 'user' && (
                 <div style={{
                   width: 30, height: 30, borderRadius: 10,
-                  background: '#1f2937', display: 'flex',
-                  alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 2
+                  background: isDark ? '#374151' : '#1f2937', display: 'flex',
+                  alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 2,
+                  boxShadow: isDark ? '0 2px 4px rgba(0,0,0,0.5)' : 'none'
                 }}>
                   <User size={14} color="#ffffff" />
                 </div>
@@ -112,7 +113,7 @@ const Terminal: React.FC<TerminalProps> = ({
         {isProcessing && (
           <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
             <div style={{
-              background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: '4px 18px 18px 18px',
+              background: isDark ? '#111827' : '#ffffff', border: isDark ? '1px solid #1f2937' : '1px solid #e5e7eb', borderRadius: '4px 18px 18px 18px',
               padding: '12px 16px', display: 'flex', gap: 5, alignItems: 'center'
             }}>
               {[0, 150, 300].map(delay => (
@@ -131,8 +132,8 @@ const Terminal: React.FC<TerminalProps> = ({
 
       {/* Input Bar */}
       <div style={{
-        borderTop: '1px solid #e5e7eb', padding: '12px 16px',
-        background: '#ffffff', display: 'flex', alignItems: 'center', gap: 10
+        borderTop: isDark ? '1px solid #1f2937' : '1px solid #e5e7eb', padding: '12px 16px',
+        background: isDark ? '#0f1115' : '#ffffff', display: 'flex', alignItems: 'center', gap: 10
       }}>
         {/* Mic button */}
         <button
@@ -143,9 +144,10 @@ const Terminal: React.FC<TerminalProps> = ({
           style={{
             width: 40, height: 40, borderRadius: 12, flexShrink: 0,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            border: '1px solid #e5e7eb', cursor: 'pointer',
-            background: isVoiceActive ? '#ef4444' : '#f9fafb',
-            color: isVoiceActive ? '#ffffff' : '#6b7280'
+            border: isDark ? '1px solid #374151' : '1px solid #e5e7eb', cursor: 'pointer',
+            background: isVoiceActive ? '#ef4444' : (isDark ? '#1f2937' : '#f9fafb'),
+            color: isVoiceActive ? '#ffffff' : (isDark ? '#9ca3af' : '#6b7280'),
+            boxShadow: isVoiceActive ? '0 0 15px rgba(239,68,68,0.5)' : 'none'
           }}
         >
           {isVoiceActive ? <Mic size={18} /> : <MicOff size={18} />}
@@ -161,8 +163,9 @@ const Terminal: React.FC<TerminalProps> = ({
             disabled={isProcessing}
             style={{
               flex: 1, padding: '10px 14px', borderRadius: 12,
-              border: '1px solid #e5e7eb', fontSize: 14, color: '#111827',
-              background: '#f9fafb', outline: 'none',
+              border: isDark ? '1px solid #374151' : '1px solid #e5e7eb',
+              fontSize: 14, color: isDark ? '#f3f4f6' : '#111827',
+              background: isDark ? '#1f2937' : '#f9fafb', outline: 'none',
               fontFamily: 'Inter, sans-serif'
             }}
           />
@@ -172,9 +175,10 @@ const Terminal: React.FC<TerminalProps> = ({
             style={{
               width: 40, height: 40, borderRadius: 12, flexShrink: 0,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: input.trim() && !isProcessing ? '#1f2937' : '#e5e7eb',
-              color: input.trim() && !isProcessing ? '#ffffff' : '#9ca3af',
-              border: 'none', cursor: input.trim() && !isProcessing ? 'pointer' : 'not-allowed'
+              background: input.trim() && !isProcessing ? '#8b5cf6' : (isDark ? '#1f2937' : '#e5e7eb'),
+              color: input.trim() && !isProcessing ? '#ffffff' : (isDark ? '#6b7280' : '#9ca3af'),
+              border: 'none', cursor: input.trim() && !isProcessing ? 'pointer' : 'not-allowed',
+              boxShadow: input.trim() && !isProcessing ? '0 4px 10px rgba(139,92,246,0.3)' : 'none'
             }}
           >
             <Send size={16} />
@@ -185,7 +189,8 @@ const Terminal: React.FC<TerminalProps> = ({
       {isVoiceActive && (
         <div style={{
           textAlign: 'center', fontSize: 11, color: '#ef4444',
-          fontWeight: 500, padding: '4px 0 8px', background: '#ffffff'
+          fontWeight: 600, padding: '6px 0 10px', background: isDark ? '#0f1115' : '#ffffff',
+          letterSpacing: '0.05em', textTransform: 'uppercase'
         }}>
           Listening... speak now
         </div>
