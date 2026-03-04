@@ -122,7 +122,7 @@ wss.on('connection', (ws) => {
                 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
 
                 const session = await ai.live.connect({
-                    model: 'gemini-2.0-flash-live-001',
+                    model: 'gemini-2.0-flash-exp',
                     config: {
                         responseModalities: [Modality.AUDIO],
                         systemInstruction: "You are the Personal AI Operator's Voice Interface. Be concise, technical, and helpful. You can hear and speak. Help the user with system tasks."
@@ -508,92 +508,87 @@ app.post('/erpnext/consult', async (req, res) => {
     res.json(result);
 });
 
-// AI Chat Proxy Endpoint (Security: API key stays server-side)
-// FALLBACK: LongCat API auto-used if Gemini fails
+// AI Chat Proxy — with history context, guaranteed text response
 app.post('/ai/chat', async (req, res) => {
-    const { message, history, systemPrompt, tools } = req.body;
+    const { message, history, systemPrompt } = req.body;
     let geminiError: any = null;
 
     // Try Gemini first
     try {
         const { GoogleGenAI } = await import('@google/genai');
         const apiKey = process.env.API_KEY || '';
-
-        if (!apiKey) {
-            throw new Error('GEMINI_API_KEY not configured');
-        }
+        if (!apiKey) throw new Error('API_KEY not configured');
 
         const ai = new GoogleGenAI({ apiKey });
 
+        // Build conversation history for Gemini context (last 10 messages)
+        const chatHistory: any[] = [];
+        if (Array.isArray(history)) {
+            for (const msg of history.slice(-10)) {
+                if (msg.role === 'user' && msg.text) {
+                    chatHistory.push({ role: 'user', parts: [{ text: msg.text }] });
+                } else if (msg.role === 'ai' && msg.text) {
+                    chatHistory.push({ role: 'model', parts: [{ text: msg.text }] });
+                }
+            }
+        }
+
         const chat = ai.chats.create({
             model: 'gemini-2.0-flash',
+            history: chatHistory,
             config: {
-                tools: tools || [],
-                systemInstruction: systemPrompt
+                systemInstruction: (systemPrompt || '') + '\n\nIMPORTANT: Always respond with a helpful conversational text reply. Never respond with empty text.'
             }
         });
 
         const response = await chat.sendMessage({ message });
+        const text = response.text || '';
+        const functionCalls = (response as any).functionCalls || [];
 
-        return res.json({
-            success: true,
-            text: response.text,
-            functionCalls: response.functionCalls || [],
-            provider: 'gemini'
-        });
+        console.log(`[AI_CHAT]: text=${text.length}chars, fcalls=${functionCalls.length}`);
+
+        if (text.trim() || functionCalls.length > 0) {
+            return res.json({ success: true, text, functionCalls, provider: 'gemini' });
+        }
+        throw new Error('Empty response from Gemini');
+
     } catch (error: any) {
         geminiError = error;
-        console.warn('[AI_PROXY]: Gemini failed, falling back to LongCat:', error.message);
+        console.warn('[AI_PROXY]: Gemini failed, trying LongCat:', error.message);
     }
 
-    // FALLBACK: LongCat API (OpenAI-compatible)
+    // FALLBACK: LongCat (always returns text)
     try {
         const LONGCAT_API_KEY = 'ak_29S95d5U41S38Fn0Qm10C8A38Ar5C';
         const LONGCAT_BASE_URL = 'https://api.longcat.chat/openai';
 
-        const messages = [];
-        if (systemPrompt) {
-            messages.push({ role: 'system', content: systemPrompt });
+        const messages: any[] = [{ role: 'system', content: 'You are a helpful Personal AI Operator. Respond conversationally and helpfully in the same language the user writes in.' }];
+
+        // Add history context
+        if (Array.isArray(history)) {
+            for (const msg of history.slice(-8)) {
+                if (msg.role === 'user' && msg.text) messages.push({ role: 'user', content: msg.text });
+                else if (msg.role === 'ai' && msg.text) messages.push({ role: 'assistant', content: msg.text });
+            }
         }
         messages.push({ role: 'user', content: message });
 
         const response = await fetch(`${LONGCAT_BASE_URL}/v1/chat/completions`, {
             method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${LONGCAT_API_KEY}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                model: 'LongCat-Flash-Chat',
-                messages: messages,
-                max_tokens: 4000,
-                temperature: 0.7
-            })
+            headers: { 'Authorization': `Bearer ${LONGCAT_API_KEY}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ model: 'LongCat-Flash-Chat', messages, max_tokens: 2000, temperature: 0.7 })
         });
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`LongCat API error: ${response.status} - ${errorText}`);
-        }
-
+        if (!response.ok) throw new Error(`LongCat HTTP ${response.status}`);
         const data = await response.json();
-        const text = data.choices?.[0]?.message?.content || '';
+        const text = data.choices?.[0]?.message?.content || 'I received your message.';
 
-        // Convert LongCat response to Gemini-like format
-        // Note: LongCat doesn't support function calls, so we return empty
-        return res.json({
-            success: true,
-            text: text,
-            functionCalls: [],
-            provider: 'longcat',
-            fallback: true
-        });
+        return res.json({ success: true, text, functionCalls: [], provider: 'longcat', fallback: true });
     } catch (longcatError: any) {
-        console.error('[AI_PROXY_ERROR]: Both Gemini and LongCat failed:', longcatError.message);
+        console.error('[AI_PROXY_ERROR]:', longcatError.message);
         res.json({
             success: false,
-            error: `All AI providers failed. Gemini: ${geminiError?.message || 'Unknown'}, LongCat: ${longcatError.message}`,
-            providers: ['gemini', 'longcat']
+            error: `AI unavailable. Gemini: ${geminiError?.message}. LongCat: ${longcatError.message}`
         });
     }
 });

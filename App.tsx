@@ -237,6 +237,8 @@ const AppContent: React.FC = () => {
 
   useEffect(() => {
     localStorage.setItem('operator_master_prod_v8_final', JSON.stringify(state));
+    // Keep historyRef up to date so sendMessage always sends latest history
+    historyRef.current = state.history;
   }, [state]);
 
   // Keyboard shortcuts - moved after processInput to avoid reference error
@@ -332,20 +334,18 @@ const AppContent: React.FC = () => {
     }
   }, [state.daemon.events, state.isAutonomous, isProcessing]);
 
+  const historyRef = useRef<any[]>([]);
+
   const initChat = useCallback(() => {
-    // API key is now handled server-side
     chatRef.current = {
       sendMessage: async ({ message }: { message: string }) => {
-        const token = localStorage.getItem('operator_auth_token');
         const response = await fetch(`${state.osState.bridgeUrl}/ai/chat`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             message,
-            systemPrompt: MASTER_SYSTEM_PROMPT,
-            tools: [{ functionDeclarations: [OS_TOOL_DECLARATION] }]
+            history: historyRef.current,
+            systemPrompt: MASTER_SYSTEM_PROMPT
           })
         });
         return await response.json();
