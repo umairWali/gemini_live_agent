@@ -22,10 +22,14 @@ The **Personal AI Operator** is a real-time, bidirectional voice agent that acts
 - **Cloud Native**: Deployed on Google Cloud Run for high scalability.
 
 ### Elite Features (Gemini Live Power)
-- **Live Desktop Vision**: Enable "Screen Share" to let the agent see your desktop in real-time. It uses JPEG frame streaming directly into the Gemini Live session to help you with what you see.
-- **Dynamic Tool Calling**: The agent can now execute local system actions (run commands, write files, read docs) by dynamically calling internal sidecar tools during the live session.
-- **Sentiment-Aware UI**: The interface dynamically shifts its theme and glow effects (Happy/Angry/Normal) based on the real-time sentiment analysis of your voice input.
-- **Session History**: Save and load previous voice sessions from the sidebar to keep track of your conversations.
+- **Autonomous Mission Board**: A persistent goal-tracking system in the sidebar. The agent autonomously updates your "Missions" as you progress through tasks.
+- **Developer Fix Agent**: Uses `run_fix` tool to autonomously analyze build errors or code bugs and attempt an immediate patch.
+- **Meeting Minute Assistant**: Enable Screen Share during Google Meet/Teams. The agent uses Vision frames to prepare minutes, identify speakers, and extract action items directly into your Mission Board.
+- **Daily Elite Briefing**: Every time you connect, the agent proactively provides a spoken summary of your active goals, system status, and pending reminders.
+- **Live Desktop Vision**: Real-time screen capture streaming into the Gemini Live session for visual-context-aware conversations.
+- **Dynamic Tool Calling**: Autonomous execution of local system actions (commands, files, dirs) directly from the live voice session.
+- **Sentiment-Aware UI**: Real-time UI theme shifting based on voice sentiment analysis (Happy/Angry/Normal).
+- **Session History**: Persistent storage for previous voice sessions.
 
 ---
 
