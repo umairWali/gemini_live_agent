@@ -21,7 +21,8 @@ The **Personal AI Operator** is a real-time, bidirectional voice agent that acts
 - **Bilingual**: Understands and responds in Urdu and English natively.
 - **Cloud Native**: Deployed on Google Cloud Run for high scalability.
 
-### Elite Features (Gemini Live Power)
+- **Neural Knowledge Graph (Visual Memory)**: An interactive 2D graph in the "Memory" tab that visualizes the AI's long-term understanding of your persona, projects, and preferences.
+- **Multi-Agent War Room**: Visualizes the internal state of different agent roles (Planner, Executor, Healer, etc.) in real-time as they collaborate to solve your tasks.
 - **Autonomous Mission Board**: A persistent goal-tracking system in the sidebar. The agent autonomously updates your "Missions" as you progress through tasks.
 - **Developer Fix Agent**: Uses `run_fix` tool to autonomously analyze build errors or code bugs and attempt an immediate patch.
 - **Meeting Minute Assistant**: Enable Screen Share during Google Meet/Teams. The agent uses Vision frames to prepare minutes, identify speakers, and extract action items directly into your Mission Board.

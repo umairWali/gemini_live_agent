@@ -1,7 +1,9 @@
 
 import React, { useState } from 'react';
-import { AppState, VerifierFeature } from '../types';
-import { Target, History, Monitor, Zap, ClipboardCheck, Server, BarChart3, ShieldCheck, Cpu } from 'lucide-react';
+import { AppState, VerifierFeature, AgentRole, AgentActivity } from '../types';
+import { Target, History, Monitor, Zap, ClipboardCheck, Server, BarChart3, ShieldCheck, Cpu, Brain, Activity } from 'lucide-react';
+import MultiAgentWarRoom from './MultiAgentWarRoom';
+import NeuralKnowledgeGraph from './NeuralKnowledgeGraph';
 
 interface RightPanelProps {
   state: AppState;
@@ -10,7 +12,7 @@ interface RightPanelProps {
 }
 
 const RightPanel: React.FC<RightPanelProps> = ({ state }) => {
-  const [activeTab, setActiveTab] = useState<'SYSTEM' | 'DAEMON' | 'GOALS' | 'VERIFIER'>('SYSTEM');
+  const [activeTab, setActiveTab] = useState<'SYSTEM' | 'AGENTS' | 'MEMORY' | 'VERIFIER'>('SYSTEM');
 
   const verifierFeatures: VerifierFeature[] = [
     {
@@ -60,8 +62,8 @@ const RightPanel: React.FC<RightPanelProps> = ({ state }) => {
       <div className="grid grid-cols-4 border-b border-slate-900 bg-black/40">
         {[
           { id: 'SYSTEM', icon: Monitor },
-          { id: 'DAEMON', icon: Server },
-          { id: 'GOALS', icon: Target },
+          { id: 'AGENTS', icon: Activity },
+          { id: 'MEMORY', icon: Brain },
           { id: 'VERIFIER', icon: ClipboardCheck }
         ].map(tab => (
           <button
@@ -169,43 +171,40 @@ const RightPanel: React.FC<RightPanelProps> = ({ state }) => {
           </section>
         )}
 
-        {activeTab === 'DAEMON' && (
-          <section className="space-y-10">
-            <h2 className="text-[12px] font-black uppercase tracking-[0.4em] text-slate-500 flex items-center gap-4"><Server className="w-5 h-5" /> Process_Watchdog</h2>
-            <div className="space-y-5">
-              {state.daemon.processes.map(p => (
-                <div key={p.pid} className="p-6 glass-card rounded-3xl flex items-center justify-between transition-all hover:bg-white/5 group">
-                  <div className="flex flex-col gap-1">
-                    <span className="text-[11px] font-black text-slate-300 uppercase tracking-tighter group-hover:text-violet-400 transition-colors">{p.name}</span>
-                    <span className="text-[9px] font-bold text-slate-600">PID: {p.pid} • {p.status}</span>
+        {activeTab === 'AGENTS' && (
+          <div className="animate-in fade-in slide-in-from-right-4 duration-500">
+            <MultiAgentWarRoom activities={state.agentActivities} isDark={true} />
+            <div className="mt-10 p-6 glass-card rounded-3xl space-y-4">
+              <h4 className="text-[9px] font-black uppercase text-slate-500 tracking-widest flex items-center gap-2"><Server className="w-4 h-4" /> Operational_Processes</h4>
+              <div className="space-y-3">
+                {state.daemon.processes.slice(0, 3).map(p => (
+                  <div key={p.pid} className="flex justify-between items-center text-[10px] font-bold">
+                    <span className="text-slate-200">{p.name}</span>
+                    <span className="text-violet-400">{(p.cpu * 100).toFixed(1)}%</span>
                   </div>
-                  <div className="text-right">
-                    <p className="text-[11px] font-black text-violet-400">{(p.cpu * 100).toFixed(1)}% CPU</p>
-                    <p className="text-[9px] font-bold text-slate-600">{p.mem} MB RAM</p>
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </section>
+          </div>
         )}
 
-        {activeTab === 'GOALS' && (
-          <section className="space-y-10">
-            <h2 className="text-[12px] font-black uppercase tracking-[0.4em] text-slate-500 flex items-center gap-4"><Target className="w-5 h-5" /> Active_Directives</h2>
-            <div className="space-y-8">
-              {state.goals.map(goal => (
-                <div key={goal.id} className="p-8 glass-card rounded-3xl space-y-6 transition-all hover:border-violet-500/20">
-                  <div className="flex justify-between items-center">
-                    <span className="text-[12px] font-black text-slate-200 uppercase tracking-tight">{goal.title}</span>
-                    <span className="text-[12px] font-black text-violet-400">{goal.progress}%</span>
-                  </div>
-                  <div className="h-2 w-full bg-black/40 rounded-full overflow-hidden shadow-inner">
-                    <div className="h-full bg-violet-600 transition-all duration-1000 shadow-[0_0_15px_rgba(139,92,246,0.5)]" style={{ width: `${goal.progress}%` }} />
-                  </div>
+        {activeTab === 'MEMORY' && (
+          <div className="animate-in fade-in slide-in-from-right-4 duration-500">
+            <NeuralKnowledgeGraph data={state.knowledgeGraph} isDark={true} />
+            <div className="mt-10 p-8 glass-card rounded-[2.5rem] bg-violet-500/5 border border-violet-500/10">
+              <h4 className="text-[10px] font-black uppercase text-violet-400 tracking-widest text-center mb-6">Autonomous Intelligence</h4>
+              <div className="space-y-4">
+                <div className="flex justify-between items-center text-[11px] font-black uppercase tracking-tighter">
+                  <span className="text-slate-400">Synaptic Density</span>
+                  <span className="text-white">82.4%</span>
                 </div>
-              ))}
+                <div className="flex justify-between items-center text-[11px] font-black uppercase tracking-tighter">
+                  <span className="text-slate-400">Context Retention</span>
+                  <span className="text-white">High</span>
+                </div>
+              </div>
             </div>
-          </section>
+          </div>
         )}
       </div>
     </aside>

@@ -83,7 +83,27 @@ const AppContent: React.FC = () => {
       activeProjects: ['Main Project'],
       vault: [{ id: 'v1', key: 'AWS_PROD_SECRET', value: '******************', timestamp: Date.now() }],
       auditTrail: [],
-      agentActivities: Object.values(AgentRole).map(role => ({ agent: role as AgentRole, status: 'idle', message: 'Standby', timestamp: Date.now() })),
+      agentActivities: Object.values(AgentRole).map(role => ({
+        agent: role as AgentRole,
+        status: 'idle',
+        message: 'Awaiting directive...',
+        timestamp: Date.now()
+      })),
+      knowledgeGraph: {
+        nodes: [
+          { id: 'user', label: 'User Persona', type: 'person', relevance: 0.9 },
+          { id: 'op', label: 'Personal Operator', type: 'project', relevance: 1.0 },
+          { id: 'hack', label: 'Gemini Hackathon', type: 'project', relevance: 0.8 },
+          { id: 'lang', label: 'Urdu/English preference', type: 'preference', relevance: 0.7 },
+          { id: 'tech', label: 'React/Node.js tech stack', type: 'fact', relevance: 0.6 }
+        ],
+        links: [
+          { source: 'user', target: 'op' },
+          { source: 'op', target: 'hack' },
+          { source: 'user', target: 'lang' },
+          { source: 'op', target: 'tech' }
+        ]
+      },
       history: [], savedSessions: [], envSignals: [], evolutionLogs: [], telemetry: [],
       osState: { connected: false, platform: 'linux', runningApps: ['Terminal', 'Code', 'Chrome'], bridgeUrl: '' },
       emotionState: 'normal',
@@ -134,6 +154,14 @@ const AppContent: React.FC = () => {
     if (!txt.trim() || isProcessing) return;
     setIsProcessing(true);
 
+    // Set Agent status
+    setState(p => ({
+      ...p,
+      agentActivities: p.agentActivities.map(a =>
+        a.agent === AgentRole.PLANNER ? { ...a, status: 'thinking', message: 'Synthesizing response...' } : a
+      )
+    }));
+
     if (origin === 'user') {
       setState(p => ({
         ...p,
@@ -155,12 +183,34 @@ const AppContent: React.FC = () => {
       if (data.reply) {
         setState(p => ({
           ...p,
+          agentActivities: p.agentActivities.map(a =>
+            a.agent === AgentRole.PLANNER ? { ...a, status: 'idle', message: 'Directive complete.' } :
+              a.agent === AgentRole.EXECUTOR ? { ...a, status: 'acting', message: 'Rendering response...' } : a
+          ),
           history: [...p.history, { role: 'ai', text: data.reply, timestamp: Date.now(), agentBadge: AgentRole.EXECUTOR }].slice(-50)
         }));
+
+        // Reset Executor after a moment
+        setTimeout(() => {
+          setState(p => ({
+            ...p,
+            agentActivities: p.agentActivities.map(a =>
+              a.agent === AgentRole.EXECUTOR ? { ...a, status: 'idle', message: 'Awaiting directive...' } : a
+            )
+          }));
+        }, 3000);
+
         if (isVoiceActive) speakText(data.reply);
       }
     } catch (e) {
       console.error(e);
+      // Reset Planner on error
+      setState(p => ({
+        ...p,
+        agentActivities: p.agentActivities.map(a =>
+          a.agent === AgentRole.PLANNER ? { ...a, status: 'idle', message: 'Operation failed.' } : a
+        )
+      }));
       addToast({ type: 'error', title: 'AI Error', message: 'Failed to communicate with bridge.' });
     } finally {
       setIsProcessing(false);

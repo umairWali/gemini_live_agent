@@ -137,20 +137,37 @@ export interface Message {
 }
 
 export interface Goal {
-    id: string;
-    title: string;
-    description: string;
-    status: 'pending' | 'active' | 'completed' | 'paused';
-    progress: number;
-    tasks: string[];
-    createdAt: number;
+  id: string;
+  title: string;
+  description: string;
+  status: 'pending' | 'active' | 'completed' | 'paused';
+  progress: number;
+  tasks: string[];
+  createdAt: number;
 }
 
 export interface ProjectTask {
-    id: string;
-    projectId: string;
-    title: string;
-    status: 'todo' | 'doing' | 'done';
+  id: string;
+  projectId: string;
+  title: string;
+  status: 'todo' | 'doing' | 'done';
+}
+
+export interface KnowledgeNode {
+  id: string;
+  label: string;
+  type: 'person' | 'project' | 'fact' | 'preference';
+  relevance: number; // 0-1
+}
+
+export interface KnowledgeLink {
+  source: string;
+  target: string;
+}
+
+export interface KnowledgeGraphData {
+  nodes: KnowledgeNode[];
+  links: KnowledgeLink[];
 }
 
 export interface AppState {
@@ -164,6 +181,7 @@ export interface AppState {
   agentActivities: AgentActivity[];
   goals: Goal[];
   activeProjects: string[];
+  knowledgeGraph: KnowledgeGraphData;
   vault: VaultEntry[];
   auditTrail: AuditTrailEntry[];
   history: Message[];
