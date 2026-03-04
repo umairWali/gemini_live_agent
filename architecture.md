@@ -1,6 +1,6 @@
 # System Architecture Diagram
 
-This diagram visualizes how the Personal AI Operator interacts with the Google GenAI SDK and handles real-time audio through WebSockets.
+This diagram visualizes how the Personal Operator interacts with the Google GenAI SDK and handles real-time audio through WebSockets.
 
 ```mermaid
 sequenceDiagram

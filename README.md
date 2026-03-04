@@ -1,6 +1,6 @@
 <div align="center">
-  <h1>Personal AI Operator</h1>
-  <i>A Next-Generation Voice-First Assistant powered by Gemini Live API</i>
+  <h1>Personal Operator</h1>
+  <i>A Next-Generation Voice-First Elite System powered by Gemini Live API</i>
   <br/><br/>
   <b>Built for the Gemini Live Agent Challenge (Live Agents Category)</b>
 </div>
@@ -9,7 +9,7 @@
 
 ## Overview
 
-The **Personal AI Operator** is a real-time, bidirectional voice agent that acts as your smart, context-aware companion. It breaks out of the standard "chatbot text box" paradigm by enabling true, fluid voice conversations. You speak naturally to it, and it responds intelligently with spoken audio in real-time.
+The **Personal Operator** is a real-time, bidirectional voice-to-system orchestrator. It’s designed to be a high-performance system companion that eliminates the traditional "chatbot" delay by leveraging low-latency audio streams. You talk, it acts — whether it's managing your codebase, tracking missions, or summarizing your daily schedule.
 
 **Category**: Live Agents  
 **Technologies**: React (Frontend), Node.js (Backend), Google GenAI SDK (`gemini-live-2.5-flash-preview`), WebSockets, Google Cloud Run.

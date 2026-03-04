@@ -15,7 +15,7 @@ import { useCommandPalette } from './components/CommandPalette';
 import { useSoundEffects } from './hooks/useSoundEffects';
 import { LucideIcon, Radio } from 'lucide-react';
 
-const MASTER_SYSTEM_PROMPT = `You are Personal Operator — a smart, autonomous AI assistant.
+const MASTER_SYSTEM_PROMPT = `You are Personal Operator — an elite, autonomous system companion.
 
 Your job is to manage the user's projects, fix their code, participate in their meetings, and remember their personal preferences.
 
@@ -211,7 +211,7 @@ const AppContent: React.FC = () => {
           a.agent === AgentRole.PLANNER ? { ...a, status: 'idle', message: 'Operation failed.' } : a
         )
       }));
-      addToast({ type: 'error', title: 'AI Error', message: 'Failed to communicate with bridge.' });
+      addToast({ type: 'error', title: 'Error', message: 'Failed to communicate with bridge.' });
     } finally {
       setIsProcessing(false);
     }

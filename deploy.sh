@@ -44,4 +44,4 @@ gcloud run deploy "$SERVICE_NAME" \
   --set-env-vars="API_KEY=${API_KEY}"
 
 echo " Deployment completed successfully!"
-echo " Your Personal AI Operator is now live."
+echo " Your Personal Operator is now live."
