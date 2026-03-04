@@ -9,6 +9,8 @@ interface TerminalProps {
   isProcessing: boolean;
   onExecute: (id: string) => void;
   onToggleExplain?: (index: number) => void;
+  isVoiceActive?: boolean;
+  onToggleVoice?: () => void;
 }
 
 // Encoding/Decoding helpers
@@ -36,54 +38,15 @@ async function decodeAudioData(data: Uint8Array, ctx: AudioContext, sampleRate: 
   return buffer;
 }
 
-const Terminal: React.FC<TerminalProps> = ({ history, onSend, isProcessing, onExecute, onToggleExplain }) => {
+const Terminal: React.FC<TerminalProps> = ({ history, onSend, isProcessing, onExecute, onToggleExplain, isVoiceActive, onToggleVoice }) => {
   const [input, setInput] = useState('');
-  const [isLive, setIsLive] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
-  const outputAudioContextRef = useRef<AudioContext | null>(null);
-  const sessionPromiseRef = useRef<Promise<any> | null>(null);
   const nextStartTimeRef = useRef<number>(0);
   const sourcesRef = useRef<Set<AudioBufferSourceNode>>(new Set());
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [history]);
-
-  const toggleLive = async () => {
-    if (isLive) {
-      setIsLive(false);
-      return;
-    }
-
-    // Use server-side proxy instead of direct API key
-    try {
-      const token = localStorage.getItem('operator_auth_token');
-      const response = await fetch('/ai/live', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-auth-token': token || ''
-        },
-        body: JSON.stringify({
-          config: {
-            speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Zephyr' } } },
-            systemInstruction: "You are the Personal AI Operator's voice interface. Supervisor mode active. Be technical, concise, and operational."
-          }
-        })
-      });
-
-      const result = await response.json();
-      if (result.success) {
-        setIsLive(true);
-        // Note: Full implementation would use WebSocket for bidirectional audio streaming
-        console.log('[VOICE]: Live audio session initialized via server proxy');
-      } else {
-        console.error('[VOICE]: Failed to initialize live audio:', result.error);
-      }
-    } catch (err) {
-      console.error('[VOICE]: Error connecting to live audio endpoint:', err);
-    }
-  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -190,10 +153,10 @@ const Terminal: React.FC<TerminalProps> = ({ history, onSend, isProcessing, onEx
           />
           <button
             type="button"
-            onClick={toggleLive}
-            className={`p-4 rounded-full transition-all duration-500 ${isLive ? 'bg-rose-500 text-white shadow-[0_0_30px_rgba(244,63,94,0.3)]' : 'bg-slate-800 text-slate-400 hover:text-violet-400'}`}
+            onClick={onToggleVoice}
+            className={`p-4 rounded-full transition-all duration-500 ${isVoiceActive ? 'bg-rose-500 text-white shadow-[0_0_30px_rgba(244,63,94,0.3)]' : 'bg-slate-800 text-slate-400 hover:text-violet-400'}`}
           >
-            {isLive ? <Mic className="w-6 h-6" /> : <MicOff className="w-6 h-6" />}
+            {isVoiceActive ? <Mic className="w-6 h-6 animate-pulse" /> : <MicOff className="w-6 h-6" />}
           </button>
           <button
             type="submit"

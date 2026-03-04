@@ -510,6 +510,18 @@ const AppContent: React.FC = () => {
       addAuditEntry('ERROR: Chat service not initialized.', 'system');
       return;
     }
+
+    // Append the input to history immediately so the user sees what they typed
+    setState(prev => ({
+      ...prev,
+      history: [...prev.history, {
+        role: origin === 'user' ? 'user' : 'ai',
+        text: input,
+        timestamp: Date.now(),
+        agentBadge: origin === 'system' ? AgentRole.AUTONOMOUS_ENGINEER : undefined
+      }].slice(-50)
+    }));
+
     setIsProcessing(true);
     try {
       const response = await chatRef.current.sendMessage({ message: input });
@@ -540,7 +552,7 @@ const AppContent: React.FC = () => {
 
       setState(prev => {
         const newMessage: Message = {
-          role: origin === 'user' ? 'user' : 'ai',
+          role: 'ai',
           text,
           timestamp: Date.now(),
           agentBadge: origin === 'system' ? AgentRole.AUTONOMOUS_ENGINEER : AgentRole.SUPERVISOR,
@@ -711,6 +723,8 @@ const AppContent: React.FC = () => {
                 h[i].isExplainMode = !h[i].isExplainMode;
                 setState(p => ({ ...p, history: h }));
               }}
+              isVoiceActive={isVoiceActive}
+              onToggleVoice={toggleVoice}
             />
           </div>
         </div>
