@@ -117,7 +117,7 @@ const AppContent: React.FC = () => {
       vault: [{ id: 'v1', key: 'AWS_PROD_SECRET', value: '******************', timestamp: Date.now() }],
       auditTrail: [],
       agentActivities: Object.values(AgentRole).map(role => ({ agent: role as AgentRole, status: 'idle', message: 'Standby', timestamp: Date.now() })),
-      history: [], envSignals: [], evolutionLogs: [], telemetry: [],
+      history: [], savedSessions: [], envSignals: [], evolutionLogs: [], telemetry: [],
       osState: { connected: false, platform: 'linux', runningApps: ['Terminal', 'Code', 'Chrome'], bridgeUrl: '' },
       realtimeMetrics: { cpu: 0, ram: 0 },
       githubFeed: [],
@@ -712,12 +712,30 @@ const AppContent: React.FC = () => {
         notificationsEnabled={notificationsEnabled}
       />
 
-      <ChatSidebar isDark={isDark} onNewChat={() => {
-        if (!isProcessing) {
-          playClick();
-          setState(prev => ({ ...prev, history: [] }));
-        }
-      }} />
+      <ChatSidebar
+        isDark={isDark}
+        savedSessions={state.savedSessions || []}
+        onSelectSession={(id) => {
+          const session = state.savedSessions?.find(s => s.id === id);
+          if (session) {
+            playClick();
+            setState(prev => ({ ...prev, history: session.history }));
+          }
+        }}
+        onNewChat={() => {
+          if (!isProcessing) {
+            playClick();
+            if (state.history.length > 0) {
+              const firstUserMsg = state.history.find(m => m.role === 'user');
+              const title = firstUserMsg ? firstUserMsg.text.slice(0, 30) + '...' : 'New Session';
+              const newSession = { id: Date.now().toString(), title, history: [...state.history], timestamp: Date.now() };
+              setState(prev => ({ ...prev, savedSessions: [newSession, ...(prev.savedSessions || [])], history: [] }));
+            } else {
+              setState(prev => ({ ...prev, history: [] }));
+            }
+          }
+        }}
+      />
       <main className={`flex-1 flex flex-col relative overflow-hidden transition-colors ${isDark ? 'bg-black' : 'bg-slate-50'}`}>
 
         <AppHeader isDark={isDark} isVoiceActive={isVoiceActive} />

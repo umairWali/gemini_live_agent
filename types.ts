@@ -156,6 +156,7 @@ export interface AppState {
   vault: VaultEntry[];
   auditTrail: AuditTrailEntry[];
   history: Message[];
+  savedSessions?: { id: string; title: string; history: Message[]; timestamp: number }[];
   envSignals: EnvSignal[];
   evolutionLogs: SelfEvolutionLog[];
   telemetry: TelemetryPoint[];

@@ -4,9 +4,11 @@ import { Plus, MessageSquare, Sparkles } from 'lucide-react';
 interface ChatSidebarProps {
     onNewChat: () => void;
     isDark: boolean;
+    savedSessions?: { id: string, title: string, history: any[], timestamp: number }[];
+    onSelectSession?: (id: string) => void;
 }
 
-const ChatSidebar: React.FC<ChatSidebarProps> = ({ onNewChat, isDark }) => {
+const ChatSidebar: React.FC<ChatSidebarProps> = ({ onNewChat, isDark, savedSessions = [], onSelectSession }) => {
     return (
         <aside className={`w-64 border-r flex flex-col transition-colors ${isDark ? 'bg-gray-900 border-gray-800 text-white' : 'bg-white border-gray-200 text-gray-800'} z-20 shrink-0`}>
             <div className="p-4">
@@ -22,23 +24,20 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({ onNewChat, isDark }) => {
             <div className="flex-1 overflow-y-auto px-3 py-2 space-y-1 custom-scrollbar">
                 <div className={`text-xs font-bold tracking-wider uppercase px-2 py-3 mb-1 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>Recent History</div>
 
-                {/* Premium Mock History Items */}
-                <button className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors text-left ${isDark ? 'hover:bg-gray-800' : 'hover:bg-gray-100'}`}>
-                    <MessageSquare size={16} className={isDark ? 'text-gray-500' : 'text-gray-400'} />
-                    <span className="truncate font-medium">Matrix monitoring concepts</span>
-                </button>
-                <button className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors text-left ${isDark ? 'hover:bg-gray-800' : 'hover:bg-gray-100'}`}>
-                    <MessageSquare size={16} className={isDark ? 'text-gray-500' : 'text-gray-400'} />
-                    <span className="truncate font-medium">Explain Node.js event pool</span>
-                </button>
-                <button className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors text-left ${isDark ? 'hover:bg-gray-800' : 'hover:bg-gray-100'}`}>
-                    <MessageSquare size={16} className={isDark ? 'text-gray-500' : 'text-gray-400'} />
-                    <span className="truncate font-medium">Fix the voice API integration</span>
-                </button>
-                <button className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors text-left ${isDark ? 'hover:bg-gray-800' : 'hover:bg-gray-100'}`}>
-                    <MessageSquare size={16} className={isDark ? 'text-gray-500' : 'text-gray-400'} />
-                    <span className="truncate font-medium">UI Cleanup request</span>
-                </button>
+                {savedSessions.length === 0 ? (
+                    <div className={`text-center py-4 text-xs ${isDark ? 'text-gray-600' : 'text-gray-400'}`}>No recent sessions</div>
+                ) : (
+                    savedSessions.map((session) => (
+                        <button
+                            key={session.id}
+                            onClick={() => onSelectSession && onSelectSession(session.id)}
+                            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors text-left ${isDark ? 'hover:bg-gray-800' : 'hover:bg-gray-100'}`}
+                        >
+                            <MessageSquare size={16} className={isDark ? 'text-gray-500' : 'text-gray-400'} shrink-0="true" />
+                            <span className="truncate font-medium">{session.title}</span>
+                        </button>
+                    ))
+                )}
             </div>
 
             <div className={`p-4 border-t ${isDark ? 'border-gray-800' : 'border-gray-200'} mt-auto`}>
