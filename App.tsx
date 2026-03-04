@@ -394,7 +394,7 @@ const AppContent: React.FC = () => {
       ws = new WebSocket(wsUrl);
       (window as any).operatorWs = ws;
 
-      ws.onmessage = (event) => {
+      ws.onmessage = async (event) => {
         const data = JSON.parse(event.data);
         if (data.type === 'FS_CHANGE') {
           pushEvent(data.type, data.source, data.metadata);

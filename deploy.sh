@@ -43,5 +43,5 @@ gcloud run deploy "$SERVICE_NAME" \
   --allow-unauthenticated \
   --set-env-vars="API_KEY=${API_KEY}"
 
-echo "✅ Deployment completed successfully!"
-echo "🎉 Your Personal AI Operator is now live."
+echo " Deployment completed successfully!"
+echo " Your Personal AI Operator is now live."
