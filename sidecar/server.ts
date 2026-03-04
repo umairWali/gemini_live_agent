@@ -849,12 +849,12 @@ app.post('/webhook/openclaw', async (req, res) => {
 
     if (message?.toLowerCase().includes('status') || message?.toLowerCase().includes('health')) {
         const h = health.getStatus();
-        response.reply = `🤖 AI Operator Status: ${h}\nUptime: ${Math.floor(process.uptime() / 60)} mins\nReady for commands!`;
+        response.reply = `AI Operator Status: ${h}\nUptime: ${Math.floor(process.uptime() / 60)} mins\nReady for commands!`;
     } else if (message?.toLowerCase().includes('goals')) {
         const goals = goalManager.getActiveGoals();
-        response.reply = `🎯 Active Goals: ${goals.length}\n${goals.map((g: any) => `• ${g.description}`).join('\n') || 'None'}`;
+        response.reply = `Active Goals: ${goals.length}\n${goals.map((g: any) => `• ${g.description}`).join('\n') || 'None'}`;
     } else {
-        response.reply = `✅ Operator received: "${message}"\nUse: status, goals, or send a task!`;
+        response.reply = `Operator received: "${message}"\nUse: status, goals, or send a task!`;
     }
 
     res.json(response);

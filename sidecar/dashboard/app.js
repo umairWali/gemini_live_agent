@@ -270,7 +270,7 @@
 
         state.isSpeaking = true;
         btn.classList.add('speaking');
-        btn.textContent = '⏹️ Stop';
+        btn.textContent = 'Stop';
         window.speechSynthesis.speak(utterance);
     };
 
@@ -369,7 +369,7 @@
                 html += `</ul></div>`;
             }
             if (verifications.length) {
-                html += `<div class="assumption-block" style="border-color:rgba(96,165,250,0.2)"><h5 style="color:var(--accent-blue)">🔍 Verification Needed</h5><ul>`;
+                html += `<div class="assumption-block" style="border-color:rgba(96,165,250,0.2)"><h5 style="color:var(--accent-blue)">Verification Needed</h5><ul>`;
                 verifications.forEach(v => { html += `<li>${v}</li>`; });
                 html += `</ul></div>`;
             }
@@ -554,7 +554,7 @@
         if (action === 'advise_solution') {
             renderAdvisoryCard(result);
         } else if (action === 'record_mentorship') {
-            createResponseCard('system', `<p>✅ Mentorship session recorded: <strong>${payload.topic}</strong></p><p style="color:var(--text-muted);font-size:12px">Decision: ${payload.decision}<br>Rationale: ${payload.rationale}</p>`, { summary: `Mentorship: ${payload.topic}` });
+            createResponseCard('system', `<p>Mentorship session recorded: <strong>${payload.topic}</strong></p><p style="color:var(--text-muted);font-size:12px">Decision: ${payload.decision}<br>Rationale: ${payload.rationale}</p>`, { summary: `Mentorship: ${payload.topic}` });
             updateLastAction('Mentorship: ' + payload.topic, timeStr());
         } else if (action === 'learn_rule') {
             const newRule = { trigger: payload.trigger, action: payload.action, rationale: payload.rationale, validated: false, uses: 0 };
@@ -562,7 +562,7 @@
             updateBadges();
             refreshRulesList();
             refreshLearningFeed();
-            createResponseCard('system', `<p>🧠 Rule learned: <span style="color:var(--accent-purple);font-weight:600">${payload.trigger}</span> → ${payload.action}</p>`, { summary: `Rule learned: ${payload.trigger}` });
+            createResponseCard('system', `<p>Rule learned: <span style="color:var(--accent-purple);font-weight:600">${payload.trigger}</span> → ${payload.action}</p>`, { summary: `Rule learned: ${payload.trigger}` });
             updateLastAction('Rule learned', timeStr());
         } else {
             renderGenericCard(result);
@@ -576,7 +576,7 @@
             const prompt = btn.dataset.prompt || '';
 
             if (action === 'health') {
-                createResponseCard('user', '<p>❤️ Health Check</p>');
+                createResponseCard('user', '<p>Health Check</p>');
                 const loadingEl = document.createElement('div');
                 loadingEl.className = 'loading-dots';
                 loadingEl.innerHTML = '<span></span><span></span><span></span>';

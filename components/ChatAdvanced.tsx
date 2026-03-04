@@ -25,36 +25,12 @@ export const MessageActions: React.FC<MessageActionsProps> = ({
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
 
-  const emojis = ['👍', '👎', '❤️', '😄', '😮', '🎉', '🤔', '👏'];
+  const emojis: string[] = [];
 
   return (
     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-      {/* Reaction button */}
+      {/* Reaction button removed as per emoji removal request */}
       <div className="relative">
-        <button
-          onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-          className="p-1.5 hover:bg-slate-700/50 rounded text-slate-400 hover:text-slate-200 transition-colors"
-          title="Add reaction"
-        >
-          <Smile className="w-4 h-4" />
-        </button>
-        
-        {showEmojiPicker && (
-          <div className="absolute bottom-full left-0 mb-2 p-2 bg-slate-800 border border-slate-700 rounded-lg shadow-xl flex gap-1 z-10">
-            {emojis.map(emoji => (
-              <button
-                key={emoji}
-                onClick={() => {
-                  onReact?.(emoji);
-                  setShowEmojiPicker(false);
-                }}
-                className="p-1.5 hover:bg-slate-700 rounded text-lg transition-colors"
-              >
-                {emoji}
-              </button>
-            ))}
-          </div>
-        )}
       </div>
 
       {/* Reply button */}
@@ -126,11 +102,10 @@ export const MessageReactions: React.FC<MessageReactionsProps> = ({
         <button
           key={emoji}
           onClick={() => onReact(emoji)}
-          className={`px-2 py-1 rounded-full text-sm flex items-center gap-1 transition-colors ${
-            userReaction === emoji
+          className={`px-2 py-1 rounded-full text-sm flex items-center gap-1 transition-colors ${userReaction === emoji
               ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
               : 'bg-slate-800 text-slate-400 border border-slate-700 hover:bg-slate-700'
-          }`}
+            }`}
         >
           {emoji} {count}
         </button>

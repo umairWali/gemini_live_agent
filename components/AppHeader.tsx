@@ -30,14 +30,16 @@ const AppHeader: React.FC<AppHeaderProps> = ({ isDark, isVoiceActive, emotionSta
             <div className="flex items-center gap-4">
                 {/* Animated Avatar / Logo */}
                 <div
-                    className={`relative w-10 h-10 rounded-2xl flex items-center justify-center transition-all duration-75 ${gradientBg || (isDark ? 'bg-white/5 border border-white/10' : 'bg-slate-50 border border-slate-200')} shadow-inner`}
+                    className={`relative w-10 h-10 rounded-2xl flex items-center justify-center transition-all duration-75 ${gradientBg || (isDark ? 'bg-white/5 border border-white/10' : 'bg-slate-50 border border-slate-200')} shadow-inner overflow-hidden`}
                     style={{
                         transform: `scale(${1 + (audioLevel / 500)})`,
                         boxShadow: audioLevel > 10 ? `0 0 ${audioLevel / 2}px ${accentColor.includes('violet') ? 'rgba(139,92,246,0.5)' : accentColor.includes('red') ? 'rgba(239,68,68,0.5)' : 'rgba(16,185,129,0.5)'}` : 'none'
                     }}
                 >
-                    <Bot
-                        className={`w-5 h-5 transition-colors duration-700 ${isVoiceActive ? `${accentColor}` : 'text-slate-400'}`}
+                    <img
+                        src="/logo.png"
+                        alt="Logo"
+                        className="w-full h-full object-cover"
                         style={{
                             transform: `scale(${1 + (audioLevel / 200)})`,
                         }}

@@ -46,8 +46,8 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({ onNewChat, isDark, savedSessi
                         <Sparkles size={14} className="text-white" />
                     </div>
                     <div className="flex flex-col">
-                        <span className="text-[11px] font-black uppercase tracking-widest text-violet-500">Pro Edition</span>
-                        <span className={`text-[10px] font-medium ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Live Agent Operator v2.0</span>
+                        <span className="text-[11px] font-black uppercase tracking-widest text-violet-500">Elite Edition</span>
+                        <span className={`text-[10px] font-medium ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Personal Operator</span>
                     </div>
                 </div>
             </div>

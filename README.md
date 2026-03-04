@@ -1,5 +1,5 @@
 <div align="center">
-  <h1>🎙️ Personal AI Operator</h1>
+  <h1>Personal AI Operator</h1>
   <i>A Next-Generation Voice-First Assistant powered by Gemini Live API</i>
   <br/><br/>
   <b>Built for the Gemini Live Agent Challenge (Live Agents Category)</b>
@@ -7,35 +7,35 @@
 
 ---
 
-## 🚀 Overview
+## Overview
 
 The **Personal AI Operator** is a real-time, bidirectional voice agent that acts as your smart, context-aware companion. It breaks out of the standard "chatbot text box" paradigm by enabling true, fluid voice conversations. You speak naturally to it, and it responds intelligently with spoken audio in real-time.
 
 **Category**: Live Agents  
 **Technologies**: React (Frontend), Node.js (Backend), Google GenAI SDK (`gemini-live-2.5-flash-preview`), WebSockets, Google Cloud Run.
 
-### 🌟 Key Features
+### Key Features
 - **Real-Time Voice Streaming**: Uses the Gemini Live API via WebSockets for sub-second bidirectional audio streaming (no browser-based pseudo-TTS).
 - **Interruption Handling**: The agent understands when you interrupt it (barge-in capability) naturally.
 - **Multimodal Feedback**: Streams audio while simultaneously updating a synchronized text UI.
 - **Bilingual**: Understands and responds in Urdu and English natively.
 - **Cloud Native**: Deployed on Google Cloud Run for high scalability.
 
-### ✨ Elite Features (Gemini Live Power)
-- **🖥️ Live Desktop Vision**: Enable "Screen Share" to let the agent see your desktop in real-time. It uses JPEG frame streaming directly into the Gemini Live session to help you with what you see.
-- **🛠️ Dynamic Tool Calling**: The agent can now execute local system actions (run commands, write files, read docs) by dynamically calling internal sidecar tools during the live session.
-- **🌈 Sentiment-Aware UI**: The interface dynamically shifts its theme and glow effects (Happy/Angry/Normal) based on the real-time sentiment analysis of your voice input.
-- **💾 Session History**: Save and load previous voice sessions from the sidebar to keep track of your conversations.
+### Elite Features (Gemini Live Power)
+- **Live Desktop Vision**: Enable "Screen Share" to let the agent see your desktop in real-time. It uses JPEG frame streaming directly into the Gemini Live session to help you with what you see.
+- **Dynamic Tool Calling**: The agent can now execute local system actions (run commands, write files, read docs) by dynamically calling internal sidecar tools during the live session.
+- **Sentiment-Aware UI**: The interface dynamically shifts its theme and glow effects (Happy/Angry/Normal) based on the real-time sentiment analysis of your voice input.
+- **Session History**: Save and load previous voice sessions from the sidebar to keep track of your conversations.
 
 ---
 
-## 🛠️ Architecture
+## Architecture
 
 See our [architecture.md](./architecture.md) representation showing how the frontend, WebSocket server, and Gemini Live API coordinate raw PCM audio chunks.
 
 ---
 
-## 📦 Running the Project Locally (Spin-up Instructions)
+## Running the Project Locally (Spin-up Instructions)
 
 Follow these steps to reproduce and run the project locally.
 
@@ -74,7 +74,7 @@ npm start
 
 ---
 
-## ☁️ Google Cloud Deployment (Automated)
+## Google Cloud Deployment (Automated)
 
 This project features Infrastructure-as-Code automation to earn the Cloud Deployment bonus point.
 
@@ -99,10 +99,10 @@ gcloud run deploy personal-ai-operator --source . --region us-central1 --allow-u
 
 ---
 
-## ⚖️ Hackathon Compliance
-- ✅ Built specifically for the **Live Agents** Category.
-- ✅ Uses **Gemini Live API** (`ai.live.connect`) over WebSockets.
-- ✅ Uses `@google/genai` (Google GenAI SDK v1.41.0+).
-- ✅ Cloud Native deployment via Google Cloud Run.
-- ✅ Architecture Diagram included (`architecture.md`).
-- ✅ Fully supports English & Urdu language.
+## Hackathon Compliance
+- Built specifically for the Live Agents Category.
+- Uses Gemini Live API (ai.live.connect) over WebSockets.
+- Uses @google/genai (Google GenAI SDK v1.41.0+).
+- Cloud Native deployment via Google Cloud Run.
+- Architecture Diagram included (`architecture.md`).
+- Fully supports English & Urdu language.
