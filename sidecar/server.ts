@@ -34,74 +34,47 @@ const port = process.env.PORT || 3000;
 const server = createServer(app);
 const wss = new WebSocketServer({ server, path: '/ws/' });
 
+const distPath = path.join(process.cwd(), 'dashboard');
+
 app.use(cors());
 app.use(express.json());
 
-// Serve dashboard static files
-const distPath = path.join(process.cwd(), 'dashboard');
-console.log(`[SIDECAR]: Serving dashboard from ${distPath}`);
-
-if (!fs.existsSync(distPath)) {
-    console.error(`[SIDECAR_ERROR]: Dashboard directory not found at ${distPath}`);
-}
-
-// Serve static assets from dashboard build at both /dashboard and root
-app.use('/dashboard', express.static(distPath));
+// --- 1. CORE ASSETS & API ---
+// Note: distPath contains both the build and anything from public/
 app.use(express.static(distPath));
 
-// Favicon fallback (prevent 404)
-app.get('/favicon.ico', (_req, res) => {
-    const faviconPath = path.join(distPath, 'favicon.ico');
-    if (fs.existsSync(faviconPath)) {
-        res.sendFile(faviconPath);
-    } else {
-        res.status(204).end();
-    }
-});
-
-// Manifest fallback
-app.get('/manifest.json', (_req, res) => {
-    res.json({
-        name: 'Personal AI Operator',
-        short_name: 'AI Operator',
-        start_url: '/dashboard/',
-        display: 'standalone',
-        background_color: '#020617',
-        theme_color: '#020617',
-        icons: []
-    });
-});
-
-app.get('/', (_req: any, res: any) => res.redirect('/dashboard/'));
-
-// SPA fallback for /dashboard/* routes
-app.get('/dashboard/*', (_req: any, res: any) => {
-    const indexPath = path.join(distPath, 'index.html');
-    if (fs.existsSync(indexPath)) {
-        res.sendFile(indexPath);
-    } else {
-        res.status(404).send('Dashboard not found');
-    }
-});
-
-// Health check endpoint
 app.get('/health', (req, res) => {
     res.json({ success: true, status: 'HEALTHY', uptime: process.uptime() });
 });
 
-// Security Audit Logs
 app.get('/api/audit', (_req, res) => {
     const auditPath = path.resolve(process.cwd(), 'audit_trail.json');
     try {
-        if (!fs.existsSync(auditPath)) {
-            return res.json({ success: true, logs: [] });
-        }
+        if (!fs.existsSync(auditPath)) return res.json({ success: true, logs: [] });
         const data = fs.readFileSync(auditPath, 'utf8');
         res.json({ success: true, logs: JSON.parse(data) });
     } catch (e: any) {
         res.status(500).json({ success: false, error: e.message });
     }
 });
+
+// Explicit manifest route with correct paths
+app.get('/manifest.json', (_req, res) => {
+    res.json({
+        name: 'Personal Operator Dashboard',
+        short_name: 'Personal Operator',
+        start_url: '/dashboard/',
+        display: 'standalone',
+        background_color: '#020617',
+        theme_color: '#020617',
+        icons: [
+            { "src": "/logo.png", "type": "image/png", "sizes": "192x192" },
+            { "src": "/logo.png", "type": "image/png", "sizes": "512x512" }
+        ]
+    });
+});
+
+
 
 const recovery = new RecoveryEngine();
 const stateManager = new StateManager();
@@ -339,8 +312,9 @@ watcher.on('event', (e) => {
 });
 
 // IPC Endpoint
-app.post('/execute', async (req, res) => {
-    const { action, target, args, bypassJudgment } = req.body.args;
+app.post('/api/execute', async (req, res) => {
+    const body = req.body.args || req.body;
+    const { action, target, args, bypassJudgment } = body;
     console.log(`[IPC_REQUEST]: ${action} on ${target}`);
 
     // Update Mode Context (Minimal inference for now)
@@ -517,7 +491,7 @@ app.post('/execute', async (req, res) => {
 });
 
 // Goal Management Endpoint
-app.post('/goal', (req, res) => {
+app.post('/api/goal', (req, res) => {
     const { action, payload } = req.body;
     let result: any = { success: false };
 
@@ -568,7 +542,7 @@ app.post('/goal', (req, res) => {
 });
 
 // ERPNext Consultant Endpoint
-app.post('/erpnext/consult', async (req, res) => {
+app.post('/api/erpnext/consult', async (req, res) => {
     const { action, payload } = req.body;
     let result: any = { success: false };
 
@@ -654,7 +628,7 @@ app.post('/erpnext/consult', async (req, res) => {
 });
 
 // AI Chat Proxy — with history context, guaranteed text response
-app.post('/ai/chat', async (req, res) => {
+app.post('/api/chat', async (req, res) => {
     const { message, history, systemPrompt } = req.body;
     let geminiError: any = null;
 
@@ -739,7 +713,7 @@ app.post('/ai/chat', async (req, res) => {
 });
 
 // AI Vision Endpoint (UI Navigator Feature)
-app.post('/ai/vision', async (req, res) => {
+app.post('/api/vision', async (req, res) => {
     const { prompt } = req.body;
     const screenshotPath = `screenshot_${Date.now()}.png`;
 
@@ -803,7 +777,7 @@ app.post('/ai/vision', async (req, res) => {
 
 // AI Live Audio Proxy Endpoint (Security: API key stays server-side)
 // FALLBACK: Returns error if Gemini live audio fails (LongCat doesn't support live audio)
-app.post('/ai/live', async (req, res) => {
+app.post('/api/live', async (req, res) => {
     const { config } = req.body;
 
     try {
@@ -917,6 +891,22 @@ const startMonitoring = () => {
         });
     }, 15000); // 15 seconds for more responsive demo loop
 };
+
+// --- 2. STATIC & SPA FALLBACK ---
+app.use('/dashboard', express.static(distPath));
+app.use(express.static(distPath));
+
+app.get('/dashboard/*', (req, res) => {
+    const indexPath = path.join(distPath, 'index.html');
+    if (fs.existsSync(indexPath)) res.sendFile(indexPath);
+    else res.status(404).send('Dashboard not found');
+});
+
+app.all('/api/*', (req, res) => {
+    res.status(404).json({ success: false, error: 'API route not found' });
+});
+
+app.get('/', (req, res) => res.redirect('/dashboard/'));
 
 server.listen(port, () => {
     console.log(`[SIDECAR]: Server listening on port ${port}`);
