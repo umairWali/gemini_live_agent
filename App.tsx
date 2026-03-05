@@ -389,6 +389,13 @@ const AppContent: React.FC = () => {
             }));
             if (data.type === 'VOICE_PROACTIVE_ALERT') speakText(data.text);
           }
+        } else if (data.type === 'VOICE_READY') {
+          addToast({ type: 'success', title: 'AI Ready', message: 'Gemini is now listening.' });
+        } else if (data.type === 'VOICE_ERROR') {
+          addToast({ type: 'error', title: 'Gemini Error', message: data.error });
+          setIsVoiceActive(false);
+          if (audioContextRef.current) audioContextRef.current.close().catch(() => { });
+          if (mediaStreamRef.current) mediaStreamRef.current.getTracks().forEach(t => t.stop());
         } else if (data.type === 'SYSTEM_PULSE') {
           setState(p => ({ ...p, realtimeMetrics: data.metrics }));
         }
