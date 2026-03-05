@@ -116,26 +116,26 @@ wss.on('connection', (ws) => {
                     return;
                 }
 
-                const { GoogleGenAI, Modality } = await import('@google/genai');
+                const { GoogleGenAI, Type } = await import('@google/genai');
                 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
                 try {
                     let liveSession: any;
                     liveSession = await ai.live.connect({
-                        model: 'models/gemini-2.0-flash-exp',
+                        model: 'gemini-2.0-flash-exp',
                         config: {
-                            responseModalities: [Modality.AUDIO, Modality.TEXT],
-                            systemInstruction: 'You are Personal Operator — an elite, autonomous assistant. Be brief. Mix Urdu/English.',
+                            responseModalities: ["AUDIO", "TEXT"],
+                            systemInstruction: { parts: [{ text: 'You are Personal Operator — an elite, autonomous assistant. Be brief. Mix Urdu/English.' }] },
                             tools: [{
                                 functionDeclarations: [{
                                     name: "execute_action",
                                     description: "System tools",
                                     parameters: {
-                                        type: "OBJECT",
+                                        type: Type.OBJECT,
                                         properties: {
-                                            action: { type: "STRING" },
-                                            target: { type: "STRING" },
-                                            args: { type: "STRING" }
+                                            action: { type: Type.STRING },
+                                            target: { type: Type.STRING },
+                                            args: { type: Type.STRING }
                                         }
                                     }
                                 }]
@@ -190,34 +190,32 @@ wss.on('connection', (ws) => {
                 if (session && message.data) {
                     if (Math.random() < 0.01) console.log(`[AI_AUDIO_IN]: ${Math.round(message.data.length / 1024)}KB`);
                     try {
-                        // Standard GenAI Send format for real-time input
-                        session.send({
-                            realtimeInput: {
-                                mediaChunks: [{
-                                    data: message.data,
-                                    mimeType: 'audio/pcm;rate=24000'
-                                }]
-                            }
-                        });
+                        const payload = [{ mimeType: 'audio/pcm;rate=24000', data: message.data }];
+                        if (typeof session.sendRealtimeInput === 'function') {
+                            session.sendRealtimeInput(payload);
+                        } else if (typeof session.send === 'function') {
+                            session.send({ realtimeInput: { mediaChunks: payload } });
+                        }
                     } catch (err: any) {
                         console.error('[AI_AUDIO_SEND_ERR]:', err.message);
-                        // Emergency fallback for direct input if send() fails
-                        try { (session as any).sendRealtimeInput([{ mimeType: 'audio/pcm;rate=24000', data: message.data }]); } catch { }
                     }
                 }
             } else if (message.type === 'VOICE_TEXT_INPUT') {
                 const session = liveSessions.get(ws);
                 if (session && message.text) {
                     try {
-                        session.send({
-                            clientContent: {
-                                turns: [{
-                                    role: 'user',
-                                    parts: [{ text: message.text }]
-                                }],
-                                turnComplete: true
-                            }
-                        });
+                        const payload = {
+                            turns: [{
+                                role: 'user',
+                                parts: [{ text: message.text }]
+                            }],
+                            turnComplete: true
+                        };
+                        if (typeof session.sendClientContent === 'function') {
+                            session.sendClientContent([payload]);
+                        } else if (typeof session.send === 'function') {
+                            session.send({ clientContent: payload });
+                        }
                     } catch (err: any) {
                         console.error('[AI_TEXT_SEND_ERR]:', err.message);
                     }
