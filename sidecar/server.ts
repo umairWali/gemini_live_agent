@@ -143,25 +143,18 @@ wss.on('connection', (ws) => {
                         } as any,
                         callbacks: {
                             onmessage: async (msg: any) => {
-                                const parts = msg.serverContent?.modelTurn?.parts || [];
-                                if (parts.length > 0) console.log(`[AI_LIVE]: Received ${parts.length} parts from model.`);
+                                // HEAVY DEBUG: Log raw server response structure
+                                console.log('[AI_DEBUG_RAW]:', JSON.stringify(msg, (k, v) => (k === 'data' && typeof v === 'string' ? `[${v.length}B]` : v)));
 
-                                for (const part of parts) {
-                                    if (part.inlineData?.data) {
-                                        ws.send(JSON.stringify({ type: 'VOICE_RESPONSE', data: part.inlineData.data }));
-                                    }
-                                    if (part.text) {
-                                        ws.send(JSON.stringify({ type: 'VOICE_TEXT', text: part.text }));
-                                    }
-                                    if (part.functionCall && liveSession) {
-                                        const { name, args } = part.functionCall;
-                                        if (name === 'execute_action') {
-                                            executeAction(args.action, args.target, args.args).then((res) => {
-                                                liveSession.sendClientContent([{
-                                                    role: 'user',
-                                                    parts: [{ functionResponse: { name, response: { result: res.output || res.error } } }]
-                                                }]);
-                                            });
+                                const modelTurn = msg.serverContent?.modelTurn;
+                                if (modelTurn) {
+                                    for (const part of (modelTurn.parts || [])) {
+                                        if (part.inlineData?.data) {
+                                            ws.send(JSON.stringify({ type: 'VOICE_RESPONSE', data: part.inlineData.data }));
+                                        }
+                                        if (part.text) {
+                                            console.log(`[AI_LIVE_REPLY]: ${part.text}`);
+                                            ws.send(JSON.stringify({ type: 'VOICE_TEXT', text: part.text }));
                                         }
                                     }
                                 }
@@ -191,12 +184,12 @@ wss.on('connection', (ws) => {
             } else if (message.type === 'VOICE_AUDIO') {
                 const session = liveSessions.get(ws);
                 if (session && message.data) {
-                    // Log every 100th audio chunk to verify stream
-                    if (Math.random() < 0.01) console.log('[AI_LIVE]: Forwarding audio chunk...');
-                    session.sendRealtimeInput([{
-                        mimeType: 'audio/pcm;rate=24000',
-                        data: message.data
-                    }]);
+                    if (Math.random() < 0.05) console.log(`[AI_AUDIO_IN]: ${Math.round(message.data.length / 1024)}KB`);
+                    try {
+                        session.sendRealtimeInput([{ mimeType: 'audio/pcm;rate=24000', data: message.data }]);
+                    } catch (err) {
+                        (session as any).send?.({ mimeType: 'audio/pcm;rate=24000', data: message.data });
+                    }
                 }
             } else if (message.type === 'VOICE_TEXT_INPUT') {
                 const session = liveSessions.get(ws);

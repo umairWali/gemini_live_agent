@@ -265,6 +265,9 @@ const AppContent: React.FC = () => {
         const workletNode = new AudioWorkletNode(ctx, 'audio-processor');
         workletNodeRef.current = workletNode;
 
+        let audioBuffer: Int16Array[] = [];
+        let bufferLength = 0;
+
         workletNode.port.onmessage = (e) => {
           if (ws.readyState === WebSocket.OPEN) {
             const inputData = e.data;
@@ -272,15 +275,29 @@ const AppContent: React.FC = () => {
             for (let i = 0; i < inputData.length; i++) {
               pcmData[i] = Math.max(-1, Math.min(1, inputData[i])) * 32767;
             }
-            // Robust binary to base64
-            const bytes = new Uint8Array(pcmData.buffer);
-            let binary = '';
-            const chunkSize = 8192;
-            for (let i = 0; i < bytes.length; i += chunkSize) {
-              binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+
+            audioBuffer.push(pcmData);
+            bufferLength += pcmData.length;
+
+            // Flash every ~85ms (2048 samples at 24kHz)
+            if (bufferLength >= 2048) {
+              const combined = new Int16Array(bufferLength);
+              let offset = 0;
+              for (const chunk of audioBuffer) {
+                combined.set(chunk, offset);
+                offset += chunk.length;
+              }
+
+              const bytes = new Uint8Array(combined.buffer);
+              let binary = '';
+              for (let i = 0; i < bytes.length; i += 8192) {
+                binary += String.fromCharCode(...bytes.subarray(i, i + 8192));
+              }
+              ws.send(JSON.stringify({ type: 'VOICE_AUDIO', data: btoa(binary) }));
+
+              audioBuffer = [];
+              bufferLength = 0;
             }
-            const base64 = btoa(binary);
-            ws.send(JSON.stringify({ type: 'VOICE_AUDIO', data: base64 }));
           }
         };
 
