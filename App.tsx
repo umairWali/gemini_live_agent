@@ -123,6 +123,7 @@ const AppContent: React.FC = () => {
   const [audioLevel, setAudioLevel] = useState(0);
   const voiceSocketRef = useRef<WebSocket | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
+  const workletNodeRef = useRef<AudioWorkletNode | null>(null);
   const playbackCtxRef = useRef<AudioContext | null>(null);
   const analyzerRef = useRef<AnalyserNode | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
@@ -230,8 +231,18 @@ const AppContent: React.FC = () => {
       setIsVoiceActive(false);
       setIsVoiceConnecting(false);
       ws.send(JSON.stringify({ type: 'STOP_VOICE' }));
-      if (audioContextRef.current) audioContextRef.current.close().catch(() => { });
-      if (mediaStreamRef.current) mediaStreamRef.current.getTracks().forEach(t => t.stop());
+      if (workletNodeRef.current) {
+        workletNodeRef.current.disconnect();
+        workletNodeRef.current = null;
+      }
+      if (audioContextRef.current) {
+        audioContextRef.current.close().catch(() => { });
+        audioContextRef.current = null;
+      }
+      if (mediaStreamRef.current) {
+        mediaStreamRef.current.getTracks().forEach(t => t.stop());
+        mediaStreamRef.current = null;
+      }
       addToast({ type: 'success', title: 'Voice Deactivated', message: 'Mic stream closed.' });
       return;
     }
@@ -244,16 +255,19 @@ const AppContent: React.FC = () => {
   const startMediaStream = useCallback(() => {
     const ws = (window as any).operatorWs as WebSocket;
     navigator.mediaDevices.getUserMedia({ audio: { sampleRate: 24000, channelCount: 1, noiseSuppression: true } })
-      .then(stream => {
+      .then(async stream => {
         mediaStreamRef.current = stream;
         const ctx = new window.AudioContext({ sampleRate: 24000 });
         audioContextRef.current = ctx;
-        const source = ctx.createMediaStreamSource(stream);
-        const processor = ctx.createScriptProcessor(4096, 1, 1);
 
-        processor.onaudioprocess = (e) => {
+        await ctx.audioWorklet.addModule('/audio-processor.js');
+        const source = ctx.createMediaStreamSource(stream);
+        const workletNode = new AudioWorkletNode(ctx, 'audio-processor');
+        workletNodeRef.current = workletNode;
+
+        workletNode.port.onmessage = (e) => {
           if (ws.readyState === WebSocket.OPEN && isVoiceActive) {
-            const inputData = e.inputBuffer.getChannelData(0);
+            const inputData = e.data;
             const pcmData = new Int16Array(inputData.length);
             for (let i = 0; i < inputData.length; i++) {
               pcmData[i] = Math.max(-1, Math.min(1, inputData[i])) * 32767;
@@ -263,8 +277,9 @@ const AppContent: React.FC = () => {
           }
         };
 
-        source.connect(processor);
-        processor.connect(ctx.destination);
+        source.connect(workletNode);
+        workletNode.connect(ctx.destination);
+
         setIsVoiceConnecting(false);
         setIsVoiceActive(true);
         addToast({ type: 'success', title: 'AI Ready', message: 'Gemini is now listening.' });
@@ -397,8 +412,18 @@ const AppContent: React.FC = () => {
           addToast({ type: 'error', title: 'Gemini Error', message: data.error });
           setIsVoiceActive(false);
           setIsVoiceConnecting(false);
-          if (audioContextRef.current) audioContextRef.current.close().catch(() => { });
-          if (mediaStreamRef.current) mediaStreamRef.current.getTracks().forEach(t => t.stop());
+          if (workletNodeRef.current) {
+            workletNodeRef.current.disconnect();
+            workletNodeRef.current = null;
+          }
+          if (audioContextRef.current) {
+            audioContextRef.current.close().catch(() => { });
+            audioContextRef.current = null;
+          }
+          if (mediaStreamRef.current) {
+            mediaStreamRef.current.getTracks().forEach(t => t.stop());
+            mediaStreamRef.current = null;
+          }
         } else if (data.type === 'SYSTEM_PULSE') {
           setState(p => ({ ...p, realtimeMetrics: data.metrics }));
         }

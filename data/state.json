@@ -39,6 +39,342 @@
   "tasks": [],
   "auditTrail": [
     {
+      "id": "zpdaxusij",
+      "text": "MONITOR_PULSE: CPU=26%, RAM=42%",
+      "source": "health_monitor",
+      "timestamp": 1772749862479
+    },
+    {
+      "id": "ruyfao690",
+      "text": "MONITOR_PULSE: CPU=24%, RAM=42%",
+      "source": "health_monitor",
+      "timestamp": 1772749847463
+    },
+    {
+      "id": "dalvebph3",
+      "text": "MONITOR_PULSE: CPU=28%, RAM=42%",
+      "source": "health_monitor",
+      "timestamp": 1772749832461
+    },
+    {
+      "id": "mzppvpg7v",
+      "text": "MONITOR_PULSE: CPU=5%, RAM=42%",
+      "source": "health_monitor",
+      "timestamp": 1772749817461
+    },
+    {
+      "id": "z2cg2z2fj",
+      "text": "MONITOR_PULSE: CPU=7%, RAM=42%",
+      "source": "health_monitor",
+      "timestamp": 1772749802461
+    },
+    {
+      "id": "pi5pth8yd",
+      "text": "MONITOR_PULSE: CPU=0%, RAM=40%",
+      "source": "health_monitor",
+      "timestamp": 1772749787458
+    },
+    {
+      "id": "6d47cwkhb",
+      "text": "MONITOR_PULSE: CPU=2%, RAM=40%",
+      "source": "health_monitor",
+      "timestamp": 1772749772456
+    },
+    {
+      "id": "08knqn3v4",
+      "text": "MONITOR_PULSE: CPU=1%, RAM=41%",
+      "source": "health_monitor",
+      "timestamp": 1772749757451
+    },
+    {
+      "id": "fjoxmhdgg",
+      "text": "MONITOR_PULSE: CPU=3%, RAM=41%",
+      "source": "health_monitor",
+      "timestamp": 1772749742453
+    },
+    {
+      "id": "edxc7rjbb",
+      "text": "MONITOR_PULSE: CPU=1%, RAM=40%",
+      "source": "health_monitor",
+      "timestamp": 1772749727434
+    },
+    {
+      "id": "k5ogzlbkf",
+      "text": "MONITOR_PULSE: CPU=4%, RAM=40%",
+      "source": "health_monitor",
+      "timestamp": 1772749712434
+    },
+    {
+      "id": "bxz3kztkv",
+      "text": "MONITOR_PULSE: CPU=4%, RAM=40%",
+      "source": "health_monitor",
+      "timestamp": 1772749697422
+    },
+    {
+      "id": "xhdoc6blk",
+      "text": "MONITOR_PULSE: CPU=5%, RAM=40%",
+      "source": "health_monitor",
+      "timestamp": 1772749682420
+    },
+    {
+      "id": "usxgn2cm9",
+      "text": "MONITOR_PULSE: CPU=1%, RAM=41%",
+      "source": "health_monitor",
+      "timestamp": 1772749667422
+    },
+    {
+      "id": "7hzn1wp2r",
+      "text": "MONITOR_PULSE: CPU=4%, RAM=41%",
+      "source": "health_monitor",
+      "timestamp": 1772749652421
+    },
+    {
+      "id": "i5hljv533",
+      "text": "MONITOR_PULSE: CPU=1%, RAM=41%",
+      "source": "health_monitor",
+      "timestamp": 1772749637382
+    },
+    {
+      "id": "pimzb9oex",
+      "text": "MONITOR_PULSE: CPU=2%, RAM=41%",
+      "source": "health_monitor",
+      "timestamp": 1772749622381
+    },
+    {
+      "id": "kdy92qvs0",
+      "text": "MONITOR_PULSE: CPU=6%, RAM=41%",
+      "source": "health_monitor",
+      "timestamp": 1772749607380
+    },
+    {
+      "id": "piqg8hr8v",
+      "text": "MONITOR_PULSE: CPU=6%, RAM=41%",
+      "source": "health_monitor",
+      "timestamp": 1772749592380
+    },
+    {
+      "id": "2y0uktay9",
+      "text": "MONITOR_PULSE: CPU=5%, RAM=41%",
+      "source": "health_monitor",
+      "timestamp": 1772749577372
+    },
+    {
+      "id": "ufjk8x8c5",
+      "text": "MONITOR_PULSE: CPU=2%, RAM=42%",
+      "source": "health_monitor",
+      "timestamp": 1772749562373
+    },
+    {
+      "id": "sp26fuq3c",
+      "text": "MONITOR_PULSE: CPU=3%, RAM=42%",
+      "source": "health_monitor",
+      "timestamp": 1772749547352
+    },
+    {
+      "id": "cpk5kicrt",
+      "text": "MONITOR_PULSE: CPU=4%, RAM=42%",
+      "source": "health_monitor",
+      "timestamp": 1772749532349
+    },
+    {
+      "id": "gzb7qz9z8",
+      "text": "MONITOR_PULSE: CPU=3%, RAM=42%",
+      "source": "health_monitor",
+      "timestamp": 1772749517335
+    },
+    {
+      "id": "lc5k3pjo2",
+      "text": "MONITOR_PULSE: CPU=11%, RAM=43%",
+      "source": "health_monitor",
+      "timestamp": 1772749502334
+    },
+    {
+      "id": "1rx6ropgm",
+      "text": "MONITOR_PULSE: CPU=8%, RAM=42%",
+      "source": "health_monitor",
+      "timestamp": 1772749487320
+    },
+    {
+      "id": "rd7mzd9wz",
+      "text": "MONITOR_PULSE: CPU=17%, RAM=42%",
+      "source": "health_monitor",
+      "timestamp": 1772749472319
+    },
+    {
+      "id": "emgfjl9y8",
+      "text": "MONITOR_PULSE: CPU=5%, RAM=43%",
+      "source": "health_monitor",
+      "timestamp": 1772749457315
+    },
+    {
+      "id": "zfy1gpg8c",
+      "text": "MONITOR_PULSE: CPU=5%, RAM=42%",
+      "source": "health_monitor",
+      "timestamp": 1772749442315
+    },
+    {
+      "id": "kimjyho3o",
+      "text": "MONITOR_PULSE: CPU=7%, RAM=43%",
+      "source": "health_monitor",
+      "timestamp": 1772749427310
+    },
+    {
+      "id": "jef73uupv",
+      "text": "MONITOR_PULSE: CPU=3%, RAM=42%",
+      "source": "health_monitor",
+      "timestamp": 1772749412309
+    },
+    {
+      "id": "gqvfpb5r2",
+      "text": "MONITOR_PULSE: CPU=1%, RAM=42%",
+      "source": "health_monitor",
+      "timestamp": 1772749397301
+    },
+    {
+      "id": "z77bi1468",
+      "text": "MONITOR_PULSE: CPU=13%, RAM=42%",
+      "source": "health_monitor",
+      "timestamp": 1772749382301
+    },
+    {
+      "id": "unc3b4ig7",
+      "text": "MONITOR_PULSE: CPU=3%, RAM=42%",
+      "source": "health_monitor",
+      "timestamp": 1772749367284
+    },
+    {
+      "id": "uw831ip3x",
+      "text": "MONITOR_PULSE: CPU=3%, RAM=43%",
+      "source": "health_monitor",
+      "timestamp": 1772749352283
+    },
+    {
+      "id": "o0hfo57by",
+      "text": "MONITOR_PULSE: CPU=1%, RAM=42%",
+      "source": "health_monitor",
+      "timestamp": 1772749337269
+    },
+    {
+      "id": "6e02v34s8",
+      "text": "MONITOR_PULSE: CPU=2%, RAM=42%",
+      "source": "health_monitor",
+      "timestamp": 1772749322269
+    },
+    {
+      "id": "msd01z781",
+      "text": "MONITOR_PULSE: CPU=5%, RAM=42%",
+      "source": "health_monitor",
+      "timestamp": 1772749307257
+    },
+    {
+      "id": "vdxv9suks",
+      "text": "MONITOR_PULSE: CPU=8%, RAM=43%",
+      "source": "health_monitor",
+      "timestamp": 1772749292256
+    },
+    {
+      "id": "xxcfpqcn1",
+      "text": "MONITOR_PULSE: CPU=4%, RAM=42%",
+      "source": "health_monitor",
+      "timestamp": 1772749277239
+    },
+    {
+      "id": "5s8ijqbol",
+      "text": "MONITOR_PULSE: CPU=2%, RAM=42%",
+      "source": "health_monitor",
+      "timestamp": 1772749262239
+    },
+    {
+      "id": "wx4b90wyk",
+      "text": "MONITOR_PULSE: CPU=1%, RAM=42%",
+      "source": "health_monitor",
+      "timestamp": 1772749247224
+    },
+    {
+      "id": "2pwhebjh5",
+      "text": "MONITOR_PULSE: CPU=2%, RAM=42%",
+      "source": "health_monitor",
+      "timestamp": 1772749232224
+    },
+    {
+      "id": "cpr7r2dek",
+      "text": "MONITOR_PULSE: CPU=2%, RAM=42%",
+      "source": "health_monitor",
+      "timestamp": 1772749217212
+    },
+    {
+      "id": "8nch5sti3",
+      "text": "MONITOR_PULSE: CPU=12%, RAM=43%",
+      "source": "health_monitor",
+      "timestamp": 1772749202216
+    },
+    {
+      "id": "a7wfardge",
+      "text": "MONITOR_PULSE: CPU=21%, RAM=43%",
+      "source": "health_monitor",
+      "timestamp": 1772749187204
+    },
+    {
+      "id": "8p88jlzfz",
+      "text": "MONITOR_PULSE: CPU=21%, RAM=42%",
+      "source": "health_monitor",
+      "timestamp": 1772749172207
+    },
+    {
+      "id": "u6tyz6r3j",
+      "text": "MONITOR_PULSE: CPU=5%, RAM=45%",
+      "source": "health_monitor",
+      "timestamp": 1772749157179
+    },
+    {
+      "id": "ljoe3hxg5",
+      "text": "MONITOR_PULSE: CPU=2%, RAM=45%",
+      "source": "health_monitor",
+      "timestamp": 1772749142182
+    },
+    {
+      "id": "th2e6bjng",
+      "text": "MONITOR_PULSE: CPU=35%, RAM=45%",
+      "source": "health_monitor",
+      "timestamp": 1772749127171
+    },
+    {
+      "id": "4bezp18k8",
+      "text": "MONITOR_PULSE: CPU=18%, RAM=44%",
+      "source": "health_monitor",
+      "timestamp": 1772749112171
+    },
+    {
+      "id": "4xsjymi6n",
+      "text": "MONITOR_PULSE: CPU=11%, RAM=44%",
+      "source": "health_monitor",
+      "timestamp": 1772749097161
+    },
+    {
+      "id": "nai55dk5i",
+      "text": "MONITOR_PULSE: CPU=7%, RAM=44%",
+      "source": "health_monitor",
+      "timestamp": 1772749082161
+    },
+    {
+      "id": "wjb2plelw",
+      "text": "MONITOR_PULSE: CPU=3%, RAM=44%",
+      "source": "health_monitor",
+      "timestamp": 1772749067144
+    },
+    {
+      "id": "5s5kvpsl7",
+      "text": "MONITOR_PULSE: CPU=4%, RAM=44%",
+      "source": "health_monitor",
+      "timestamp": 1772749052144
+    },
+    {
+      "id": "6ac24ot5d",
+      "text": "MONITOR_PULSE: CPU=61%, RAM=45%",
+      "source": "health_monitor",
+      "timestamp": 1772749037137
+    },
+    {
       "id": "zd3kjmv2a",
       "text": "MONITOR_PULSE: CPU=41%, RAM=42%",
       "source": "health_monitor",
@@ -5701,342 +6037,6 @@
       "text": "MONITOR_PULSE: CPU=0%, RAM=15%",
       "source": "health_monitor",
       "timestamp": 1772679428320
-    },
-    {
-      "id": "jd5chhbl1",
-      "text": "MONITOR_PULSE: CPU=0%, RAM=15%",
-      "source": "health_monitor",
-      "timestamp": 1772679308312
-    },
-    {
-      "id": "tgibf6t51",
-      "text": "MONITOR_PULSE: CPU=0%, RAM=15%",
-      "source": "health_monitor",
-      "timestamp": 1772679188304
-    },
-    {
-      "id": "dltsrgu0x",
-      "text": "MONITOR_PULSE: CPU=0%, RAM=15%",
-      "source": "health_monitor",
-      "timestamp": 1772679068298
-    },
-    {
-      "id": "jl0yae4gw",
-      "text": "MONITOR_PULSE: CPU=0%, RAM=15%",
-      "source": "health_monitor",
-      "timestamp": 1772678948290
-    },
-    {
-      "id": "8moemnizq",
-      "text": "MONITOR_PULSE: CPU=0%, RAM=15%",
-      "source": "health_monitor",
-      "timestamp": 1772678828283
-    },
-    {
-      "id": "49hd0fql7",
-      "text": "MONITOR_PULSE: CPU=0%, RAM=15%",
-      "source": "health_monitor",
-      "timestamp": 1772678708276
-    },
-    {
-      "id": "miq9s684h",
-      "text": "MONITOR_PULSE: CPU=0%, RAM=15%",
-      "source": "health_monitor",
-      "timestamp": 1772678588268
-    },
-    {
-      "id": "xhkuk15gw",
-      "text": "MONITOR_PULSE: CPU=0%, RAM=15%",
-      "source": "health_monitor",
-      "timestamp": 1772678468261
-    },
-    {
-      "id": "up4nywqmf",
-      "text": "MONITOR_PULSE: CPU=0%, RAM=15%",
-      "source": "health_monitor",
-      "timestamp": 1772678348253
-    },
-    {
-      "id": "l6k5fno7m",
-      "text": "MONITOR_PULSE: CPU=0%, RAM=15%",
-      "source": "health_monitor",
-      "timestamp": 1772678228244
-    },
-    {
-      "id": "l8cdjjdd5",
-      "text": "MONITOR_PULSE: CPU=0%, RAM=15%",
-      "source": "health_monitor",
-      "timestamp": 1772678108235
-    },
-    {
-      "id": "we4bydz7c",
-      "text": "MONITOR_PULSE: CPU=0%, RAM=15%",
-      "source": "health_monitor",
-      "timestamp": 1772677988227
-    },
-    {
-      "id": "36rwzbi3b",
-      "text": "MONITOR_PULSE: CPU=0%, RAM=15%",
-      "source": "health_monitor",
-      "timestamp": 1772677868219
-    },
-    {
-      "id": "ykjl8ougb",
-      "text": "MONITOR_PULSE: CPU=0%, RAM=15%",
-      "source": "health_monitor",
-      "timestamp": 1772677748210
-    },
-    {
-      "id": "xls6mmhzv",
-      "text": "MONITOR_PULSE: CPU=0%, RAM=15%",
-      "source": "health_monitor",
-      "timestamp": 1772677628201
-    },
-    {
-      "id": "czgpkgvu0",
-      "text": "MONITOR_PULSE: CPU=0%, RAM=15%",
-      "source": "health_monitor",
-      "timestamp": 1772677508192
-    },
-    {
-      "id": "yqxrq7m1w",
-      "text": "MONITOR_PULSE: CPU=0%, RAM=15%",
-      "source": "health_monitor",
-      "timestamp": 1772677388184
-    },
-    {
-      "id": "zek558n32",
-      "text": "MONITOR_PULSE: CPU=0%, RAM=15%",
-      "source": "health_monitor",
-      "timestamp": 1772677268175
-    },
-    {
-      "id": "yu6jq8pdw",
-      "text": "MONITOR_PULSE: CPU=0%, RAM=15%",
-      "source": "health_monitor",
-      "timestamp": 1772677148166
-    },
-    {
-      "id": "dr2i0mzsc",
-      "text": "MONITOR_PULSE: CPU=1%, RAM=15%",
-      "source": "health_monitor",
-      "timestamp": 1772677028159
-    },
-    {
-      "id": "tfipdzubg",
-      "text": "MONITOR_PULSE: CPU=0%, RAM=15%",
-      "source": "health_monitor",
-      "timestamp": 1772676908150
-    },
-    {
-      "id": "hll6b9ip4",
-      "text": "MONITOR_PULSE: CPU=0%, RAM=15%",
-      "source": "health_monitor",
-      "timestamp": 1772676788141
-    },
-    {
-      "id": "whpi5u3oq",
-      "text": "MONITOR_PULSE: CPU=1%, RAM=15%",
-      "source": "health_monitor",
-      "timestamp": 1772676668131
-    },
-    {
-      "id": "hv0h1p1xs",
-      "text": "MONITOR_PULSE: CPU=1%, RAM=15%",
-      "source": "health_monitor",
-      "timestamp": 1772676548123
-    },
-    {
-      "id": "ardhi9iu8",
-      "text": "MONITOR_PULSE: CPU=0%, RAM=15%",
-      "source": "health_monitor",
-      "timestamp": 1772676428115
-    },
-    {
-      "id": "m48100ewj",
-      "text": "MONITOR_PULSE: CPU=0%, RAM=15%",
-      "source": "health_monitor",
-      "timestamp": 1772676308106
-    },
-    {
-      "id": "jm0y8t36c",
-      "text": "MONITOR_PULSE: CPU=0%, RAM=15%",
-      "source": "health_monitor",
-      "timestamp": 1772676188099
-    },
-    {
-      "id": "njjiffzsa",
-      "text": "MONITOR_PULSE: CPU=0%, RAM=15%",
-      "source": "health_monitor",
-      "timestamp": 1772676068091
-    },
-    {
-      "id": "1uarmx18e",
-      "text": "MONITOR_PULSE: CPU=0%, RAM=15%",
-      "source": "health_monitor",
-      "timestamp": 1772675948083
-    },
-    {
-      "id": "ew2wpnyqq",
-      "text": "MONITOR_PULSE: CPU=0%, RAM=15%",
-      "source": "health_monitor",
-      "timestamp": 1772675828075
-    },
-    {
-      "id": "rn6lix2ii",
-      "text": "MONITOR_PULSE: CPU=0%, RAM=15%",
-      "source": "health_monitor",
-      "timestamp": 1772675708066
-    },
-    {
-      "id": "5l0bvpg2a",
-      "text": "MONITOR_PULSE: CPU=0%, RAM=15%",
-      "source": "health_monitor",
-      "timestamp": 1772675588059
-    },
-    {
-      "id": "tpxc19xu5",
-      "text": "MONITOR_PULSE: CPU=0%, RAM=15%",
-      "source": "health_monitor",
-      "timestamp": 1772675468050
-    },
-    {
-      "id": "pxbbzgmcg",
-      "text": "MONITOR_PULSE: CPU=0%, RAM=15%",
-      "source": "health_monitor",
-      "timestamp": 1772675348041
-    },
-    {
-      "id": "2rueum1fw",
-      "text": "MONITOR_PULSE: CPU=0%, RAM=15%",
-      "source": "health_monitor",
-      "timestamp": 1772675228033
-    },
-    {
-      "id": "0doo1wxuu",
-      "text": "MONITOR_PULSE: CPU=0%, RAM=15%",
-      "source": "health_monitor",
-      "timestamp": 1772675108026
-    },
-    {
-      "id": "kw6fc6obq",
-      "text": "MONITOR_PULSE: CPU=0%, RAM=15%",
-      "source": "health_monitor",
-      "timestamp": 1772674988018
-    },
-    {
-      "id": "nrhwgilvy",
-      "text": "MONITOR_PULSE: CPU=0%, RAM=15%",
-      "source": "health_monitor",
-      "timestamp": 1772674868015
-    },
-    {
-      "id": "gjbdnuwxe",
-      "text": "MONITOR_PULSE: CPU=0%, RAM=15%",
-      "source": "health_monitor",
-      "timestamp": 1772674748006
-    },
-    {
-      "id": "3engmhh0f",
-      "text": "MONITOR_PULSE: CPU=0%, RAM=15%",
-      "source": "health_monitor",
-      "timestamp": 1772674627997
-    },
-    {
-      "id": "6wu12ui5p",
-      "text": "MONITOR_PULSE: CPU=0%, RAM=15%",
-      "source": "health_monitor",
-      "timestamp": 1772674507990
-    },
-    {
-      "id": "m5hcxhu0u",
-      "text": "MONITOR_PULSE: CPU=0%, RAM=15%",
-      "source": "health_monitor",
-      "timestamp": 1772674387982
-    },
-    {
-      "id": "ffy83zb3t",
-      "text": "MONITOR_PULSE: CPU=0%, RAM=15%",
-      "source": "health_monitor",
-      "timestamp": 1772674267974
-    },
-    {
-      "id": "try1kbzgc",
-      "text": "MONITOR_PULSE: CPU=0%, RAM=15%",
-      "source": "health_monitor",
-      "timestamp": 1772674147964
-    },
-    {
-      "id": "xtnoa933a",
-      "text": "MONITOR_PULSE: CPU=0%, RAM=15%",
-      "source": "health_monitor",
-      "timestamp": 1772674027956
-    },
-    {
-      "id": "gxd7onlqx",
-      "text": "MONITOR_PULSE: CPU=0%, RAM=15%",
-      "source": "health_monitor",
-      "timestamp": 1772673907948
-    },
-    {
-      "id": "j8ik26zgn",
-      "text": "MONITOR_PULSE: CPU=0%, RAM=15%",
-      "source": "health_monitor",
-      "timestamp": 1772673787940
-    },
-    {
-      "id": "7vbkwtp5w",
-      "text": "MONITOR_PULSE: CPU=0%, RAM=15%",
-      "source": "health_monitor",
-      "timestamp": 1772673667934
-    },
-    {
-      "id": "anj6egmxl",
-      "text": "MONITOR_PULSE: CPU=0%, RAM=15%",
-      "source": "health_monitor",
-      "timestamp": 1772673547926
-    },
-    {
-      "id": "mktiz7b26",
-      "text": "MONITOR_PULSE: CPU=0%, RAM=15%",
-      "source": "health_monitor",
-      "timestamp": 1772673427921
-    },
-    {
-      "id": "1rk75xz76",
-      "text": "MONITOR_PULSE: CPU=0%, RAM=15%",
-      "source": "health_monitor",
-      "timestamp": 1772673307920
-    },
-    {
-      "id": "x1ugfvunb",
-      "text": "MONITOR_PULSE: CPU=0%, RAM=15%",
-      "source": "health_monitor",
-      "timestamp": 1772673187911
-    },
-    {
-      "id": "phs74vqe1",
-      "text": "MONITOR_PULSE: CPU=0%, RAM=15%",
-      "source": "health_monitor",
-      "timestamp": 1772673067902
-    },
-    {
-      "id": "bv3ulghbl",
-      "text": "MONITOR_PULSE: CPU=0%, RAM=15%",
-      "source": "health_monitor",
-      "timestamp": 1772672947893
-    },
-    {
-      "id": "1ryeycmhn",
-      "text": "MONITOR_PULSE: CPU=0%, RAM=15%",
-      "source": "health_monitor",
-      "timestamp": 1772672827885
-    },
-    {
-      "id": "6t3qeowoo",
-      "text": "MONITOR_PULSE: CPU=0%, RAM=15%",
-      "source": "health_monitor",
-      "timestamp": 1772672707876
     }
   ],
   "vault": [],
