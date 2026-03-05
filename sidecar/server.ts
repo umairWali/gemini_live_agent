@@ -166,12 +166,16 @@ wss.on('connection', (ws) => {
                                 }
                             },
                             onopen: () => {
-                                console.log('[AI_LIVE]: Provider Connection Established.');
+                                console.log('[AI_LIVE]: Provider session active.');
                                 ws.send(JSON.stringify({ type: 'VOICE_READY' }));
                             },
                             onerror: (err: any) => {
-                                console.error('[AI_LIVE]: Model Error', err);
+                                console.error('[AI_LIVE_ERROR]:', err);
                                 ws.send(JSON.stringify({ type: 'VOICE_ERROR', error: String(err.message || err) || 'Model error' }));
+                            },
+                            onclose: (status: any) => {
+                                console.log('[AI_LIVE]: Provider session closed.', status);
+                                liveSessions.delete(ws);
                             }
                         }
                     });
@@ -184,17 +188,39 @@ wss.on('connection', (ws) => {
             } else if (message.type === 'VOICE_AUDIO') {
                 const session = liveSessions.get(ws);
                 if (session && message.data) {
-                    if (Math.random() < 0.05) console.log(`[AI_AUDIO_IN]: ${Math.round(message.data.length / 1024)}KB`);
+                    if (Math.random() < 0.01) console.log(`[AI_AUDIO_IN]: ${Math.round(message.data.length / 1024)}KB`);
                     try {
-                        session.sendRealtimeInput([{ mimeType: 'audio/pcm;rate=24000', data: message.data }]);
-                    } catch (err) {
-                        (session as any).send?.({ mimeType: 'audio/pcm;rate=24000', data: message.data });
+                        // Standard GenAI Send format for real-time input
+                        session.send({
+                            realtimeInput: {
+                                mediaChunks: [{
+                                    data: message.data,
+                                    mimeType: 'audio/pcm;rate=24000'
+                                }]
+                            }
+                        });
+                    } catch (err: any) {
+                        console.error('[AI_AUDIO_SEND_ERR]:', err.message);
+                        // Emergency fallback for direct input if send() fails
+                        try { (session as any).sendRealtimeInput([{ mimeType: 'audio/pcm;rate=24000', data: message.data }]); } catch { }
                     }
                 }
             } else if (message.type === 'VOICE_TEXT_INPUT') {
                 const session = liveSessions.get(ws);
                 if (session && message.text) {
-                    (session as any).sendClientContent([{ role: 'user', parts: [{ text: message.text }] }]);
+                    try {
+                        session.send({
+                            clientContent: {
+                                turns: [{
+                                    role: 'user',
+                                    parts: [{ text: message.text }]
+                                }],
+                                turnComplete: true
+                            }
+                        });
+                    } catch (err: any) {
+                        console.error('[AI_TEXT_SEND_ERR]:', err.message);
+                    }
                 }
             } else if (message.type === 'STOP_VOICE') {
                 const session = liveSessions.get(ws);
