@@ -254,10 +254,10 @@ const AppContent: React.FC = () => {
 
   const startMediaStream = useCallback(() => {
     const ws = (window as any).operatorWs as WebSocket;
-    navigator.mediaDevices.getUserMedia({ audio: { sampleRate: 24000, channelCount: 1, noiseSuppression: true } })
+    navigator.mediaDevices.getUserMedia({ audio: { sampleRate: 16000, channelCount: 1, noiseSuppression: true } })
       .then(async stream => {
         mediaStreamRef.current = stream;
-        const ctx = new window.AudioContext({ sampleRate: 24000 });
+        const ctx = new window.AudioContext({ sampleRate: 16000 });
         audioContextRef.current = ctx;
 
         await ctx.audioWorklet.addModule('/audio-processor.js');
@@ -279,7 +279,7 @@ const AppContent: React.FC = () => {
             audioBuffer.push(pcmData);
             bufferLength += pcmData.length;
 
-            // Flash every ~85ms (2048 samples at 24kHz)
+            // Flash every ~85ms (1365 samples at 16kHz, roughly 1024 or 2048 is fine)
             if (bufferLength >= 2048) {
               const combined = new Int16Array(bufferLength);
               let offset = 0;
@@ -375,13 +375,7 @@ const AppContent: React.FC = () => {
         if (d.success) setState(p => ({ ...p, goals: JSON.parse(d.output) }));
       });
 
-      // Briefing
-      setTimeout(() => {
-        ws.send(JSON.stringify({
-          type: 'VOICE_INPUT_TEXT',
-          text: 'SYSTEM: Perform an elite daily briefing now. Greet me, summarize my mission board, and check system pulse.'
-        }));
-      }, 2000);
+      // Removed text briefing as native-audio only accepts audio input.
     };
 
     ws.onmessage = async (event) => {
@@ -390,7 +384,7 @@ const AppContent: React.FC = () => {
         if (data.type === 'VOICE_RESPONSE') {
           try {
             if (!playbackCtxRef.current) {
-              playbackCtxRef.current = new window.AudioContext({ sampleRate: 24000 });
+              playbackCtxRef.current = new window.AudioContext({ sampleRate: 24000 }); // Keep output at 24kHz if model returns 24kHz
               const analyzer = playbackCtxRef.current.createAnalyser();
               analyzer.fftSize = 256;
               analyzerRef.current = analyzer;

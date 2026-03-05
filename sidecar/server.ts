@@ -207,7 +207,7 @@ wss.on('connection', (ws) => {
                 if (session && message.data) {
                     if (Math.random() < 0.01) console.log(`[AI_AUDIO_IN]: ${Math.round(message.data.length / 1024)}KB`);
                     try {
-                        const payload = [{ mimeType: 'audio/pcm;rate=24000', data: message.data }];
+                        const payload = [{ mimeType: 'audio/pcm;rate=16000', data: message.data }];
                         if (typeof session.sendRealtimeInput === 'function') {
                             session.sendRealtimeInput(payload);
                         } else if (typeof session.send === 'function') {
