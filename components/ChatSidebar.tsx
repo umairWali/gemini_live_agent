@@ -10,7 +10,7 @@ interface ChatSidebarProps {
 
 const ChatSidebar: React.FC<ChatSidebarProps> = ({ onNewChat, isDark, savedSessions = [], onSelectSession }) => {
     return (
-        <aside className={`w-64 border-r flex flex-col transition-colors ${isDark ? 'bg-slate-950 border-white/5 text-white shadow-4xl' : 'bg-white border-gray-200 text-gray-800'} z-20 shrink-0`}>
+        <aside className={`w-64 flex flex-col transition-colors ${isDark ? 'bg-slate-950 border-white/5 text-white' : 'bg-white border-gray-200 text-gray-800'} z-20 shrink-0 flex-1`}>
             <div className="p-6">
                 <button
                     onClick={onNewChat}
