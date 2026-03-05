@@ -244,7 +244,7 @@ wss.on('connection', (ws) => {
                 if (session) {
                     try {
                         session.sendRealtimeInput({
-                            media: { data: message.data, mimeType: 'audio/pcm;rate=16000' }
+                            media: { data: message.data, mimeType: 'audio/pcm;rate=24000' }
                         });
                     } catch (e: any) {
                         console.error('[AI_LIVE]: sendRealtimeInput error:', e.message);

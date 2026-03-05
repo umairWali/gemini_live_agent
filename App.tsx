@@ -231,33 +231,46 @@ const AppContent: React.FC = () => {
       return;
     }
 
-    navigator.mediaDevices.getUserMedia({ audio: { sampleRate: 24000, channelCount: 1 } })
-      .then(stream => {
-        mediaStreamRef.current = stream;
-        const ctx = new window.AudioContext({ sampleRate: 24000 });
-        audioContextRef.current = ctx;
-        const source = ctx.createMediaStreamSource(stream);
-        const processor = ctx.createScriptProcessor(4096, 1, 1);
+    const startVoiceSession = () => {
+      ws.send(JSON.stringify({ type: 'START_VOICE' }));
+      navigator.mediaDevices.getUserMedia({ audio: { sampleRate: 24000, channelCount: 1 } })
+        .then(stream => {
+          mediaStreamRef.current = stream;
+          const ctx = new window.AudioContext({ sampleRate: 24000 });
+          audioContextRef.current = ctx;
+          const source = ctx.createMediaStreamSource(stream);
+          const processor = ctx.createScriptProcessor(4096, 1, 1);
 
-        processor.onaudioprocess = (e) => {
-          if (ws.readyState === WebSocket.OPEN) {
-            const inputData = e.inputBuffer.getChannelData(0);
-            const pcmData = new Int16Array(inputData.length);
-            for (let i = 0; i < inputData.length; i++) {
-              pcmData[i] = Math.max(-1, Math.min(1, inputData[i])) * 32767;
+          processor.onaudioprocess = (e) => {
+            if (ws.readyState === WebSocket.OPEN) {
+              const inputData = e.inputBuffer.getChannelData(0);
+              const pcmData = new Int16Array(inputData.length);
+              for (let i = 0; i < inputData.length; i++) {
+                pcmData[i] = Math.max(-1, Math.min(1, inputData[i])) * 32767;
+              }
+              // Convert to base64
+              const bytes = new Uint8Array(pcmData.buffer);
+              let binary = '';
+              for (let i = 0; i < bytes.byteLength; i++) {
+                binary += String.fromCharCode(bytes[i]);
+              }
+              const base64 = btoa(binary);
+              ws.send(JSON.stringify({ type: 'VOICE_AUDIO', data: base64 }));
             }
-            ws.send(pcmData.buffer);
-          }
-        };
+          };
 
-        source.connect(processor);
-        processor.connect(ctx.destination);
-        setIsVoiceActive(true);
-        addToast({ type: 'success', title: 'Voice Active', message: 'Microphone stream started.' });
-      })
-      .catch(err => {
-        addToast({ type: 'error', title: 'Microphone Error', message: err.message });
-      });
+          source.connect(processor);
+          processor.connect(ctx.destination);
+          setIsVoiceActive(true);
+          addToast({ type: 'success', title: 'Voice Active', message: 'Microphone stream started.' });
+        })
+        .catch(err => {
+          addToast({ type: 'error', title: 'Microphone Error', message: err.message });
+        });
+    };
+
+    // --- Check for VOICE_READY before starting stream is safer but let's just start for speed ---
+    startVoiceSession();
   }, [isVoiceActive, addToast]);
 
   const toggleScreenShare = useCallback(async () => {
