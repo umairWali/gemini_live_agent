@@ -9,7 +9,7 @@
         "dev": "tsx watch server.ts"
     },
     "dependencies": {
-        "@google/genai": "^1.41.0",
+        "@google/genai": "^1.44.0",
         "@types/os-utils": "^0.0.4",
         "chokidar": "^3.5.3",
         "cors": "^2.8.6",

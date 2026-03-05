@@ -122,9 +122,9 @@ wss.on('connection', (ws) => {
                 try {
                     let liveSession: any;
                     liveSession = await ai.live.connect({
-                        model: 'gemini-2.0-flash-exp',
+                        model: 'gemini-2.5-flash-native-audio-latest',
                         config: {
-                            responseModalities: ["AUDIO", "TEXT"],
+                            responseModalities: ["AUDIO"],
                             systemInstruction: { parts: [{ text: 'You are Personal Operator — an elite, autonomous assistant. Be brief. Mix Urdu/English.' }] },
                             tools: [{
                                 functionDeclarations: [{
@@ -155,6 +155,23 @@ wss.on('connection', (ws) => {
                                         if (part.text) {
                                             console.log(`[AI_LIVE_REPLY]: ${part.text}`);
                                             ws.send(JSON.stringify({ type: 'VOICE_TEXT', text: part.text }));
+                                        }
+                                        if (part.functionCall && liveSession) {
+                                            const { name, args, id } = part.functionCall;
+                                            executeAction(args?.action || name, args?.target || '', args?.args || '').then((res) => {
+                                                const responses = [{
+                                                    name,
+                                                    id,
+                                                    response: { result: res.output || res.error || 'Done' }
+                                                }];
+                                                try {
+                                                    (liveSession as any).sendToolResponse?.(responses);
+                                                } catch (e) {
+                                                    (liveSession as any).send?.({
+                                                        functionResponses: responses
+                                                    });
+                                                }
+                                            });
                                         }
                                     }
                                 }
