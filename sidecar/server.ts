@@ -239,24 +239,28 @@ wss.on('connection', (ws) => {
                 console.log('[AI_LIVE]: VOICE_READY sent to client');
 
             } else if (message.type === 'VOICE_AUDIO') {
-                // Realtime PCM audio chunk from browser mic (base64, 16kHz)
                 const session = liveSessions.get(ws);
                 if (session) {
                     try {
-                        session.sendRealtimeInput({
-                            media: { data: message.data, mimeType: 'audio/pcm;rate=24000' }
-                        });
+                        console.log(`[AI_LIVE]: Received audio chunk (${message.data.length} bytes)`);
+                        session.sendRealtimeInput([{
+                            mimeType: 'audio/pcm;rate=24000',
+                            data: message.data
+                        }]);
                     } catch (e: any) {
                         console.error('[AI_LIVE]: sendRealtimeInput error:', e.message);
                     }
                 }
 
             } else if (message.type === 'VOICE_TEXT_INPUT') {
-                // Text message sent during an active voice session
                 const session = liveSessions.get(ws);
                 if (session && message.text) {
                     try {
-                        session.sendClientContent({ turns: message.text, turnComplete: true });
+                        console.log(`[AI_LIVE]: Sending text turn: ${message.text.substring(0, 50)}...`);
+                        session.sendClientContent([{
+                            parts: [{ text: message.text }],
+                            role: 'user'
+                        }], true);
                     } catch (e: any) {
                         console.error('[AI_LIVE]: sendClientContent error:', e.message);
                     }
