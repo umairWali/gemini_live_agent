@@ -144,6 +144,8 @@ wss.on('connection', (ws) => {
                         callbacks: {
                             onmessage: async (msg: any) => {
                                 const parts = msg.serverContent?.modelTurn?.parts || [];
+                                if (parts.length > 0) console.log(`[AI_LIVE]: Received ${parts.length} parts from model.`);
+
                                 for (const part of parts) {
                                     if (part.inlineData?.data) {
                                         ws.send(JSON.stringify({ type: 'VOICE_RESPONSE', data: part.inlineData.data }));
@@ -171,24 +173,26 @@ wss.on('connection', (ws) => {
                                 }
                             },
                             onopen: () => {
-                                console.log('[AI_LIVE]: Session open');
+                                console.log('[AI_LIVE]: Provider Connection Established.');
                                 ws.send(JSON.stringify({ type: 'VOICE_READY' }));
                             },
                             onerror: (err: any) => {
-                                console.error('[AI_LIVE]: Error', err);
-                                ws.send(JSON.stringify({ type: 'VOICE_ERROR', error: String(err.message || err) }));
+                                console.error('[AI_LIVE]: Model Error', err);
+                                ws.send(JSON.stringify({ type: 'VOICE_ERROR', error: String(err.message || err) || 'Model error' }));
                             }
                         }
                     });
                     liveSessions.set(ws, liveSession);
                 } catch (e: any) {
                     console.error('[AI_LIVE]: Connect error', e);
-                    ws.send(JSON.stringify({ type: 'VOICE_ERROR', error: 'Connect Failed: ' + e.message }));
+                    ws.send(JSON.stringify({ type: 'VOICE_ERROR', error: 'Init Failed: ' + e.message }));
                 }
 
             } else if (message.type === 'VOICE_AUDIO') {
                 const session = liveSessions.get(ws);
                 if (session && message.data) {
+                    // Log every 100th audio chunk to verify stream
+                    if (Math.random() < 0.01) console.log('[AI_LIVE]: Forwarding audio chunk...');
                     session.sendRealtimeInput([{
                         mimeType: 'audio/pcm;rate=24000',
                         data: message.data

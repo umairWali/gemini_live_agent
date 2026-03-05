@@ -119,6 +119,7 @@ const AppContent: React.FC = () => {
 
   const [isProcessing, setIsProcessing] = useState(false);
   const [isVoiceActive, setIsVoiceActive] = useState(false);
+  const [isVoiceConnecting, setIsVoiceConnecting] = useState(false);
   const [audioLevel, setAudioLevel] = useState(0);
   const voiceSocketRef = useRef<WebSocket | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -225,53 +226,53 @@ const AppContent: React.FC = () => {
       return;
     }
 
-    if (isVoiceActive) {
+    if (isVoiceActive || isVoiceConnecting) {
       setIsVoiceActive(false);
+      setIsVoiceConnecting(false);
+      ws.send(JSON.stringify({ type: 'STOP_VOICE' }));
       if (audioContextRef.current) audioContextRef.current.close().catch(() => { });
       if (mediaStreamRef.current) mediaStreamRef.current.getTracks().forEach(t => t.stop());
+      addToast({ type: 'success', title: 'Voice Deactivated', message: 'Mic stream closed.' });
       return;
     }
 
-    const startVoiceSession = () => {
-      ws.send(JSON.stringify({ type: 'START_VOICE' }));
-      navigator.mediaDevices.getUserMedia({ audio: { sampleRate: 24000, channelCount: 1 } })
-        .then(stream => {
-          mediaStreamRef.current = stream;
-          const ctx = new window.AudioContext({ sampleRate: 24000 });
-          audioContextRef.current = ctx;
-          const source = ctx.createMediaStreamSource(stream);
-          const processor = ctx.createScriptProcessor(4096, 1, 1);
+    setIsVoiceConnecting(true);
+    addToast({ type: 'info', title: 'Connecting AI', message: 'Establishing Gemini Live session...' });
+    ws.send(JSON.stringify({ type: 'START_VOICE' }));
+  }, [isVoiceActive, isVoiceConnecting, addToast]);
 
-          processor.onaudioprocess = (e) => {
-            if (ws.readyState === WebSocket.OPEN) {
-              const inputData = e.inputBuffer.getChannelData(0);
-              const pcmData = new Int16Array(inputData.length);
-              for (let i = 0; i < inputData.length; i++) {
-                pcmData[i] = Math.max(-1, Math.min(1, inputData[i])) * 32767;
-              }
-              // Convert to base64
-              const bytes = new Uint8Array(pcmData.buffer);
-              let binary = '';
-              for (let i = 0; i < bytes.byteLength; i++) {
-                binary += String.fromCharCode(bytes[i]);
-              }
-              const base64 = btoa(binary);
-              ws.send(JSON.stringify({ type: 'VOICE_AUDIO', data: base64 }));
+  const startMediaStream = useCallback(() => {
+    const ws = (window as any).operatorWs as WebSocket;
+    navigator.mediaDevices.getUserMedia({ audio: { sampleRate: 24000, channelCount: 1, noiseSuppression: true } })
+      .then(stream => {
+        mediaStreamRef.current = stream;
+        const ctx = new window.AudioContext({ sampleRate: 24000 });
+        audioContextRef.current = ctx;
+        const source = ctx.createMediaStreamSource(stream);
+        const processor = ctx.createScriptProcessor(4096, 1, 1);
+
+        processor.onaudioprocess = (e) => {
+          if (ws.readyState === WebSocket.OPEN && isVoiceActive) {
+            const inputData = e.inputBuffer.getChannelData(0);
+            const pcmData = new Int16Array(inputData.length);
+            for (let i = 0; i < inputData.length; i++) {
+              pcmData[i] = Math.max(-1, Math.min(1, inputData[i])) * 32767;
             }
-          };
+            const base64 = btoa(String.fromCharCode(...new Uint8Array(pcmData.buffer)));
+            ws.send(JSON.stringify({ type: 'VOICE_AUDIO', data: base64 }));
+          }
+        };
 
-          source.connect(processor);
-          processor.connect(ctx.destination);
-          setIsVoiceActive(true);
-          addToast({ type: 'success', title: 'Voice Active', message: 'Microphone stream started.' });
-        })
-        .catch(err => {
-          addToast({ type: 'error', title: 'Microphone Error', message: err.message });
-        });
-    };
-
-    // --- Check for VOICE_READY before starting stream is safer but let's just start for speed ---
-    startVoiceSession();
+        source.connect(processor);
+        processor.connect(ctx.destination);
+        setIsVoiceConnecting(false);
+        setIsVoiceActive(true);
+        addToast({ type: 'success', title: 'AI Ready', message: 'Gemini is now listening.' });
+      })
+      .catch(err => {
+        setIsVoiceConnecting(false);
+        addToast({ type: 'error', title: 'Microphone Error', message: err.message });
+      });
   }, [isVoiceActive, addToast]);
 
   const toggleScreenShare = useCallback(async () => {
@@ -391,10 +392,11 @@ const AppContent: React.FC = () => {
             if (data.type === 'VOICE_PROACTIVE_ALERT') speakText(data.text);
           }
         } else if (data.type === 'VOICE_READY') {
-          addToast({ type: 'success', title: 'AI Ready', message: 'Gemini is now listening.' });
+          startMediaStream();
         } else if (data.type === 'VOICE_ERROR') {
           addToast({ type: 'error', title: 'Gemini Error', message: data.error });
           setIsVoiceActive(false);
+          setIsVoiceConnecting(false);
           if (audioContextRef.current) audioContextRef.current.close().catch(() => { });
           if (mediaStreamRef.current) mediaStreamRef.current.getTracks().forEach(t => t.stop());
         } else if (data.type === 'SYSTEM_PULSE') {
