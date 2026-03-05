@@ -1,21 +1,19 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap');
 
+@import "tailwindcss";
+
 :root {
-  --bg: #f7f8fa;
-  --bg-secondary: #ffffff;
-  --border: #e5e7eb;
-  --text: #111827;
-  --text-muted: #6b7280;
-  --user-bubble-bg: #1f2937;
-  --user-bubble-text: #ffffff;
-  --ai-bubble-bg: #f3f4f6;
-  --ai-bubble-text: #111827;
-  --accent: #374151;
-  --shadow: 0 1px 8px rgba(0, 0, 0, 0.06);
+  --bg: #020617;
+  --bg-secondary: rgba(15, 23, 42, 0.7);
+  --border: rgba(255, 255, 255, 0.05);
+  --text: #f8fafc;
+  --text-muted: #94a3b8;
+  --user-bubble-bg: #1e293b;
+  --user-bubble-text: #f8fafc;
+  --ai-bubble-bg: rgba(30, 41, 59, 0.3);
+  --ai-bubble-text: #f1f5f9;
+  --accent: #6366f1;
+  --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
 }
 
 * {
@@ -40,60 +38,58 @@ body {
 }
 
 .shadow-4xl {
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
 }
 
 /* Glass Cards */
 .glass {
   background: var(--bg-secondary);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--border);
   box-shadow: var(--shadow);
 }
 
 .glass-card {
-  background: var(--bg-secondary);
-  border: 1px solid var(--border);
-  transition: box-shadow 0.2s;
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .glass-card:hover {
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(99, 102, 241, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 30px -10px rgba(99, 102, 241, 0.3);
 }
 
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
-  width: 4px;
-  height: 4px;
+  width: 5px;
+  height: 5px;
 }
 
 ::-webkit-scrollbar-track {
-  background: transparent;
+  background: rgba(0, 0, 0, 0.2);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #d1d5db;
-  border-radius: 10px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #9ca3af;
-}
-
-.custom-scrollbar::-webkit-scrollbar {
-  width: 3px;
-}
-
-.custom-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.custom-scrollbar::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.1);
   border-radius: 10px;
 }
 
-.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.2);
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.05);
 }
 
 /* Input focus */
@@ -104,38 +100,35 @@ textarea:focus-visible {
 
 /* Buttons */
 button {
-  transition: all 0.15s ease;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 button:active {
-  transform: scale(0.97);
+  transform: scale(0.95);
 }
-
-/* Message bubble — NO animation to prevent blinking */
-.msg-bubble {}
 
 /* Mic pulse animation */
 @keyframes mic-pulse {
 
   0%,
   100% {
-    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.35);
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
   }
 
   50% {
-    box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+    box-shadow: 0 0 0 15px rgba(239, 68, 68, 0);
   }
 }
 
 .mic-active {
-  animation: mic-pulse 1.2s infinite;
+  animation: mic-pulse 1.5s infinite;
 }
 
-/* Slide up for toasts only */
+/* Animations */
 @keyframes slide-up {
   from {
     opacity: 0;
-    transform: translateY(12px);
+    transform: translateY(10px);
   }
 
   to {
@@ -145,20 +138,21 @@ button:active {
 }
 
 .toast-enter {
-  animation: slide-up 0.25s ease-out;
+  animation: slide-up 0.3s ease-out;
 }
 
-/* Subtle appear for new messages — no blinking */
 @keyframes msg-appear {
   from {
     opacity: 0;
+    transform: scale(0.98);
   }
 
   to {
     opacity: 1;
+    transform: scale(1);
   }
 }
 
 .msg-new {
-  animation: msg-appear 0.2s ease-out;
+  animation: msg-appear 0.25s ease-out;
 }
