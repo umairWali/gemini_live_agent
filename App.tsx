@@ -266,13 +266,20 @@ const AppContent: React.FC = () => {
         workletNodeRef.current = workletNode;
 
         workletNode.port.onmessage = (e) => {
-          if (ws.readyState === WebSocket.OPEN && isVoiceActive) {
+          if (ws.readyState === WebSocket.OPEN) {
             const inputData = e.data;
             const pcmData = new Int16Array(inputData.length);
             for (let i = 0; i < inputData.length; i++) {
               pcmData[i] = Math.max(-1, Math.min(1, inputData[i])) * 32767;
             }
-            const base64 = btoa(String.fromCharCode(...new Uint8Array(pcmData.buffer)));
+            // Robust binary to base64
+            const bytes = new Uint8Array(pcmData.buffer);
+            let binary = '';
+            const chunkSize = 8192;
+            for (let i = 0; i < bytes.length; i += chunkSize) {
+              binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+            }
+            const base64 = btoa(binary);
             ws.send(JSON.stringify({ type: 'VOICE_AUDIO', data: base64 }));
           }
         };
@@ -283,12 +290,14 @@ const AppContent: React.FC = () => {
         setIsVoiceConnecting(false);
         setIsVoiceActive(true);
         addToast({ type: 'success', title: 'AI Ready', message: 'Gemini is now listening.' });
+        console.log('[CLIENT]: Media stream and worklet started.');
       })
       .catch(err => {
         setIsVoiceConnecting(false);
+        console.error('[CLIENT]: Mic error', err);
         addToast({ type: 'error', title: 'Microphone Error', message: err.message });
       });
-  }, [isVoiceActive, addToast]);
+  }, [addToast]);
 
   const toggleScreenShare = useCallback(async () => {
     const ws = (window as any).operatorWs as WebSocket;
