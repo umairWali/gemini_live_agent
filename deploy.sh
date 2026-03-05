@@ -37,11 +37,16 @@ fi
 echo " Building container and deploying to Google Cloud Run..."
 echo "This might take a few minutes..."
 
+ENV_VARS_FLAG=""
+if [ -n "$API_KEY" ]; then
+    ENV_VARS_FLAG="--set-env-vars=API_KEY=${API_KEY}"
+fi
+
 gcloud run deploy "$SERVICE_NAME" \
   --source "$ENTRY_POINT" \
   --region "$REGION" \
   --allow-unauthenticated \
-  --set-env-vars="API_KEY=${API_KEY}"
+  $ENV_VARS_FLAG
 
 echo " Deployment completed successfully!"
 echo " Your Personal Operator is now live."

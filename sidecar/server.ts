@@ -589,7 +589,7 @@ app.post('/api/chat', async (req, res) => {
         console.log(`[AI_CHAT]: text=${text.length}chars, fcalls=${functionCalls.length}`);
 
         if (text.trim() || functionCalls.length > 0) {
-            return res.json({ success: true, text, functionCalls, provider: 'gemini' });
+            return res.json({ success: true, text, reply: text, functionCalls, provider: 'gemini' });
         }
         throw new Error('Empty response from Gemini');
 
@@ -624,7 +624,7 @@ app.post('/api/chat', async (req, res) => {
         const data = await response.json();
         const text = data.choices?.[0]?.message?.content || 'I received your message.';
 
-        return res.json({ success: true, text, functionCalls: [], provider: 'longcat', fallback: true });
+        return res.json({ success: true, text, reply: text, functionCalls: [], provider: 'longcat', fallback: true });
     } catch (longcatError: any) {
         console.error('[AI_PROXY_ERROR]:', longcatError.message);
         res.json({

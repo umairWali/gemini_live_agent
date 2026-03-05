@@ -180,7 +180,8 @@ const AppContent: React.FC = () => {
         })
       });
       const data = await response.json();
-      if (data.reply) {
+
+      if (data.success && data.reply) {
         setState(p => ({
           ...p,
           agentActivities: p.agentActivities.map(a =>
@@ -190,7 +191,6 @@ const AppContent: React.FC = () => {
           history: [...p.history, { role: 'ai', text: data.reply, timestamp: Date.now(), agentBadge: AgentRole.EXECUTOR }].slice(-50)
         }));
 
-        // Reset Executor after a moment
         setTimeout(() => {
           setState(p => ({
             ...p,
@@ -201,19 +201,20 @@ const AppContent: React.FC = () => {
         }, 3000);
 
         if (isVoiceActive) speakText(data.reply);
+      } else {
+        addToast({ type: 'error', title: 'AI Operator Error', message: data.error || 'Failed to generate response.' });
       }
     } catch (e) {
       console.error(e);
-      // Reset Planner on error
+      addToast({ type: 'error', title: 'Network Error', message: 'Could not connect to Operator Sidecar.' });
+    } finally {
+      setIsProcessing(false);
       setState(p => ({
         ...p,
         agentActivities: p.agentActivities.map(a =>
-          a.agent === AgentRole.PLANNER ? { ...a, status: 'idle', message: 'Operation failed.' } : a
+          a.agent === AgentRole.PLANNER ? { ...a, status: 'idle', message: 'Task finalized.' } : a
         )
       }));
-      addToast({ type: 'error', title: 'Error', message: 'Failed to communicate with bridge.' });
-    } finally {
-      setIsProcessing(false);
     }
   };
 
