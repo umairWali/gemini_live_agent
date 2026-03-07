@@ -134,7 +134,9 @@ wss.on('connection', (ws) => {
                                     { name: "set_reminder", description: "Set a smart reminder.", parameters: { type: "OBJECT", properties: { task: { type: "STRING" }, time_in_minutes: { type: "NUMBER" } } } },
                                     { name: "export_to_docs", description: "Export the generated meeting minutes or content to a Google Doc or Excel sheet.", parameters: { type: "OBJECT", properties: { title: { type: "STRING" }, content: { type: "STRING" }, format: { type: "STRING", description: "'doc' or 'excel'" } } } },
                                     { name: "execute_action", description: "Execute a live system action or command.", parameters: { type: "OBJECT", properties: { command_description: { type: "STRING" } } } },
-                                    { name: "code_review", description: "Perform a code review via voice.", parameters: { type: "OBJECT", properties: { filename: { type: "STRING" } } } }
+                                    { name: "code_review", description: "Perform a code review via voice.", parameters: { type: "OBJECT", properties: { filename: { type: "STRING" } } } },
+                                    { name: "update_memory", description: "Add a fact about the user or the environment to the real-time Memory Knowledge Graph. Use this proactively.", parameters: { type: "OBJECT", properties: { subject: { type: "STRING" }, relation: { type: "STRING" }, object: { type: "STRING" } } } },
+                                    { name: "update_sentiment", description: "Update the UI emotion state based on the user's vocal tone or text. Empathy engine.", parameters: { type: "OBJECT", properties: { emotion: { type: "STRING", description: "'happy', 'angry', or 'normal'" } } } }
                                 ]
                             }]
                         } as any,
@@ -200,6 +202,16 @@ wss.on('connection', (ws) => {
                                         else if (call.name === 'code_review') {
                                             resultInfo = `Scanned ${call.args?.filename}. Code review ready to present.`;
                                             uiLabel = ` Voice Code Review: Analyzing ${call.args?.filename || 'code'}...`;
+                                        }
+                                        else if (call.name === 'update_memory') {
+                                            resultInfo = `Memory added: ${call.args?.subject} -> ${call.args?.relation} -> ${call.args?.object}`;
+                                            uiLabel = `🧠 Memory Synced: ${call.args?.subject} ${call.args?.relation} ${call.args?.object}`;
+                                            ws.send(JSON.stringify({ type: 'UPDATE_MEMORY', data: call.args }));
+                                        }
+                                        else if (call.name === 'update_sentiment') {
+                                            resultInfo = `Empathy engine shifted state to ${call.args?.emotion}.`;
+                                            uiLabel = `🎭 Sentiment Shift: ${call.args?.emotion?.toUpperCase()}`;
+                                            ws.send(JSON.stringify({ type: 'UPDATE_SENTIMENT', emotion: call.args?.emotion }));
                                         }
 
                                         // Broadcast the action to UI so user can see what Gemini is doing in real-time

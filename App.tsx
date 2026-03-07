@@ -48,7 +48,7 @@ const AppContent: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   const [state, setState] = useState<AppState>(() => {
-    const saved = localStorage.getItem('operator_master_prod_v10');
+    const saved = localStorage.getItem('operator_master_prod_v11');
     if (saved) {
       const parsed = JSON.parse(saved);
       return {
@@ -91,17 +91,15 @@ const AppContent: React.FC = () => {
       })),
       knowledgeGraph: {
         nodes: [
-          { id: 'user', label: 'User Persona', type: 'person', relevance: 0.9 },
-          { id: 'op', label: 'Personal Operator', type: 'project', relevance: 1.0 },
-          { id: 'hack', label: 'Gemini Hackathon', type: 'project', relevance: 0.8 },
-          { id: 'lang', label: 'Urdu/English preference', type: 'preference', relevance: 0.7 },
-          { id: 'tech', label: 'React/Node.js tech stack', type: 'fact', relevance: 0.6 }
+          { id: 'user', label: 'Umair', type: 'person', relevance: 0.9 },
+          { id: 'role', label: 'Developer', type: 'fact', relevance: 1.0 },
+          { id: 'project', label: 'Personal Operator AI', type: 'project', relevance: 0.8 },
+          { id: 'lang', label: 'Urdu/English', type: 'preference', relevance: 0.7 }
         ],
         links: [
-          { source: 'user', target: 'op' },
-          { source: 'op', target: 'hack' },
-          { source: 'user', target: 'lang' },
-          { source: 'op', target: 'tech' }
+          { source: 'user', target: 'role' },
+          { source: 'user', target: 'project' },
+          { source: 'user', target: 'lang' }
         ]
       },
       history: [], savedSessions: [], envSignals: [], evolutionLogs: [], telemetry: [],
@@ -134,7 +132,7 @@ const AppContent: React.FC = () => {
   const screenCaptureIntervalRef = useRef<any>(null);
 
   useEffect(() => {
-    localStorage.setItem('operator_master_prod_v10', JSON.stringify(state));
+    localStorage.setItem('operator_master_prod_v11', JSON.stringify(state));
   }, [state]);
 
   const addAuditEntry = (text: string, source: any) => {
@@ -507,6 +505,32 @@ const AppContent: React.FC = () => {
           }
         } else if (data.type === 'SYSTEM_PULSE') {
           setState(p => ({ ...p, realtimeMetrics: data.metrics }));
+        } else if (data.type === 'UPDATE_MEMORY') {
+          setState(p => {
+            const subjectId = data.data.subject.toLowerCase().replace(/\s+/g, '_');
+            const objectId = data.data.object.toLowerCase().replace(/\s+/g, '_');
+
+            // Check if nodes already exist to prevent dupes
+            const nodes = [...p.knowledgeGraph.nodes];
+            if (!nodes.find(n => n.id === subjectId)) {
+              nodes.push({ id: subjectId, label: data.data.subject, type: 'concept', relevance: 0.8 });
+            }
+            if (!nodes.find(n => n.id === objectId)) {
+              nodes.push({ id: objectId, label: data.data.object, type: 'fact', relevance: 0.7 });
+            }
+
+            // Find if link exists
+            const links = [...p.knowledgeGraph.links];
+            if (!links.find(l => l.source === subjectId && l.target === objectId)) {
+              links.push({ source: subjectId, target: objectId });
+            }
+
+            return { ...p, knowledgeGraph: { nodes, links } };
+          });
+          addToast({ type: 'success', title: 'Memory Updated', message: `Learned: ${data.data.subject} -> ${data.data.object}` });
+        } else if (data.type === 'UPDATE_SENTIMENT') {
+          setState(p => ({ ...p, emotionState: data.emotion }));
+          addToast({ type: 'info', title: 'Empathy Engine', message: `Emotional state shifted to: ${data.emotion}` });
         }
       }
     };
