@@ -1,53 +1,88 @@
 <div align="center">
-  <h1>Personal Operator</h1>
-  <i>A Next-Generation Voice-First Elite System powered by Gemini Live API</i>
+  <h1>🤖 Personal Operator</h1>
+  <i>A Next-Generation Real-Time Voice AI Agent powered by Gemini 2.5 Live API</i>
   <br/><br/>
-  <b>Built for the Gemini Live Agent Challenge (Live Agents Category)</b>
+  <b>Built for the Gemini Live Agent Challenge — Live Agents 🗣️ Category</b>
+  <br/><br/>
+  <a href="https://personal-ai-operator-677446941082.us-central1.run.app/">🌐 Live Demo</a> |
+  <a href="./ARCHITECTURE.md">🏗️ Architecture Diagram</a>
 </div>
 
 ---
 
-## Overview
+## 🌟 What Problem Does It Solve?
 
-The **Personal Operator** is a real-time, bidirectional voice-to-system orchestrator. It’s designed to be a high-performance system companion that eliminates the traditional "chatbot" delay by leveraging low-latency audio streams. You talk, it acts — whether it's managing your codebase, tracking missions, or summarizing your daily schedule.
+Most AI assistants feel slow and robotic — they wait for you to finish speaking, then take seconds to respond. **Personal Operator** eliminates this friction by enabling **natural, interruption-friendly real-time voice conversations** powered by Google Gemini 2.5 Native Audio Live API.
 
-**Category**: Live Agents  
-**Technologies**: React (Frontend), Node.js (Backend), Google GenAI SDK (`gemini-live-2.5-flash-preview`), WebSockets, Google Cloud Run.
-
-### Key Features
-- **Real-Time Voice Streaming**: Uses the Gemini Live API via WebSockets for sub-second bidirectional audio streaming (no browser-based pseudo-TTS).
-- **Interruption Handling**: The agent understands when you interrupt it (barge-in capability) naturally.
-- **Multimodal Feedback**: Streams audio while simultaneously updating a synchronized text UI.
-- **Bilingual**: Understands and responds in Urdu and English natively.
-- **Cloud Native**: Deployed on Google Cloud Run for high scalability.
-
-- **Neural Knowledge Graph (Visual Memory)**: An interactive 2D graph in the "Memory" tab that visualizes the AI's long-term understanding of your persona, projects, and preferences.
-- **Multi-Agent War Room**: Visualizes the internal state of different agent roles (Planner, Executor, Healer, etc.) in real-time as they collaborate to solve your tasks.
-- **Autonomous Mission Board**: A persistent goal-tracking system in the sidebar. The agent autonomously updates your "Missions" as you progress through tasks.
-- **Developer Fix Agent**: Uses `run_fix` tool to autonomously analyze build errors or code bugs and attempt an immediate patch.
-- **Meeting Minute Assistant**: Enable Screen Share during Google Meet/Teams. The agent uses Vision frames to prepare minutes, identify speakers, and extract action items directly into your Mission Board.
-- **Daily Elite Briefing**: Every time you connect, the agent proactively provides a spoken summary of your active goals, system status, and pending reminders.
-- **Live Desktop Vision**: Real-time screen capture streaming into the Gemini Live session for visual-context-aware conversations.
-- **Dynamic Tool Calling**: Autonomous execution of local system actions (commands, files, dirs) directly from the live voice session.
-- **Sentiment-Aware UI**: Real-time UI theme shifting based on voice sentiment analysis (Happy/Angry/Normal).
-- **Session History**: Persistent storage for previous voice sessions.
+It goes beyond a chatbot — it's a **personal system orchestrator** you can *talk* to. It monitors your infrastructure, tracks your missions, and acts autonomously on your behalf.
 
 ---
 
-## Architecture
+## ✨ Key Features
 
-See our [architecture.md](./architecture.md) representation showing how the frontend, WebSocket server, and Gemini Live API coordinate raw PCM audio chunks.
+| Feature | Description |
+|---|---|
+| 🎙️ **Real-Time Voice Streaming** | Bidirectional PCM audio streaming at 16kHz using Gemini Live API |
+| ⚡ **Zero Delay Interruption** | VAD-based barge-in: interrupt Gemini mid-sentence naturally |
+| 🔤 **Live Transcription** | Shows what you said and what Gemini replied, in real-time text |
+| 🌍 **Bilingual** | Understands and responds in Urdu + English natively |
+| 🖥️ **Screen Vision** | Share your screen and let Gemini "see" and comment on it |
+| 🤖 **Autonomous Missions** | AI autonomously tracks and updates your active goals |
+| 📊 **System Health Monitor** | Real-time CPU/RAM monitoring with HUD dashboard |
+| 🔧 **Live Tool Execution** | Voice-triggered shell commands, code fixes, file operations |
+| ☁️ **Cloud Native** | Fully deployed on Google Cloud Run |
 
 ---
 
-## Running the Project Locally (Spin-up Instructions)
+## 🏗️ Architecture
 
-Follow these steps to reproduce and run the project locally.
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                         BROWSER (React)                          │
+│  ┌──────────────┐   PCM Audio   ┌────────────────────────────┐  │
+│  │ Microphone   │──────────────▶│    AudioWorklet Processor  │  │
+│  │ (16kHz)      │               │    (VAD + Buffering)       │  │
+│  └──────────────┘               └────────────┬───────────────┘  │
+│                                              │ Base64 PCM        │
+│  ┌───────────────────┐                       │ WebSocket Msg     │
+│  │  UI / HUD / Chat  │◀─────────────────────┐│                   │
+│  │  Visualizers      │  VOICE_TEXT / AUDIO   ││                   │
+│  └───────────────────┘                       ││                   │
+└──────────────────────────────────────────────┼┼───────────────────┘
+                                               ││
+                              WebSocket (/ws/) ││
+                                               ││
+┌──────────────────────────────────────────────┼┼───────────────────┐
+│             GOOGLE CLOUD RUN (Node.js)        ││                   │
+│                                               ▼│                   │
+│  ┌────────────────────────────────────────────┐│                   │
+│  │           server.ts (Express + WS)         ││                   │
+│  │  ┌────────────────────────────────────┐    ││                   │
+│  │  │  Gemini Live Session Manager       │    ││                   │
+│  │  │  ┌──────────────────────────────┐  │    ││                   │
+│  │  │  │ ai.live.connect(callbacks)   │  │    ││                   │
+│  │  │  │  onmessage → VOICE_RESPONSE  │  │◀───┘│                   │
+│  │  │  │  onopen → VOICE_READY        │  │     │                   │
+│  │  │  └──────────────┬───────────────┘  │     │                   │
+│  │  └─────────────────┼───────────────────┘     │                   │
+│  └────────────────────┼─────────────────────────┘                   │
+│                       │ sendRealtimeInput({audio})                    │
+│                       ▼                                               │
+│  ┌──────────────────────────────────────────────────────────────┐    │
+│  │            GEMINI 2.5 NATIVE AUDIO LIVE API                  │    │
+│  │  wss://generativelanguage.googleapis.com/...                 │    │
+│  │  Model: gemini-2.5-flash-native-audio-latest                 │    │
+│  └──────────────────────────────────────────────────────────────┘    │
+└───────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 🚀 Running Locally (Spin-Up Instructions)
 
 ### Prerequisites
-- Node.js (v20+)
-- Google Cloud Account with an active project
-- A valid Gemini API Key (`API_KEY`)
+- Node.js v20+
+- A valid [Google Gemini API Key](https://aistudio.google.com/app/apikey)
 
 ### 1. Clone & Install
 ```bash
@@ -56,58 +91,84 @@ cd gemini_live_agent
 npm install
 ```
 
-### 2. Configure Environment variables
-Create a `.env` file in the root directory and add your API Key:
-```env
-API_KEY=your_gemini_api_key_here
+### 2. Set Environment
+```bash
+export API_KEY="your_gemini_api_key_here"
 ```
 
-### 3. Build the Application
-Compile the React frontend and TypeScript sidecar server:
+### 3. Build
 ```bash
 npm run build
 ```
 
-### 4. Start the Application
-Start the Node.js Express server with the WebSocket bridge:
+### 4. Start
 ```bash
 npm start
 ```
-*The app will be available at `http://localhost:8080`*
+App will be available at `http://localhost:3000`
 
-*(Note: Modern browsers require HTTPS or `localhost` for microphone access via navigator.mediaDevices).*
+> ⚠️ Chrome requires HTTPS or `localhost` for microphone access.
 
 ---
 
-## Google Cloud Deployment (Automated)
+## ☁️ Cloud Deployment (Automated)
 
-This project features Infrastructure-as-Code automation to earn the Cloud Deployment bonus point.
+This project earns the **Infrastructure-as-Code bonus** with a fully automated deploy script.
 
 ### Prerequisites
-- Install the [Google Cloud CLI (`gcloud`)](https://cloud.google.com/sdk/docs/install)
-- Authenticate via `gcloud auth login`
-- Set your target project: `gcloud config set project [YOUR_PROJECT_ID]`
-- Enable Cloud Run Admin and Cloud Build APIs.
+- [gcloud CLI](https://cloud.google.com/sdk/docs/install) installed and authenticated
+- Cloud Run & Cloud Build APIs enabled
 
-### One-Click Deploy Script
-We have included a custom `./deploy.sh` script to automate building and pushing to Cloud Run seamlessly:
-
+### One-Command Deploy
 ```bash
 export API_KEY="your_api_key"
-./deploy.sh
+npm run build && ./deploy.sh
 ```
 
-Alternatively, you can manually trigger Google Cloud Run:
+The `deploy.sh` script automatically:
+- Builds a Docker container using Cloud Build
+- Pushes and deploys to Cloud Run (region: `us-central1`)
+- Sets environment variables securely
+- Configures unauthenticated public access
+
+### Manual Deploy (alternative)
 ```bash
-gcloud run deploy personal-ai-operator --source . --region us-central1 --allow-unauthenticated --set-env-vars="API_KEY=$API_KEY"
+gcloud run deploy personal-ai-operator \
+  --source . \
+  --region us-central1 \
+  --allow-unauthenticated \
+  --set-env-vars="API_KEY=$API_KEY"
 ```
 
 ---
 
-## Hackathon Compliance
-- Built specifically for the Live Agents Category.
-- Uses Gemini Live API (ai.live.connect) over WebSockets.
-- Uses @google/genai (Google GenAI SDK v1.41.0+).
-- Cloud Native deployment via Google Cloud Run.
-- Architecture Diagram included (`architecture.md`).
-- Fully supports English & Urdu language.
+## 🔑 Tech Stack
+
+| Technology | Purpose |
+|---|---|
+| **Gemini 2.5 Flash Native Audio Live** | Real-time Bidirectional Voice AI |
+| **@google/genai SDK v1.41+** | Official Google GenAI SDK for Live API |
+| **React 19 + TypeScript** | Frontend UI |
+| **Node.js + Express** | Backend WebSocket Server |
+| **Web Audio API + AudioWorklet** | Low-latency PCM Microphone Processing |
+| **Google Cloud Run** | Serverless Container Hosting |
+| **WebSocket (ws)** | Real-time Browser ↔ Server communication |
+
+---
+
+## 📋 Hackathon Compliance
+
+✅ **Live Agents Category** — Real-time interruption-capable voice agent  
+✅ **Gemini Live API** — `ai.live.connect()` with `onmessage` callbacks  
+✅ **@google/genai SDK** — Official Google GenAI SDK  
+✅ **Google Cloud Run** — Backend deployed and live  
+✅ **Automated Deployment** — `deploy.sh` IaC script (bonus)  
+✅ **Multimodal** — Voice + Screen Vision + Text + Audio Output  
+✅ **Architecture Diagram** — Included in this README  
+
+---
+
+## 🔗 Live URLs
+
+- **App**: https://personal-ai-operator-677446941082.us-central1.run.app/
+- **API Key Model**: `gemini-2.5-flash-native-audio-latest`

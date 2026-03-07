@@ -125,7 +125,6 @@ const AppContent: React.FC = () => {
   const voiceSocketRef = useRef<WebSocket | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const workletNodeRef = useRef<AudioWorkletNode | null>(null);
-  const playbackCtxRef = useRef<AudioContext | null>(null);
   const analyzerRef = useRef<AnalyserNode | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const playbackScheduleRef = useRef<number>(0);
@@ -221,51 +220,97 @@ const AppContent: React.FC = () => {
     }
   };
 
-  const toggleVoice = useCallback(() => {
+  const toggleVoice = useCallback(async () => {
     const ws = (window as any).operatorWs as WebSocket;
+
+    // Handle the case where the server disconnected while the mic was active
     if (!ws || ws.readyState !== WebSocket.OPEN) {
-      addToast({ type: 'error', title: 'Connection Error', message: 'WebSocket not connected.' });
+      if (isVoiceActive || isVoiceConnecting || isVoiceReady) {
+        setIsVoiceActive(false);
+        setIsVoiceReady(false);
+        setIsVoiceConnecting(false);
+        if (workletNodeRef.current) {
+          try { workletNodeRef.current.disconnect(); } catch (e) { }
+          workletNodeRef.current = null;
+        }
+        if (mediaStreamRef.current) {
+          mediaStreamRef.current.getTracks().forEach(t => t.stop());
+          mediaStreamRef.current = null;
+        }
+        addToast({ type: 'success', title: 'Voice Offline', message: 'Session closed locally (server was disconnected).' });
+      } else {
+        addToast({ type: 'error', title: 'Connection Error', message: 'WebSocket not connected.' });
+      }
       return;
     }
 
+    // Initialize AudioContext immediately on user gesture
+    if (!audioContextRef.current) {
+      const AudioCtx = (window.AudioContext || (window as any).webkitAudioContext);
+      audioContextRef.current = new AudioCtx({ sampleRate: 16000 });
+
+      const analyzer = audioContextRef.current.createAnalyser();
+      analyzer.fftSize = 256;
+      analyzerRef.current = analyzer;
+
+      const dataArray = new Uint8Array(analyzer.frequencyBinCount);
+      const updateLevel = () => {
+        if (analyzerRef.current) {
+          analyzerRef.current.getByteFrequencyData(dataArray);
+          const average = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
+          setAudioLevel(average * 2.5);
+          requestAnimationFrame(updateLevel);
+        }
+      };
+      updateLevel();
+    }
+
+    await audioContextRef.current.resume();
+
     if (isVoiceActive || isVoiceConnecting || isVoiceReady) {
+      console.log('[CLIENT]: Closing session manually');
       setIsVoiceActive(false);
       setIsVoiceReady(false);
       setIsVoiceConnecting(false);
       ws.send(JSON.stringify({ type: 'STOP_VOICE' }));
+
       if (workletNodeRef.current) {
-        workletNodeRef.current.disconnect();
+        try { workletNodeRef.current.disconnect(); } catch (e) { }
         workletNodeRef.current = null;
-      }
-      if (audioContextRef.current) {
-        audioContextRef.current.close().catch(() => { });
-        audioContextRef.current = null;
       }
       if (mediaStreamRef.current) {
         mediaStreamRef.current.getTracks().forEach(t => t.stop());
         mediaStreamRef.current = null;
       }
-      addToast({ type: 'success', title: 'Voice Deactivated', message: 'Mic stream closed.' });
+      addToast({ type: 'success', title: 'Voice Offline', message: 'Mic stream closed.' });
       return;
     }
 
     setIsVoiceConnecting(true);
-    addToast({ type: 'info', title: 'Connecting AI', message: 'Establishing Gemini Live session...' });
+    addToast({ type: 'info', title: 'Voice Link', message: 'Requesting Gemini stream...' });
+    console.log('[CLIENT]: Requesting START_VOICE');
     ws.send(JSON.stringify({ type: 'START_VOICE' }));
-  }, [isVoiceActive, isVoiceConnecting, addToast]);
+  }, [isVoiceActive, isVoiceConnecting, isVoiceReady, addToast]);
 
   const startMediaStream = useCallback(() => {
     const ws = (window as any).operatorWs as WebSocket;
-    navigator.mediaDevices.getUserMedia({ audio: { sampleRate: 16000, channelCount: 1, noiseSuppression: true } })
+    navigator.mediaDevices.getUserMedia({ audio: { sampleRate: 16000, channelCount: 1, noiseSuppression: false } })
       .then(async stream => {
         mediaStreamRef.current = stream;
-        const ctx = new window.AudioContext({ sampleRate: 16000 });
-        audioContextRef.current = ctx;
+        const ctx = audioContextRef.current!;
+
+        // Clean up old worklet if still hanging
+        if (workletNodeRef.current) {
+          try { workletNodeRef.current.disconnect(); } catch (e) { }
+        }
 
         await ctx.audioWorklet.addModule('/audio-processor.js');
         const source = ctx.createMediaStreamSource(stream);
         const workletNode = new AudioWorkletNode(ctx, 'audio-processor');
         workletNodeRef.current = workletNode;
+
+        source.connect(analyzerRef.current!);
+        source.connect(workletNode);
 
         let audioBuffer: Int16Array[] = [];
         let bufferLength = 0;
@@ -300,6 +345,8 @@ const AppContent: React.FC = () => {
                 }
 
                 // CRITICAL Handshake Check
+                // Log occasionally to confirm data flow
+                if (Math.random() < 0.02) console.log('[CLIENT_DEBUG]: Audio Streaming Active');
                 ws.send(JSON.stringify({ type: 'VOICE_AUDIO', data: btoa(binary) }));
 
                 audioBuffer = [];
@@ -310,12 +357,12 @@ const AppContent: React.FC = () => {
         };
 
         source.connect(workletNode);
-        workletNode.connect(ctx.destination);
+        // Do NOT connect worklet to destination (we don't want local echo)
 
         setIsVoiceConnecting(false);
         setIsVoiceActive(true);
-        addToast({ type: 'success', title: 'AI Ready', message: 'Gemini is now listening.' });
-        console.log('[CLIENT]: Media stream and worklet started.');
+        addToast({ type: 'success', title: 'Voice Online', message: 'You are now live with Gemini.' });
+        console.log('[CLIENT]: Stream initialized on top of resumed context.');
       })
       .catch(err => {
         setIsVoiceConnecting(false);
@@ -326,7 +373,14 @@ const AppContent: React.FC = () => {
 
   const toggleScreenShare = useCallback(async () => {
     const ws = (window as any).operatorWs as WebSocket;
-    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+      if (isScreenSharing) {
+        setIsScreenSharing(false);
+        if (screenStreamRef.current) screenStreamRef.current.getTracks().forEach(t => t.stop());
+        if (screenCaptureIntervalRef.current) clearInterval(screenCaptureIntervalRef.current);
+      }
+      return;
+    }
 
     if (isScreenSharing) {
       setIsScreenSharing(false);
@@ -391,40 +445,37 @@ const AppContent: React.FC = () => {
         const data = JSON.parse(event.data);
         if (data.type === 'VOICE_RESPONSE') {
           try {
-            if (!playbackCtxRef.current) {
-              playbackCtxRef.current = new window.AudioContext({ sampleRate: 24000 }); // Keep output at 24kHz if model returns 24kHz
-              const analyzer = playbackCtxRef.current.createAnalyser();
-              analyzer.fftSize = 256;
-              analyzerRef.current = analyzer;
-              analyzer.connect(playbackCtxRef.current.destination);
-              const dataArray = new Uint8Array(analyzer.frequencyBinCount);
-              const updateLevel = () => {
-                if (analyzerRef.current) {
-                  analyzerRef.current.getByteFrequencyData(dataArray);
-                  const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
-                  setAudioLevel(average * 2);
-                  requestAnimationFrame(updateLevel);
-                }
-              };
-              updateLevel();
-            }
-            const ctx = playbackCtxRef.current;
+            const ctx = audioContextRef.current;
+            if (!ctx) return;
             if (ctx.state === 'suspended') await ctx.resume();
+
             const binaryString = atob(data.data);
             const bytes = new Uint8Array(binaryString.length);
             for (let i = 0; i < binaryString.length; i++) bytes[i] = binaryString.charCodeAt(i);
+
+            // Native audio usually comes at 24kHz. Let's handle it.
             const pcmData = new Int16Array(bytes.buffer);
             const floatData = new Float32Array(pcmData.length);
             for (let i = 0; i < pcmData.length; i++) floatData[i] = pcmData[i] / 32768;
+
             const buffer = ctx.createBuffer(1, floatData.length, 24000);
             buffer.getChannelData(0).set(floatData);
+
             const source = ctx.createBufferSource();
             source.buffer = buffer;
+
+            // Connect to analyzer for waveform visualization
             source.connect(analyzerRef.current!);
+            // CRITICAL: Also connect directly to speakers so we actually hear Gemini's voice
+            source.connect(ctx.destination);
+
             const startAt = Math.max(ctx.currentTime, playbackScheduleRef.current || 0);
             source.start(startAt);
             playbackScheduleRef.current = startAt + buffer.duration;
-          } catch (err) { }
+            console.log(`[CLIENT]: Playing ${Math.round(buffer.duration * 1000)}ms audio chunk.`);
+          } catch (err: any) {
+            console.error('[CLIENT_PLAYBACK_ERR]:', err.message);
+          }
         } else if (data.type === 'VOICE_TEXT' || data.type === 'VOICE_PROACTIVE_ALERT' || data.type === 'VOICE_INPUT_TEXT') {
           const role = data.type === 'VOICE_INPUT_TEXT' ? 'user' : 'ai';
           if (data.text && !data.text.startsWith('SYSTEM:')) {

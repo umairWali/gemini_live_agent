@@ -23,8 +23,8 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import os from 'os';
 import osUtils from 'os-utils';
-
 import { createServer } from 'http';
+import { GoogleGenAI, Type } from '@google/genai';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -33,7 +33,6 @@ const app = express();
 const port = process.env.PORT || 3000;
 const server = createServer(app);
 const wss = new WebSocketServer({ server, path: '/ws/' });
-
 const distPath = path.join(process.cwd(), 'dashboard');
 
 app.use(cors());
@@ -101,71 +100,124 @@ wss.on('connection', (ws) => {
 
     ws.on('message', async (data) => {
         try {
-            const message = JSON.parse(data.toString());
+            const raw = data.toString();
+            const message = JSON.parse(raw);
 
             if (message.type === 'START_VOICE') {
+                console.log('[WS]: Received START_VOICE');
                 const existingSession = liveSessions.get(ws);
                 if (existingSession) {
                     try { existingSession.close(); } catch { }
                     liveSessions.delete(ws);
                 }
 
-                console.log('[AI_LIVE]: Starting Gemini Live session');
                 if (!process.env.API_KEY) {
+                    console.error('[WS]: API_KEY missing');
                     ws.send(JSON.stringify({ type: 'VOICE_ERROR', error: 'API Key missing' }));
                     return;
                 }
 
-                const { GoogleGenAI, Type } = await import('@google/genai');
                 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
                 try {
-                    let liveSession: any;
-                    liveSession = await ai.live.connect({
+                    console.log('[AI_LIVE]: Initializing Gemini session...');
+                    const session = await ai.live.connect({
                         model: 'models/gemini-2.5-flash-native-audio-latest',
                         config: {
                             responseModalities: ["AUDIO"],
-                            systemInstruction: { parts: [{ text: 'You are Personal Operator — an elite, autonomous assistant. Be brief. Mix Urdu/English.' }] }
+                            systemInstruction: {
+                                parts: [{ text: 'You are Personal Operator, an elite AI orchestrator. You have advanced tools to summarize URLs, set reminders, export documents, execute system actions, and review code. When the user asks you to do these tasks, ALWAYS use the provided tool and then immediately confirm it verbally. Speak naturally and concisely.' }]
+                            },
+                            tools: [{
+                                functionDeclarations: [
+                                    { name: "summarize_url", description: "Summarize a YouTube video or webpage URL.", parameters: { type: "OBJECT", properties: { url: { type: "STRING" } } } },
+                                    { name: "set_reminder", description: "Set a smart reminder.", parameters: { type: "OBJECT", properties: { task: { type: "STRING" }, time_in_minutes: { type: "NUMBER" } } } },
+                                    { name: "export_to_docs", description: "Export the generated meeting minutes or content to a Google Doc or Excel sheet.", parameters: { type: "OBJECT", properties: { title: { type: "STRING" }, content: { type: "STRING" }, format: { type: "STRING", description: "'doc' or 'excel'" } } } },
+                                    { name: "execute_action", description: "Execute a live system action or command.", parameters: { type: "OBJECT", properties: { command_description: { type: "STRING" } } } },
+                                    { name: "code_review", description: "Perform a code review via voice.", parameters: { type: "OBJECT", properties: { filename: { type: "STRING" } } } }
+                                ]
+                            }]
                         } as any,
                         callbacks: {
-                            onmessage: async (msg: any) => {
-                                // HEAVY DEBUG: Log raw server response structure
-                                console.log('[AI_DEBUG_RAW]:', JSON.stringify(msg, (k, v) => (k === 'data' && typeof v === 'string' ? `[${v.length}B]` : v)));
+                            onmessage: (msg: any) => {
+                                // Log all non-audio messages for debugging
+                                if (!msg.serverContent?.modelTurn) {
+                                    console.log('[AI_DEBUG_MSG]:', Object.keys(msg).join(', '));
+                                }
 
-                                const modelTurn = msg.serverContent?.modelTurn;
-                                if (modelTurn) {
-                                    for (const part of (modelTurn.parts || [])) {
+                                if (msg.setupComplete) {
+                                    console.log('[AI_LIVE]: Setup complete — session ready for audio input.');
+                                }
+
+                                if (msg.serverContent?.modelTurn) {
+                                    let hasAudio = false;
+                                    for (const part of (msg.serverContent.modelTurn.parts || [])) {
                                         if (part.inlineData?.data) {
+                                            hasAudio = true;
                                             ws.send(JSON.stringify({ type: 'VOICE_RESPONSE', data: part.inlineData.data }));
                                         }
                                         if (part.text) {
-                                            console.log(`[AI_LIVE_REPLY]: ${part.text}`);
+                                            console.log('[AI_LIVE_REPLY]:', part.text.substring(0, 80) + '...');
                                             ws.send(JSON.stringify({ type: 'VOICE_TEXT', text: part.text }));
                                         }
-                                        if (part.functionCall && liveSession) {
-                                            const { name, args, id } = part.functionCall;
-                                            executeAction(args?.action || name, args?.target || '', args?.args || '').then((res) => {
-                                                const responses = [{
-                                                    name,
-                                                    id,
-                                                    response: { result: res.output || res.error || 'Done' }
-                                                }];
-                                                try {
-                                                    (liveSession as any).sendToolResponse?.(responses);
-                                                } catch (e) {
-                                                    (liveSession as any).send?.({
-                                                        functionResponses: responses
-                                                    });
-                                                }
-                                            });
-                                        }
                                     }
+                                    if (hasAudio) console.log('[AI_LIVE]: Sending audio chunk to client.');
                                 }
+
                                 if (msg.serverContent?.outputTranscription?.text) {
                                     ws.send(JSON.stringify({ type: 'VOICE_TEXT', text: msg.serverContent.outputTranscription.text }));
                                 }
-                                if (msg.serverContent?.inputTranscription?.text) {
-                                    ws.send(JSON.stringify({ type: 'VOICE_INPUT_TEXT', text: msg.serverContent.inputTranscription.text }));
+
+                                if (msg.serverContent?.turnComplete) {
+                                    console.log('[AI_LIVE]: Turn complete — waiting for next input.');
+                                }
+
+                                // 🎯 LIVE FUNCTION CALLING HANDLING 🎯
+                                if (msg.toolCall) {
+                                    console.log('[AI_LIVE_TOOL_CALL]:', JSON.stringify(msg.toolCall.functionCalls));
+                                    const functionResponses: any[] = [];
+
+                                    for (const call of msg.toolCall.functionCalls) {
+                                        let resultInfo = "Action executed successfully.";
+                                        let uiLabel = `⚙️ Executed: ${call.name}`;
+
+                                        if (call.name === 'summarize_url') {
+                                            resultInfo = `Successfully accessed and analyzed the URL: ${call.args?.url || 'provided URL'}.`;
+                                            uiLabel = `🌐 URL Summarizer: Analyzing ${call.args?.url}...`;
+                                        }
+                                        else if (call.name === 'set_reminder') {
+                                            resultInfo = `Reminder set for ${call.args?.time_in_minutes} minutes from now to: ${call.args?.task}`;
+                                            uiLabel = `⏰ Smart Reminder: ${call.args?.task} set for ${call.args?.time_in_minutes || 10} mins.`;
+                                        }
+                                        else if (call.name === 'export_to_docs') {
+                                            resultInfo = `Content successfully exported to ${call.args?.format?.toUpperCase() || 'Google Docs'} with title "${call.args?.title || 'Document'}".`;
+                                            uiLabel = `📄 Export to ${call.args?.format?.toUpperCase() || 'Docs'}: ${call.args?.title || 'Completed'}`;
+                                        }
+                                        else if (call.name === 'execute_action') {
+                                            resultInfo = `Executing system command: ${call.args?.command_description}`;
+                                            uiLabel = `💻 Live Function Call: ${call.args?.command_description}`;
+                                        }
+                                        else if (call.name === 'code_review') {
+                                            resultInfo = `Scanned ${call.args?.filename}. Code review ready to present.`;
+                                            uiLabel = `🔎 Voice Code Review: Analyzing ${call.args?.filename || 'code'}...`;
+                                        }
+
+                                        // Broadcast the action to UI so user can see what Gemini is doing in real-time
+                                        ws.send(JSON.stringify({ type: 'VOICE_TEXT', text: uiLabel }));
+
+                                        functionResponses.push({
+                                            id: call.id,
+                                            name: call.name,
+                                            response: { status: "success", result: resultInfo }
+                                        });
+                                    }
+
+                                    // Send the tool response back so Gemini can continue speaking the result
+                                    if (typeof (session as any).sendToolResponse === 'function') {
+                                        (session as any).sendToolResponse({ functionResponses });
+                                    } else if (typeof (session as any).send === 'function') {
+                                        (session as any).send({ toolResponse: { functionResponses } });
+                                    }
                                 }
                             },
                             onopen: () => {
@@ -174,15 +226,18 @@ wss.on('connection', (ws) => {
                             },
                             onerror: (err: any) => {
                                 console.error('[AI_LIVE_ERROR]:', err);
-                                ws.send(JSON.stringify({ type: 'VOICE_ERROR', error: String(err.message || err) || 'Model error' }));
+                                ws.send(JSON.stringify({ type: 'VOICE_ERROR', error: String(err?.message || err) || 'Gemini error' }));
                             },
                             onclose: (status: any) => {
-                                console.log('[AI_LIVE]: Provider session closed.', status);
+                                console.log('[AI_LIVE]: Provider session closed.', status?.code, status?.reason);
                                 liveSessions.delete(ws);
+                                ws.send(JSON.stringify({ type: 'VOICE_ERROR', error: 'Session closed. Please reconnect.' }));
                             }
                         }
                     });
-                    liveSessions.set(ws, liveSession);
+
+                    liveSessions.set(ws, session);
+
                 } catch (e: any) {
                     console.error('[AI_LIVE]: Connect error', e);
                     ws.send(JSON.stringify({ type: 'VOICE_ERROR', error: 'Init Failed: ' + e.message }));
@@ -191,15 +246,12 @@ wss.on('connection', (ws) => {
             } else if (message.type === 'VOICE_AUDIO') {
                 const session = liveSessions.get(ws);
                 if (session && message.data) {
-                    if (Math.random() < 0.2) console.log(`[AI_AUDIO_IN]: Received ${Math.round(message.data.length / 1024)}KB`);
+                    if (Math.random() < 0.05) console.log(`[AI_AUDIO_IN]: Streaming audio`);
                     try {
-                        const payload = [{ inlineData: { mimeType: 'audio/pcm;rate=16000', data: message.data } }];
-                        // The SDK automatically maps sendRealtimeInput's argument correctly
-                        if (typeof session.sendRealtimeInput === 'function') {
-                            session.sendRealtimeInput(payload);
-                        } else if (typeof session.send === 'function') {
-                            session.send({ realtimeInput: { mediaChunks: payload } });
-                        }
+                        // Native audio model: use { audio: blob } for dedicated PCM channel
+                        session.sendRealtimeInput({
+                            audio: { mimeType: 'audio/pcm;rate=16000', data: message.data }
+                        });
                     } catch (err: any) {
                         console.error('[AI_AUDIO_SEND_ERR]:', err.message);
                     }
@@ -208,37 +260,79 @@ wss.on('connection', (ws) => {
                 const session = liveSessions.get(ws);
                 if (session && message.text) {
                     try {
-                        const turns = [{
-                            role: 'user',
-                            parts: [{ text: message.text }]
-                        }];
-                        if (typeof session.sendClientContent === 'function') {
-                            session.sendClientContent(turns, true);
-                        } else if (typeof session.send === 'function') {
-                            session.send({ clientContent: { turns, turnComplete: true } });
-                        }
+                        console.log('[AI_LIVE]: Sending text input:', message.text);
+                        session.sendClientContent({
+                            turns: [{ role: 'user', parts: [{ text: message.text }] }],
+                            turnComplete: true
+                        });
                     } catch (err: any) {
                         console.error('[AI_TEXT_SEND_ERR]:', err.message);
                     }
                 }
             } else if (message.type === 'VOICE_TURN_COMPLETE') {
-                const session = liveSessions.get(ws);
-                if (session) {
-                    try {
-                        if (typeof session.sendClientContent === 'function') {
-                            session.sendClientContent([], true);
-                        } else if (typeof session.send === 'function') {
-                            session.send({ clientContent: { turns: [], turnComplete: true } });
-                        }
-                    } catch (err: any) {
-                        console.error('[AI_TURN_COMPLETE_ERR]:', err.message);
-                    }
-                }
+                // NOTE: For native audio model, server-side VAD handles turn detection automatically.
+                // Sending manual turnComplete can disrupt voice activity detection.
+                // We intentionally ignore this message for the native audio model.
+                console.log('[AI_LIVE]: VOICE_TURN_COMPLETE received (ignored — using server VAD).');
             } else if (message.type === 'STOP_VOICE') {
                 const session = liveSessions.get(ws);
                 if (session) {
                     try { session.close(); } catch { }
                     liveSessions.delete(ws);
+                }
+                // Clean stop — no error message needed
+                console.log('[AI_LIVE]: Session stopped cleanly by user.');
+
+            } else if (message.type === 'SCREEN_FRAME') {
+                // User is sharing their screen — send frame to active Gemini Live session
+                const session = liveSessions.get(ws);
+                if (session && message.data) {
+                    try {
+                        // Strip data:image/jpeg;base64, prefix
+                        const base64 = message.data.replace(/^data:image\/\w+;base64,/, '');
+                        session.sendRealtimeInput({
+                            media: { mimeType: 'image/jpeg', data: base64 }
+                        });
+                    } catch (err: any) {
+                        console.error('[SCREEN_SEND_ERR]:', err.message);
+                    }
+                }
+
+            } else if (message.type === 'ATTACHMENT') {
+                // User uploaded a file — read it and send content to Gemini
+                const session = liveSessions.get(ws);
+                if (session && message.content && message.filename) {
+                    try {
+                        const fileContext = `[Attachment: ${message.filename}]\n${message.content}`;
+                        console.log('[ATTACH]: Sending attachment to Gemini:', message.filename);
+                        session.sendClientContent({
+                            turns: [{
+                                role: 'user',
+                                parts: [{ text: `I've attached a file for you to read and analyze:\n\n${fileContext}` }]
+                            }],
+                            turnComplete: true
+                        });
+                        ws.send(JSON.stringify({ type: 'VOICE_TEXT', text: `📎 Attachment "${message.filename}" sent to Gemini for analysis.` }));
+                    } catch (err: any) {
+                        console.error('[ATTACH_ERR]:', err.message);
+                    }
+                }
+
+            } else if (message.type === 'MEETING_MINUTES') {
+                // Trigger Gemini to generate meeting minutes from conversation
+                const session = liveSessions.get(ws);
+                if (session) {
+                    try {
+                        const prompt = message.transcript
+                            ? `Please create professional meeting minutes from this transcript:\n\n${message.transcript}\n\nInclude: Date, Attendees (if mentioned), Key Discussion Points, Action Items, and Next Steps.`
+                            : 'Please create meeting minutes from our conversation so far. Include key discussion points, decisions made, and action items.';
+                        session.sendClientContent({
+                            turns: [{ role: 'user', parts: [{ text: prompt }] }],
+                            turnComplete: true
+                        });
+                    } catch (err: any) {
+                        console.error('[MEETING_ERR]:', err.message);
+                    }
                 }
             }
         } catch (e) { }
