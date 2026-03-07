@@ -242,8 +242,10 @@ wss.on('connection', (ws) => {
                             },
                             onclose: (status: any) => {
                                 console.log('[AI_LIVE]: Provider session closed.', status?.code, status?.reason);
-                                liveSessions.delete(ws);
-                                ws.send(JSON.stringify({ type: 'VOICE_ERROR', error: 'Session closed. Please reconnect.' }));
+                                if (liveSessions.has(ws)) {
+                                    ws.send(JSON.stringify({ type: 'VOICE_ERROR', error: 'Session closed. Please reconnect.' }));
+                                    liveSessions.delete(ws);
+                                }
                             }
                         }
                     });
@@ -289,8 +291,8 @@ wss.on('connection', (ws) => {
             } else if (message.type === 'STOP_VOICE') {
                 const session = liveSessions.get(ws);
                 if (session) {
-                    try { session.close(); } catch { }
                     liveSessions.delete(ws);
+                    try { session.close(); } catch { }
                 }
                 // Clean stop — no error message needed
                 console.log('[AI_LIVE]: Session stopped cleanly by user.');
