@@ -119,6 +119,7 @@ const AppContent: React.FC = () => {
 
   const [isProcessing, setIsProcessing] = useState(false);
   const [isVoiceActive, setIsVoiceActive] = useState(false);
+  const [isVoiceReady, setIsVoiceReady] = useState(false);
   const [isVoiceConnecting, setIsVoiceConnecting] = useState(false);
   const [audioLevel, setAudioLevel] = useState(0);
   const voiceSocketRef = useRef<WebSocket | null>(null);
@@ -227,8 +228,9 @@ const AppContent: React.FC = () => {
       return;
     }
 
-    if (isVoiceActive || isVoiceConnecting) {
+    if (isVoiceActive || isVoiceConnecting || isVoiceReady) {
       setIsVoiceActive(false);
+      setIsVoiceReady(false);
       setIsVoiceConnecting(false);
       ws.send(JSON.stringify({ type: 'STOP_VOICE' }));
       if (workletNodeRef.current) {
@@ -270,33 +272,39 @@ const AppContent: React.FC = () => {
 
         workletNode.port.onmessage = (e) => {
           if (ws.readyState === WebSocket.OPEN) {
-            const inputData = e.data;
-            const pcmData = new Int16Array(inputData.length);
-            for (let i = 0; i < inputData.length; i++) {
-              pcmData[i] = Math.max(-1, Math.min(1, inputData[i])) * 32767;
-            }
-
-            audioBuffer.push(pcmData);
-            bufferLength += pcmData.length;
-
-            // Flash every ~85ms (1365 samples at 16kHz, roughly 1024 or 2048 is fine)
-            if (bufferLength >= 2048) {
-              const combined = new Int16Array(bufferLength);
-              let offset = 0;
-              for (const chunk of audioBuffer) {
-                combined.set(chunk, offset);
-                offset += chunk.length;
+            if (e.data.event === 'speech_end') {
+              ws.send(JSON.stringify({ type: 'VOICE_TURN_COMPLETE' }));
+            } else if (e.data.event === 'data') {
+              const inputData = e.data.buffer; // Float32Array
+              const pcmData = new Int16Array(inputData.length);
+              for (let i = 0; i < inputData.length; i++) {
+                pcmData[i] = Math.max(-1, Math.min(1, inputData[i])) * 32767;
               }
 
-              const bytes = new Uint8Array(combined.buffer);
-              let binary = '';
-              for (let i = 0; i < bytes.length; i += 8192) {
-                binary += String.fromCharCode(...bytes.subarray(i, i + 8192));
-              }
-              ws.send(JSON.stringify({ type: 'VOICE_AUDIO', data: btoa(binary) }));
+              audioBuffer.push(pcmData);
+              bufferLength += pcmData.length;
 
-              audioBuffer = [];
-              bufferLength = 0;
+              // Only send if VOICE_READY received from server
+              if (bufferLength >= 2048) {
+                const combined = new Int16Array(bufferLength);
+                let offset = 0;
+                for (const chunk of audioBuffer) {
+                  combined.set(chunk, offset);
+                  offset += chunk.length;
+                }
+
+                const bytes = new Uint8Array(combined.buffer);
+                let binary = '';
+                for (let i = 0; i < bytes.length; i += 8192) {
+                  binary += String.fromCharCode(...bytes.subarray(i, i + 8192));
+                }
+
+                // CRITICAL Handshake Check
+                ws.send(JSON.stringify({ type: 'VOICE_AUDIO', data: btoa(binary) }));
+
+                audioBuffer = [];
+                bufferLength = 0;
+              }
             }
           }
         };
@@ -427,10 +435,12 @@ const AppContent: React.FC = () => {
             if (data.type === 'VOICE_PROACTIVE_ALERT') speakText(data.text);
           }
         } else if (data.type === 'VOICE_READY') {
+          setIsVoiceReady(true);
           startMediaStream();
         } else if (data.type === 'VOICE_ERROR') {
           addToast({ type: 'error', title: 'Gemini Error', message: data.error });
           setIsVoiceActive(false);
+          setIsVoiceReady(false);
           setIsVoiceConnecting(false);
           if (workletNodeRef.current) {
             workletNodeRef.current.disconnect();

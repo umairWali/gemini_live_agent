@@ -122,24 +122,10 @@ wss.on('connection', (ws) => {
                 try {
                     let liveSession: any;
                     liveSession = await ai.live.connect({
-                        model: 'gemini-2.5-flash-native-audio-latest',
+                        model: 'models/gemini-2.5-flash-native-audio-latest',
                         config: {
                             responseModalities: ["AUDIO"],
-                            systemInstruction: { parts: [{ text: 'You are Personal Operator — an elite, autonomous assistant. Be brief. Mix Urdu/English.' }] },
-                            tools: [{
-                                functionDeclarations: [{
-                                    name: "execute_action",
-                                    description: "System tools",
-                                    parameters: {
-                                        type: Type.OBJECT,
-                                        properties: {
-                                            action: { type: Type.STRING },
-                                            target: { type: Type.STRING },
-                                            args: { type: Type.STRING }
-                                        }
-                                    }
-                                }]
-                            }] as any
+                            systemInstruction: { parts: [{ text: 'You are Personal Operator — an elite, autonomous assistant. Be brief. Mix Urdu/English.' }] }
                         } as any,
                         callbacks: {
                             onmessage: async (msg: any) => {
@@ -205,9 +191,10 @@ wss.on('connection', (ws) => {
             } else if (message.type === 'VOICE_AUDIO') {
                 const session = liveSessions.get(ws);
                 if (session && message.data) {
-                    if (Math.random() < 0.01) console.log(`[AI_AUDIO_IN]: ${Math.round(message.data.length / 1024)}KB`);
+                    if (Math.random() < 0.2) console.log(`[AI_AUDIO_IN]: Received ${Math.round(message.data.length / 1024)}KB`);
                     try {
-                        const payload = [{ mimeType: 'audio/pcm;rate=16000', data: message.data }];
+                        const payload = [{ inlineData: { mimeType: 'audio/pcm;rate=16000', data: message.data } }];
+                        // The SDK automatically maps sendRealtimeInput's argument correctly
                         if (typeof session.sendRealtimeInput === 'function') {
                             session.sendRealtimeInput(payload);
                         } else if (typeof session.send === 'function') {
@@ -221,20 +208,30 @@ wss.on('connection', (ws) => {
                 const session = liveSessions.get(ws);
                 if (session && message.text) {
                     try {
-                        const payload = {
-                            turns: [{
-                                role: 'user',
-                                parts: [{ text: message.text }]
-                            }],
-                            turnComplete: true
-                        };
+                        const turns = [{
+                            role: 'user',
+                            parts: [{ text: message.text }]
+                        }];
                         if (typeof session.sendClientContent === 'function') {
-                            session.sendClientContent([payload]);
+                            session.sendClientContent(turns, true);
                         } else if (typeof session.send === 'function') {
-                            session.send({ clientContent: payload });
+                            session.send({ clientContent: { turns, turnComplete: true } });
                         }
                     } catch (err: any) {
                         console.error('[AI_TEXT_SEND_ERR]:', err.message);
+                    }
+                }
+            } else if (message.type === 'VOICE_TURN_COMPLETE') {
+                const session = liveSessions.get(ws);
+                if (session) {
+                    try {
+                        if (typeof session.sendClientContent === 'function') {
+                            session.sendClientContent([], true);
+                        } else if (typeof session.send === 'function') {
+                            session.send({ clientContent: { turns: [], turnComplete: true } });
+                        }
+                    } catch (err: any) {
+                        console.error('[AI_TURN_COMPLETE_ERR]:', err.message);
                     }
                 }
             } else if (message.type === 'STOP_VOICE') {
