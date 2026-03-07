@@ -19,6 +19,19 @@ import { GoalManager } from './modules/goal_manager';
 import { ArchitectEngine } from './modules/architect';
 import { WorkModeEngine } from './modules/work_mode';
 import { ErpNextConsultant } from './modules/erpnext_consultant';
+import { EmailIntegration } from './modules/email_integration';
+import { CalendarSync } from './modules/calendar_sync';
+import { ScreenshotOCR } from './modules/screenshot_ocr';
+import { VoiceTranscription } from './modules/voice_transcription';
+import { DocumentTemplates } from './modules/document_templates';
+import { SelfHealingCode } from './modules/self_healing';
+import { PredictiveAlerts } from './modules/predictive_alerts';
+import { MultiAgentSwarm } from './modules/multi_agent_swarm';
+import { CodeReviewAI } from './modules/code_review_ai';
+import { DocumentationGenerator } from './modules/documentation_generator';
+import { DeploymentPipeline } from './modules/deployment_pipeline';
+import { CreativeStoryteller } from './modules/creative_storyteller';
+import { UINavigator } from './modules/ui_navigator';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import os from 'os';
@@ -88,6 +101,19 @@ const goalManager = new GoalManager(stateManager);
 const architect = new ArchitectEngine(stateManager);
 const workMode = new WorkModeEngine(stateManager);
 const erpNextConsultant = new ErpNextConsultant(stateManager);
+const emailIntegration = new EmailIntegration(stateManager);
+const calendarSync = new CalendarSync(stateManager);
+const screenshotOCR = new ScreenshotOCR(stateManager);
+const voiceTranscription = new VoiceTranscription(stateManager);
+const documentTemplates = new DocumentTemplates(stateManager);
+const selfHealingCode = new SelfHealingCode(stateManager);
+const predictiveAlerts = new PredictiveAlerts(stateManager, calendarSync, emailIntegration);
+const multiAgentSwarm = new MultiAgentSwarm(stateManager);
+const codeReviewAI = new CodeReviewAI(stateManager);
+const documentationGenerator = new DocumentationGenerator(stateManager);
+const deploymentPipeline = new DeploymentPipeline(stateManager);
+const creativeStoryteller = new CreativeStoryteller(stateManager);
+const uiNavigator = new UINavigator(stateManager);
 const watcher = new WatcherEngine(path.resolve(__dirname, '..'));
 
 // Event Bus (WebSocket)
@@ -703,6 +729,458 @@ app.post('/api/erpnext/consult', async (req, res) => {
                 break;
             default:
                 result = { success: false, error: 'Unknown consultant action' };
+        }
+    } catch (e: any) {
+        result = { success: false, error: e.message };
+    }
+
+    res.json(result);
+});
+
+// Email Integration Endpoint
+app.post('/api/email', async (req, res) => {
+    const { action, payload } = req.body;
+    let result: any = { success: false };
+
+    try {
+        switch (action) {
+            case 'connect':
+                result = await emailIntegration.connect(payload.provider, payload.credentials);
+                break;
+            case 'fetch':
+                result = { success: true, data: await emailIntegration.fetchEmails(payload.limit) };
+                break;
+            case 'search':
+                result = { success: true, data: await emailIntegration.searchEmails(payload.query) };
+                break;
+            case 'send':
+                result = await emailIntegration.sendEmail(payload.draft);
+                break;
+            case 'generate_reply':
+                result = { success: true, data: await emailIntegration.generateAutoReply(payload.email, payload.tone) };
+                break;
+            case 'unread_count':
+                result = { success: true, data: await emailIntegration.getUnreadCount() };
+                break;
+            default:
+                result = { success: false, error: 'Unknown email action' };
+        }
+    } catch (e: any) {
+        result = { success: false, error: e.message };
+    }
+
+    res.json(result);
+});
+
+// Calendar Sync Endpoint
+app.post('/api/calendar', async (req, res) => {
+    const { action, payload } = req.body;
+    let result: any = { success: false };
+
+    try {
+        switch (action) {
+            case 'connect':
+                result = await calendarSync.connect(payload.provider, payload.credentials);
+                break;
+            case 'today':
+                result = { success: true, data: await calendarSync.getTodayEvents() };
+                break;
+            case 'upcoming':
+                result = { success: true, data: await calendarSync.getUpcomingMeetings(payload.minutes) };
+                break;
+            case 'create':
+                result = await calendarSync.createEvent(payload.event);
+                break;
+            case 'briefing':
+                result = { success: true, data: await calendarSync.getDailyBriefing() };
+                break;
+            case 'free_slots':
+                result = { success: true, data: await calendarSync.findFreeSlots(payload.duration, new Date(payload.date)) };
+                break;
+            default:
+                result = { success: false, error: 'Unknown calendar action' };
+        }
+    } catch (e: any) {
+        result = { success: false, error: e.message };
+    }
+
+    res.json(result);
+});
+
+// Screenshot OCR Endpoint
+app.post('/api/ocr', async (req, res) => {
+    const { action, payload } = req.body;
+    let result: any = { success: false };
+
+    try {
+        switch (action) {
+            case 'process':
+                result = { success: true, data: await screenshotOCR.processImage(payload.image) };
+                break;
+            case 'extract':
+                result = { success: true, data: await screenshotOCR.extractStructuredData(payload.image) };
+                break;
+            case 'search':
+                result = { success: true, data: await screenshotOCR.searchInImage(payload.image, payload.text) };
+                break;
+            default:
+                result = { success: false, error: 'Unknown OCR action' };
+        }
+    } catch (e: any) {
+        result = { success: false, error: e.message };
+    }
+
+    res.json(result);
+});
+
+// Voice Transcription Endpoint
+app.post('/api/voice', async (req, res) => {
+    const { action, payload } = req.body;
+    let result: any = { success: false };
+
+    try {
+        switch (action) {
+            case 'transcribe':
+                result = { success: true, data: await voiceTranscription.transcribeAudio(payload.audio, payload.mimeType) };
+                break;
+            case 'save_note':
+                result = { success: true, data: await voiceTranscription.transcribeAndSave(payload.audio, payload.title) };
+                break;
+            case 'create_note':
+                result = { success: true, data: await voiceTranscription.createTextNote(payload.title, payload.content, payload.tags) };
+                break;
+            case 'get_notes':
+                result = { success: true, data: voiceTranscription.getNotes() };
+                break;
+            case 'search_notes':
+                result = { success: true, data: voiceTranscription.searchNotes(payload.query) };
+                break;
+            case 'delete_note':
+                result = { success: voiceTranscription.deleteNote(payload.noteId) };
+                break;
+            case 'summarize':
+                result = { success: true, data: await voiceTranscription.summarizeNote(payload.noteId) };
+                break;
+            default:
+                result = { success: false, error: 'Unknown voice action' };
+        }
+    } catch (e: any) {
+        result = { success: false, error: e.message };
+    }
+
+    res.json(result);
+});
+
+// Document Templates Endpoint
+app.post('/api/documents', async (req, res) => {
+    const { action, payload } = req.body;
+    let result: any = { success: false };
+
+    try {
+        switch (action) {
+            case 'templates':
+                result = { success: true, data: documentTemplates.getTemplates() };
+                break;
+            case 'generate':
+                result = { success: true, data: await documentTemplates.generateDocument(payload.templateId, payload.variables, payload.format) };
+                break;
+            case 'quick_generate':
+                result = { success: true, data: await documentTemplates.quickGenerate(payload.prompt, payload.format) };
+                break;
+            case 'get_docs':
+                result = { success: true, data: documentTemplates.getDocuments() };
+                break;
+            case 'add_template':
+                result = { success: true, data: documentTemplates.addCustomTemplate(payload.template) };
+                break;
+            default:
+                result = { success: false, error: 'Unknown document action' };
+        }
+    } catch (e: any) {
+        result = { success: false, error: e.message };
+    }
+
+    res.json(result);
+});
+
+// Self-Healing Code Endpoint
+app.post('/api/healing', async (req, res) => {
+    const { action, payload } = req.body;
+    let result: any = { success: false };
+
+    try {
+        switch (action) {
+            case 'analyze':
+                result = { success: true, data: await selfHealingCode.analyzeAndHeal(payload.error, payload.stackTrace, payload.filePath) };
+                break;
+            case 'history':
+                result = { success: true, data: selfHealingCode.getHealingHistory() };
+                break;
+            case 'stats':
+                result = { success: true, data: selfHealingCode.getStats() };
+                break;
+            case 'rollback':
+                result = { success: await selfHealingCode.rollback(payload.attemptId) };
+                break;
+            default:
+                result = { success: false, error: 'Unknown healing action' };
+        }
+    } catch (e: any) {
+        result = { success: false, error: e.message };
+    }
+
+    res.json(result);
+});
+
+// Predictive Alerts Endpoint
+app.post('/api/alerts', async (req, res) => {
+    const { action, payload } = req.body;
+    let result: any = { success: false };
+
+    try {
+        switch (action) {
+            case 'active':
+                result = { success: true, data: predictiveAlerts.getActiveAlerts() };
+                break;
+            case 'all':
+                result = { success: true, data: predictiveAlerts.getAllAlerts() };
+                break;
+            case 'dismiss':
+                result = { success: predictiveAlerts.dismissAlert(payload.alertId) };
+                break;
+            case 'rules':
+                result = { success: true, data: predictiveAlerts.getRules() };
+                break;
+            case 'toggle_rule':
+                result = { success: predictiveAlerts.toggleRule(payload.ruleId, payload.enabled) };
+                break;
+            case 'add_rule':
+                result = { success: true, data: predictiveAlerts.addCustomRule(payload.rule) };
+                break;
+            default:
+                result = { success: false, error: 'Unknown alerts action' };
+        }
+    } catch (e: any) {
+        result = { success: false, error: e.message };
+    }
+
+    res.json(result);
+});
+
+// Multi-Agent Swarm Endpoint
+app.post('/api/swarm', async (req, res) => {
+    const { action, payload } = req.body;
+    let result: any = { success: false };
+
+    try {
+        switch (action) {
+            case 'execute':
+                result = { success: true, data: await multiAgentSwarm.executeSwarm(payload.description, payload.type) };
+                break;
+            case 'agents':
+                result = { success: true, data: multiAgentSwarm.getAgents() };
+                break;
+            case 'tasks':
+                result = { success: true, data: multiAgentSwarm.getTasks() };
+                break;
+            case 'results':
+                result = { success: true, data: multiAgentSwarm.getResults() };
+                break;
+            case 'status':
+                result = { success: true, data: multiAgentSwarm.getAgentStatus() };
+                break;
+            case 'create_task':
+                result = { success: true, data: await multiAgentSwarm.createTask(payload.description, payload.type, payload.priority, payload.dependencies) };
+                break;
+            default:
+                result = { success: false, error: 'Unknown swarm action' };
+        }
+    } catch (e: any) {
+        result = { success: false, error: e.message };
+    }
+
+    res.json(result);
+});
+
+// Code Review AI Endpoint
+app.post('/api/code-review', async (req, res) => {
+    const { action, payload } = req.body;
+    let result: any = { success: false };
+
+    try {
+        switch (action) {
+            case 'review_file':
+                result = { success: true, data: await codeReviewAI.reviewFile(payload.filePath) };
+                break;
+            case 'review_code':
+                result = { success: true, data: await codeReviewAI.reviewCode(payload) };
+                break;
+            case 'review_pr':
+                result = { success: true, data: await codeReviewAI.reviewPR(payload.changedFiles, payload.prDescription) };
+                break;
+            case 'generate_fix':
+                result = { success: true, data: await codeReviewAI.generateFix(payload.issue, payload.originalCode) };
+                break;
+            case 'compare':
+                result = { success: true, data: await codeReviewAI.compareVersions(payload.oldCode, payload.newCode, payload.language) };
+                break;
+            case 'history':
+                result = { success: true, data: codeReviewAI.getReviewHistory() };
+                break;
+            case 'stats':
+                result = { success: true, data: codeReviewAI.getStats() };
+                break;
+            default:
+                result = { success: false, error: 'Unknown code review action' };
+        }
+    } catch (e: any) {
+        result = { success: false, error: e.message };
+    }
+
+    res.json(result);
+});
+
+// Documentation Generator Endpoint
+app.post('/api/docs', async (req, res) => {
+    const { action, payload } = req.body;
+    let result: any = { success: false };
+
+    try {
+        switch (action) {
+            case 'readme':
+                result = { success: true, data: await documentationGenerator.generateReadme(payload.projectPath) };
+                break;
+            case 'api':
+                result = { success: true, data: await documentationGenerator.generateApiDocs(payload.sourceFiles, payload.format) };
+                break;
+            case 'architecture':
+                result = { success: true, data: await documentationGenerator.generateArchitectureDoc(payload.projectPath) };
+                break;
+            case 'changelog':
+                result = { success: true, data: await documentationGenerator.generateChangelog(payload.commits) };
+                break;
+            case 'guide':
+                result = { success: true, data: await documentationGenerator.generateUserGuide(payload.feature, payload.screenshots) };
+                break;
+            case 'all':
+                result = { success: true, data: await documentationGenerator.generateAllDocs(payload.projectPath) };
+                break;
+            case 'list':
+                result = { success: true, data: documentationGenerator.getGeneratedDocs() };
+                break;
+            default:
+                result = { success: false, error: 'Unknown docs action' };
+        }
+    } catch (e: any) {
+        result = { success: false, error: e.message };
+    }
+
+    res.json(result);
+});
+
+// Deployment Pipeline Endpoint
+app.post('/api/deploy', async (req, res) => {
+    const { action, payload } = req.body;
+    let result: any = { success: false };
+
+    try {
+        switch (action) {
+            case 'deploy':
+                result = { success: true, data: await deploymentPipeline.deploy(payload.targetId, payload.options) };
+                break;
+            case 'rollback':
+                result = { success: await deploymentPipeline.rollback(payload.targetId) };
+                break;
+            case 'targets':
+                result = { success: true, data: deploymentPipeline.getTargets() };
+                break;
+            case 'add_target':
+                result = { success: true, data: await deploymentPipeline.addTarget(payload.target) };
+                break;
+            case 'history':
+                result = { success: true, data: deploymentPipeline.getDeployments() };
+                break;
+            case 'active':
+                result = { success: true, data: deploymentPipeline.getActiveDeployment() };
+                break;
+            default:
+                result = { success: false, error: 'Unknown deploy action' };
+        }
+    } catch (e: any) {
+        result = { success: false, error: e.message };
+    }
+
+    res.json(result);
+});
+
+// Creative Storyteller Endpoint - Interleaved multimedia output
+app.post('/api/storyteller', async (req, res) => {
+    const { action, payload } = req.body;
+    let result: any = { success: false };
+
+    try {
+        switch (action) {
+            case 'create_story':
+                result = { success: true, data: await creativeStoryteller.createInterleavedStory(payload.topic, payload.style, payload.audience, payload.segments) };
+                break;
+            case 'marketing_asset':
+                result = { success: true, data: await creativeStoryteller.generateMarketingAsset(payload.product, payload.description, payload.platform) };
+                break;
+            case 'educational':
+                result = { success: true, data: await creativeStoryteller.createEducationalExplainer(payload.topic, payload.complexity) };
+                break;
+            case 'social_content':
+                result = { success: true, data: await creativeStoryteller.createSocialContent(payload.topic, payload.mood) };
+                break;
+            case 'generate_video':
+                result = { success: true, data: await creativeStoryteller.generateVideoFromStory(payload.storyId) };
+                break;
+            case 'get_stories':
+                result = { success: true, data: creativeStoryteller.getStories() };
+                break;
+            case 'export_html':
+                result = { success: true, data: creativeStoryteller.exportStoryAsHTML(payload.storyId) };
+                break;
+            default:
+                result = { success: false, error: 'Unknown storyteller action' };
+        }
+    } catch (e: any) {
+        result = { success: false, error: e.message };
+    }
+
+    res.json(result);
+});
+
+// UI Navigator Endpoint - Visual UI understanding & interaction
+app.post('/api/navigator', async (req, res) => {
+    const { action, payload } = req.body;
+    let result: any = { success: false };
+
+    try {
+        switch (action) {
+            case 'analyze':
+                result = { success: true, data: await uiNavigator.captureAndAnalyze() };
+                break;
+            case 'create_plan':
+                result = { success: true, data: await uiNavigator.createNavigationPlan(payload.goal) };
+                break;
+            case 'execute_plan':
+                result = { success: true, data: await uiNavigator.executeNavigationPlan(payload.plan) };
+                break;
+            case 'execute_action':
+                result = { success: true, data: await uiNavigator.executeAction(payload.action) };
+                break;
+            case 'automate_workflow':
+                result = { success: true, data: await uiNavigator.automateWorkflow(payload.steps) };
+                break;
+            case 'visual_qa':
+                result = { success: true, data: await uiNavigator.performVisualQA(payload.testCases) };
+                break;
+            case 'history':
+                result = { success: true, data: uiNavigator.getActionHistory() };
+                break;
+            default:
+                result = { success: false, error: 'Unknown navigator action' };
         }
     } catch (e: any) {
         result = { success: false, error: e.message };

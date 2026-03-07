@@ -29,6 +29,7 @@ COPY --from=build-frontend /app/dist/ ./sidecar/dashboard/
 
 # Start script with virtual display for screenshots
 # Note: Google Cloud provides $PORT. Our app listens on it correctly.
-EXPOSE 3000
+ENV PORT=8080
+EXPOSE 8080
 WORKDIR /app/sidecar
-CMD ["sh", "-c", "Xvfb :99 -screen 0 1280x1024x24 & export DISPLAY=:99 && npm start"]
+CMD ["sh", "-c", "Xvfb :99 -screen 0 1280x1024x24 & export DISPLAY=:99 && npx tsx server.ts"]

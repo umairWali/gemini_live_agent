@@ -9,6 +9,7 @@ import ChatSidebar from './components/ChatSidebar';
 import Terminal from './components/Terminal';
 import RightPanel from './components/RightPanel';
 import AppHeader from './components/AppHeader';
+import SettingsPanel from './components/SettingsPanel';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { ToastProvider, useToast } from './components/Toast';
 import { useCommandPalette } from './components/CommandPalette';
@@ -43,9 +44,15 @@ const App: React.FC = () => {
 const AppContent: React.FC = () => {
   const { addToast } = useToast();
   const { playSuccess, playError, playNotification, playClick, haptic } = useSoundEffects(true);
-  const [isDark, setIsDark] = useState(true);
+  const [isDark, setIsDark] = useState(() => {
+    // Load theme from localStorage, default to true (dark)
+    const savedTheme = localStorage.getItem('operator_theme');
+    return savedTheme === null ? true : savedTheme === 'true';
+  });
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
+  const [showSettings, setShowSettings] = useState(false);
+  const [showMobileSidebar, setShowMobileSidebar] = useState(false);
 
   const [state, setState] = useState<AppState>(() => {
     const saved = localStorage.getItem('operator_master_prod_v11');
@@ -621,8 +628,44 @@ const AppContent: React.FC = () => {
     };
   }, []);
 
+  // Save theme to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('operator_theme', isDark.toString());
+  }, [isDark]);
+
   return (
     <div className={`flex w-screen h-screen overflow-hidden ${isDark ? 'bg-black text-white' : 'bg-slate-50 text-slate-900'} font-sans tracking-tight`}>
+      {/* Mobile Sidebar Overlay */}
+      {showMobileSidebar && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40 md:hidden"
+          onClick={() => setShowMobileSidebar(false)}
+        />
+      )}
+      
+      {/* Mobile Sidebar */}
+      <div className={`fixed left-0 top-0 h-full w-72 transform transition-transform duration-300 z-50 md:hidden ${showMobileSidebar ? 'translate-x-0' : '-translate-x-full'}`}>
+        <div className={`flex flex-col h-full ${isDark ? 'bg-slate-950 border-white/5' : 'bg-white border-slate-200'}`}>
+          <ChatSidebar
+            isDark={isDark}
+            savedSessions={state.savedSessions || []}
+            onSelectSession={(id) => {
+              const s = state.savedSessions?.find(s => s.id === id);
+              if (s) setState(p => ({ ...p, history: s.history }));
+              setShowMobileSidebar(false);
+            }}
+            onNewChat={() => {
+              if (state.history.length > 0) {
+                const title = state.history[0].text.slice(0, 20) + '...';
+                setState(p => ({ ...p, savedSessions: [{ id: Date.now().toString(), title, history: p.history, timestamp: Date.now() }, ...(p.savedSessions || [])], history: [] }));
+                setShowMobileSidebar(false);
+              }
+            }}
+          />
+        </div>
+      </div>
+
+      {/* Desktop Sidebar */}
       <div className={`hidden md:flex flex-col border-r transition-colors w-72 h-full overflow-hidden ${isDark ? 'bg-slate-950 border-white/5 shadow-2xl' : 'bg-white border-slate-200'} z-20 shrink-0`}>
         <ChatSidebar
           isDark={isDark}
@@ -644,7 +687,21 @@ const AppContent: React.FC = () => {
       </div>
 
       <main className="flex-1 flex flex-col relative overflow-hidden">
-        <AppHeader isDark={isDark} isVoiceActive={isVoiceActive} emotionState={state.emotionState || 'normal'} audioLevel={audioLevel} />
+        <AppHeader 
+          isDark={isDark} 
+          isVoiceActive={isVoiceActive} 
+          emotionState={state.emotionState || 'normal'} 
+          audioLevel={audioLevel}
+          onThemeToggle={() => setIsDark(!isDark)}
+          onSettingsClick={() => setShowSettings(true)}
+          onMobileMenuClick={() => setShowMobileSidebar(!showMobileSidebar)}
+          onNewChat={() => {
+            if (state.history.length > 0) {
+              const title = state.history[0].text.slice(0, 20) + '...';
+              setState(p => ({ ...p, savedSessions: [{ id: Date.now().toString(), title, history: p.history, timestamp: Date.now() }, ...(p.savedSessions || [])], history: [] }));
+            }
+          }}
+        />
         <div className="flex-1 overflow-hidden">
           <Terminal
             history={state.history}
@@ -663,6 +720,14 @@ const AppContent: React.FC = () => {
       </main>
 
       <RightPanel state={state} isDark={isDark} onModeChange={() => { }} onAutonomousToggle={() => setState(p => ({ ...p, isAutonomous: !p.isAutonomous }))} />
+      
+      {/* Settings Panel */}
+      <SettingsPanel
+        isOpen={showSettings}
+        onClose={() => setShowSettings(false)}
+        isDark={isDark}
+        onThemeToggle={() => setIsDark(!isDark)}
+      />
     </div>
   );
 };

@@ -3,7 +3,7 @@ class AudioProcessor extends AudioWorkletProcessor {
         super();
         this.lastSpeechTime = 0;
         this.isSpeaking = false;
-        this.threshold = 0.005; // Lowered for high sensitivity
+        this.threshold = 0.02; // Standard voice sensitivity
         this.silenceDelay = 1.0;
     }
 

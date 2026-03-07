@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Mic, MicOff, Send, User, Bot, Monitor, MonitorOff, Camera, CameraOff, Paperclip, FileText, Download, CircleDot, Plus, X, Zap, Sliders, Info } from 'lucide-react';
+import { Mic, MicOff, Send, User, Bot, Monitor, MonitorOff, Camera, CameraOff, Paperclip, FileText, Download, CircleDot, Plus, X, Zap, Sliders, Info, MoreVertical, Wand2, Sparkles } from 'lucide-react';
 import { AgentRole, Message } from '../types';
 
 interface TerminalProps {
@@ -243,136 +243,167 @@ const Terminal: React.FC<TerminalProps> = ({
         onChange={handleFileSelect}
       />
 
-      {/* Input Bar */}
-      <div className={`border-t p-4 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 transition-colors ${isDark ? 'bg-black border-white/5' : 'bg-white border-slate-200 shadow-2xl z-10'}`}>
-        <div className="flex flex-wrap sm:flex-nowrap gap-2 p-1.5 bg-slate-900/50 rounded-2xl border border-white/5 justify-center sm:justify-start">
-          {/* Mic button */}
-          <button
-            type="button"
-            id="voice-toggle-btn"
-            onClick={onToggleVoice}
-            title={isVoiceActive ? 'Stop voice' : 'Start voice'}
-            className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all active:scale-90 ${isVoiceActive ? 'bg-rose-500 text-white shadow-[0_0_20px_rgba(244,63,94,0.4)]' : 'bg-white/5 text-slate-400 hover:text-white hover:bg-white/10'}`}
-          >
-            {isVoiceActive ? <Mic size={20} strokeWidth={2.5} /> : <MicOff size={20} />}
-          </button>
-
-          {/* Screen Share button */}
-          {onToggleScreenShare && (
-            <button
-              type="button"
-              id="screen-share-btn"
-              onClick={onToggleScreenShare}
-              title={isScreenSharing ? 'Stop Screen Share' : 'Share Screen — Gemini will see your screen'}
-              className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all active:scale-90 ${isScreenSharing ? 'bg-sky-500 text-white shadow-[0_0_20px_rgba(14,165,233,0.4)]' : 'bg-white/5 text-slate-400 hover:text-white hover:bg-white/10'}`}
-            >
-              {isScreenSharing ? <Monitor size={20} strokeWidth={2.5} /> : <MonitorOff size={20} />}
-            </button>
-          )}
-
-          {/* Camera button */}
-          {onToggleCamera && (
-            <button
-              type="button"
-              id="camera-btn"
-              onClick={onToggleCamera}
-              title={isCameraActive ? 'Stop Camera' : 'Start Camera — Gemini will see through your webcam'}
-              className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all active:scale-90 ${isCameraActive ? 'bg-amber-500 text-white shadow-[0_0_20px_rgba(245,158,11,0.4)]' : 'bg-white/5 text-slate-400 hover:text-white hover:bg-white/10'}`}
-            >
-              {isCameraActive ? <Camera size={20} strokeWidth={2.5} /> : <CameraOff size={20} />}
-            </button>
-          )}
-
-          {/* Toggle Extra Tools Button */}
-          <button
-            type="button"
-            onClick={() => setShowExtraTools(!showExtraTools)}
-            title="More Tools"
-            className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all active:scale-90 ${showExtraTools || meetingActive || isRecording ? 'bg-violet-500/20 text-violet-400' : 'bg-white/5 text-slate-400 hover:text-white hover:bg-white/10'}`}
-          >
-            {showExtraTools ? <X size={20} /> : <Plus size={20} />}
-          </button>
-
-          {/* Interruption Slider (Sci-fi themed) */}
-          <div className={`hidden lg:flex items-center gap-3 px-4 h-11 rounded-xl border transition-all ${isDark ? 'bg-white/5 border-white/5' : 'bg-slate-50 border-slate-200'}`}>
-            <Zap size={14} className={sensitivity > 70 ? 'text-amber-400 animate-pulse' : 'text-slate-500'} />
+      {/* Input Bar - Clean & Smart Design */}
+      <div className={`border-t p-3 flex flex-col gap-3 transition-colors ${isDark ? 'bg-black border-white/5' : 'bg-white border-slate-200 shadow-lg z-10'}`}>
+        
+        {/* Mobile: Input takes full width */}
+        <form onSubmit={handleSubmit} className="flex-1 gap-2 sm:flex-row sm:items-center">
+          <div className="flex-1 relative">
             <input
-              type="range"
-              min="0"
-              max="100"
-              value={sensitivity}
-              onChange={(e) => handleSensitivityChange(parseInt(e.target.value))}
-              className="w-16 h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-violet-500 focus:accent-violet-400"
+              ref={inputRef}
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              placeholder={meetingActive ? '🟢 Meeting mode — type or speak...' : 'Ask your Operator...'}
+              disabled={isProcessing}
+              className={`w-full px-4 py-3 pr-12 rounded-xl text-sm outline-none transition-all ${isDark ? 'bg-white/5 border border-white/10 text-white focus:border-violet-500/50 placeholder:text-slate-600' : 'bg-slate-100 border border-slate-200 text-slate-900 focus:border-violet-400 placeholder:text-slate-400'} ${meetingActive ? 'border-emerald-500/40' : ''}`}
             />
-            <span className="text-[10px] font-black w-6 tabular-nums">{sensitivity}%</span>
+            {attachedFile && (
+              <div className={`absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] ${isDark ? 'bg-violet-500/20 text-violet-300' : 'bg-violet-100 text-violet-700'}`}>
+                <Paperclip size={10} />
+                {attachedFile.name.length > 12 ? attachedFile.name.slice(0, 12) + '...' : attachedFile.name}
+                <button type="button" onClick={() => setAttachedFile(null)} className="hover:text-white ml-1">
+                  <X size={10} />
+                </button>
+              </div>
+            )}
           </div>
-
-          {/* Extra Tools Expanded */}
-          {(showExtraTools || meetingActive || isRecording) && (
-            <div className="flex gap-2 animate-in slide-in-from-left-2 duration-300">
-              {/* Attachment button */}
-              <button
-                type="button"
-                id="attachment-btn"
-                onClick={() => fileInputRef.current?.click()}
-                title="Attach a file — Gemini will read and analyze it"
-                className="w-11 h-11 rounded-xl flex items-center justify-center transition-all active:scale-90 bg-white/5 text-slate-400 hover:text-white hover:bg-white/10"
-              >
-                <Paperclip size={18} />
-              </button>
-
-              {/* Meeting Minutes button */}
-              <button
-                type="button"
-                id="meeting-btn"
-                onClick={toggleMeeting}
-                title={meetingActive ? 'End Meeting & Generate Minutes' : 'Start Meeting (Gemini takes notes)'}
-                className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all active:scale-90 ${meetingActive ? 'bg-emerald-500 text-white shadow-[0_0_20px_rgba(16,185,129,0.4)] animate-pulse' : 'bg-white/5 text-slate-400 hover:text-white hover:bg-white/10'}`}
-              >
-                <FileText size={18} />
-              </button>
-
-              {/* Download last response */}
-              <button
-                type="button"
-                id="download-btn"
-                onClick={downloadLastResponse}
-                title="Download last AI response as .txt file"
-                className="w-11 h-11 rounded-xl flex items-center justify-center transition-all active:scale-90 bg-white/5 text-slate-400 hover:text-white hover:bg-white/10"
-              >
-                <Download size={18} />
-              </button>
-
-              {/* Session Recording button */}
-              <button
-                type="button"
-                id="record-btn"
-                onClick={toggleRecording}
-                title={isRecording ? 'Stop Recording Session' : 'Record Session'}
-                className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all active:scale-90 ${isRecording ? 'bg-red-600 text-white shadow-[0_0_20px_rgba(220,38,38,0.4)] animate-pulse' : 'bg-white/5 text-slate-400 hover:text-white hover:bg-white/10'}`}
-              >
-                <CircleDot size={18} />
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* Text input */}
-        <form onSubmit={handleSubmit} className="flex-1 flex gap-3">
-          <input
-            ref={inputRef}
-            value={input}
-            onChange={e => setInput(e.target.value)}
-            placeholder={meetingActive ? '🟢 Meeting in progress — speak or type...' : 'Talk to your Operator...'}
-            disabled={isProcessing}
-            className={`flex-1 px-6 py-3.5 rounded-2xl text-[14px] font-medium outline-none transition-all ${isDark ? 'bg-white/5 border border-white/10 text-white focus:border-violet-500/50' : 'bg-slate-50 border border-slate-200 text-slate-900 focus:border-violet-400'} ${meetingActive ? 'border-emerald-500/40' : ''}`}
-          />
+          
+          {/* Mobile: Send button - larger */}
           <button
             type="submit"
             disabled={!input.trim() || isProcessing}
-            className={`w-14 h-11 rounded-xl flex items-center justify-center transition-all active:scale-90 ${input.trim() && !isProcessing ? 'bg-white text-slate-900 shadow-xl' : 'bg-white/5 text-slate-600 cursor-not-allowed opacity-50'}`}
+            className={`w-14 h-10 sm:w-11 sm:h-10 rounded-xl flex items-center justify-center transition-all active:scale-90 ${input.trim() && !isProcessing ? 'bg-gradient-to-br from-violet-500 to-purple-600 text-white shadow-lg shadow-violet-500/30' : 'bg-white/5 text-slate-600 cursor-not-allowed'}`}
           >
-            <Send size={18} strokeWidth={3} />
+            <Send size={18} strokeWidth={2.5} />
+          </button>
+        </form>
+
+        {/* Desktop: Compact Controls - Hidden on Mobile */}
+        <div className="hidden sm:flex items-center gap-1.5 p-1.5 bg-slate-900/60 rounded-xl border border-white/5">
+          {/* Voice - Primary Action */}
+          <button
+            type="button"
+            onClick={onToggleVoice}
+            title={isVoiceActive ? 'Stop voice' : 'Start voice conversation'}
+            className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all active:scale-90 ${isVoiceActive ? 'bg-gradient-to-br from-rose-500 to-pink-600 text-white shadow-lg shadow-rose-500/30' : 'hover:bg-white/10 text-slate-400 hover:text-white'}`}
+          >
+            {isVoiceActive ? <Mic size={18} /> : <MicOff size={18} />}
+          </button>
+
+          {/* Vision Controls - Group */}
+          <div className="flex items-center gap-1 px-1 border-l border-white/10">
+            {onToggleScreenShare && (
+              <button
+                type="button"
+                onClick={onToggleScreenShare}
+                title={isScreenSharing ? 'Stop screen share' : 'Share screen'}
+                className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all active:scale-90 ${isScreenSharing ? 'bg-sky-500 text-white shadow-lg shadow-sky-500/30' : 'hover:bg-white/10 text-slate-400 hover:text-sky-400'}`}
+              >
+                {isScreenSharing ? <Monitor size={16} /> : <MonitorOff size={16} />}
+              </button>
+            )}
+            {onToggleCamera && (
+              <button
+                type="button"
+                onClick={onToggleCamera}
+                title={isCameraActive ? 'Stop camera' : 'Start camera'}
+                className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all active:scale-90 ${isCameraActive ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/30' : 'hover:bg-white/10 text-slate-400 hover:text-amber-400'}`}
+              >
+                {isCameraActive ? <Camera size={16} /> : <CameraOff size={16} />}
+              </button>
+            )}
+          </div>
+
+          {/* Tools Dropdown Trigger */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setShowExtraTools(!showExtraTools)}
+              title="More tools"
+              className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all active:scale-90 ${showExtraTools ? 'bg-violet-500/30 text-violet-300' : 'hover:bg-white/10 text-slate-400 hover:text-violet-400'}`}
+            >
+              <MoreVertical size={16} />
+            </button>
+
+            {/* Dropdown Menu - Mobile Optimized */}
+            {showExtraTools && (
+              <div className={`absolute bottom-full left-0 mb-2 w-56 sm:w-48 rounded-xl border shadow-2xl overflow-hidden z-50 ${isDark ? 'bg-slate-900 border-white/10' : 'bg-white border-slate-200'}`}>
+                <div className="p-1">
+                  <button
+                    onClick={() => { fileInputRef.current?.click(); setShowExtraTools(false); }}
+                    className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg text-sm sm:text-xs transition-colors ${isDark ? 'hover:bg-white/10 text-slate-300' : 'hover:bg-slate-100 text-slate-700'}`}
+                  >
+                    <Paperclip size={18} className="text-violet-400" />
+                    <span className="hidden sm:inline sm:text-xs">Attach file</span>
+                  </button>
+                  <button
+                    onClick={() => { toggleMeeting(); setShowExtraTools(false); }}
+                    className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg text-sm sm:text-xs transition-colors ${meetingActive ? 'bg-emerald-500/20 text-emerald-400' : isDark ? 'hover:bg-white/10 text-slate-300' : 'hover:bg-slate-100 text-slate-700'}`}
+                  >
+                    <FileText size={18} className={meetingActive ? 'text-emerald-400' : 'text-emerald-500'} />
+                    <span className="hidden sm:inline sm:text-xs">{meetingActive ? 'End meeting' : 'Meeting mode'}</span>
+                  </button>
+                  <button
+                    onClick={() => { toggleRecording(); setShowExtraTools(false); }}
+                    className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg text-sm sm:text-xs transition-colors ${isRecording ? 'bg-rose-500/20 text-rose-400' : isDark ? 'hover:bg-white/10 text-slate-300' : 'hover:bg-slate-100 text-slate-700'}`}
+                  >
+                    <CircleDot size={18} className={isRecording ? 'text-rose-400 animate-pulse' : 'text-rose-500'} />
+                    <span className="hidden sm:inline sm:text-xs">{isRecording ? 'Stop recording' : 'Record session'}</span>
+                  </button>
+                  <button
+                    onClick={() => { downloadLastResponse(); setShowExtraTools(false); }}
+                    className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg text-sm sm:text-xs transition-colors ${isDark ? 'hover:bg-white/10 text-slate-300' : 'hover:bg-slate-100 text-slate-700'}`}
+                  >
+                    <Download size={18} className="text-sky-400" />
+                    <span className="hidden sm:inline sm:text-xs">Download response</span>
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Middle: Sensitivity Control - Mobile Optimized */}
+        <div className={`hidden sm:flex items-center gap-2 px-3 py-2 rounded-xl border ${isDark ? 'bg-white/5 border-white/5' : 'bg-slate-100 border-slate-200'}`}>
+          <Zap size={14} className={sensitivity > 70 ? 'text-amber-400' : 'text-slate-500'} />
+          <input
+            type="range"
+            min="0"
+            max="100"
+            value={sensitivity}
+            onChange={(e) => handleSensitivityChange(parseInt(e.target.value))}
+            className="w-20 h-1 bg-slate-700 rounded-full appearance-none cursor-pointer accent-violet-500"
+          />
+          <span className="text-[10px] font-mono w-5 text-center text-slate-500 sm:text-xs">{sensitivity}</span>
+        </div>
+
+        {/* Right: Text Input */}
+        <form onSubmit={handleSubmit} className="flex-1 flex gap-2">
+          <div className="flex-1 relative">
+            <input
+              ref={inputRef}
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              placeholder={meetingActive ? '🟢 Meeting mode — type or speak...' : 'Ask your Operator...'}
+              disabled={isProcessing}
+              className={`w-full px-4 py-2.5 pr-10 rounded-xl text-sm outline-none transition-all ${isDark ? 'bg-white/5 border border-white/10 text-white focus:border-violet-500/50 placeholder:text-slate-600' : 'bg-slate-100 border border-slate-200 text-slate-900 focus:border-violet-400 placeholder:text-slate-400'} ${meetingActive ? 'border-emerald-500/40' : ''}`}
+            />
+            {attachedFile && (
+              <div className={`absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] ${isDark ? 'bg-violet-500/20 text-violet-300' : 'bg-violet-100 text-violet-700'}`}>
+                <Paperclip size={10} />
+                {attachedFile.name.length > 12 ? attachedFile.name.slice(0, 12) + '...' : attachedFile.name}
+                <button type="button" onClick={() => setAttachedFile(null)} className="hover:text-white ml-1">
+                  <X size={10} />
+                </button>
+              </div>
+            )}
+          </div>
+          <button
+            type="submit"
+            disabled={!input.trim() || isProcessing}
+            className={`w-11 h-10 rounded-xl flex items-center justify-center transition-all active:scale-90 ${input.trim() && !isProcessing ? 'bg-gradient-to-br from-violet-500 to-purple-600 text-white shadow-lg shadow-violet-500/30' : 'bg-white/5 text-slate-600 cursor-not-allowed'}`}
+          >
+            <Send size={16} strokeWidth={2.5} />
           </button>
         </form>
       </div>

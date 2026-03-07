@@ -2,7 +2,16 @@
 import { GoogleGenAI, Type } from "@google/genai";
 
 export const getAI = () => {
-  return new GoogleGenAI({ apiKey: process.env.API_KEY });
+  // Try localStorage first (for client-side), fallback to process.env (for server-side)
+  const apiKey = typeof window !== 'undefined' 
+    ? localStorage.getItem('operator_api_key') || process.env.API_KEY
+    : process.env.API_KEY;
+    
+  if (!apiKey) {
+    throw new Error('API key is required. Please set it in Settings.');
+  }
+  
+  return new GoogleGenAI({ apiKey });
 };
 
 export const summarizeMeeting = async (transcription: string) => {

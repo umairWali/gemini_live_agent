@@ -158,13 +158,236 @@ gcloud run deploy personal-ai-operator \
 
 ##  Hackathon Compliance
 
- **Live Agents Category** — Real-time interruption-capable voice agent  
- **Gemini Live API** — `ai.live.connect()` with `onmessage` callbacks  
- **@google/genai SDK** — Official Google GenAI SDK  
- **Google Cloud Run** — Backend deployed and live  
- **Automated Deployment** — `deploy.sh` IaC script (bonus)  
- **Multimodal** — Voice + Screen Vision + Text + Audio Output  
- **Architecture Diagram** — Included in this README  
+ ✅ **ALL THREE Categories Covered**:
+- **Live Agents 🗣️** — Real-time interruption-capable voice agent with Gemini Live API
+- **Creative Storyteller ✍️** — Interleaved multimedia output (text + generated images)
+- **UI Navigator ☸️** — Visual UI understanding & automated interaction
+
+ **Mandatory Requirements**:
+- ✅ **Gemini Live API** — `ai.live.connect()` with native audio streaming
+- ✅ **@google/genai SDK** — Official Google GenAI SDK v1.41+
+- ✅ **Google Cloud Run** — Backend deployed and live
+- ✅ **Multimodal** — Voice + Screen Vision + Text + Audio + Image Generation
+- ✅ **Architecture Diagram** — Included below
+- ✅ **Automated Deployment** — `deploy.sh` IaC script (bonus points)
+
+---
+
+## 🎬 Demo Video Script (< 4 Minutes)
+
+### Scene 1: Live Agent Voice + Vision (0:00-1:00)
+1. Open app, click 🔴 Mic button
+2. Speak: "Hey Operator, can you see my screen?"
+3. Click screen share button
+4. Show a coding problem on screen
+5. Ask: "Help me debug this"
+6. Watch AI analyze screen and provide solution
+7. Show interruption: Speak while AI is talking - it pauses and resumes
+
+### Scene 2: Creative Storyteller (1:00-2:00)
+1. Voice command: "Create a marketing post for my new app"
+2. Show interleaved output: Text + generated image appearing together
+3. Export to HTML - show the mixed media result
+4. "Generate an educational diagram explaining neural networks"
+
+### Scene 3: UI Navigator (2:00-3:00)
+1. "Analyze my screen and help me fill this form"
+2. Screenshot captured automatically
+3. AI identifies all form fields
+4. Automated typing/filling demonstrated
+5. "Create a workflow: open calculator, calculate 2+2, copy result"
+
+### Scene 4: Advanced Features (3:00-3:30)
+1. Show multi-agent swarm: "Research, code, and document this feature"
+2. Show 6 agents working in parallel
+3. Results appearing in real-time
+4. Self-healing code fixing an error automatically
+
+### Scene 5: Cloud Deployment Proof (3:30-4:00)
+1. Show Cloud Run console
+2. Show live URL working
+3. Show health metrics
+4. Conclude with value proposition
+
+---
+
+## 🎯 NEW: Creative Storyteller Features
+
+### Interleaved Multimedia Output
+The Creative Storyteller module generates **mixed media content** - text and images woven together in a single fluid output:
+
+```typescript
+// Example: Create interleaved story
+POST /api/storyteller
+{
+  "action": "create_story",
+  "payload": {
+    "topic": "Space travel to Mars",
+    "style": "educational",
+    "audience": "children",
+    "segments": 5
+  }
+}
+
+// Returns: Array of segments alternating text + images
+[
+  { "type": "text", "content": "Mars is the fourth planet..." },
+  { "type": "image", "content": "base64_image_data..." },
+  { "type": "text", "content": "The journey takes 9 months..." }
+]
+```
+
+### Marketing Asset Generator
+Create complete marketing materials with copy + visuals:
+```bash
+curl -X POST https://your-app/api/storyteller \
+  -H "Content-Type: application/json" \
+  -d '{
+    "action": "marketing_asset",
+    "payload": {
+      "product": "AI Assistant",
+      "description": "Voice-controlled AI helper",
+      "platform": "instagram"
+    }
+  }'
+```
+
+### Educational Explainers
+Generate diagrams + narration for complex topics:
+```bash
+POST /api/storyteller
+{
+  "action": "educational",
+  "payload": {
+    "topic": "Neural Networks",
+    "complexity": "simple"
+  }
+}
+```
+
+---
+
+## 🎯 NEW: UI Navigator Features
+
+### Visual UI Understanding
+The UI Navigator captures screenshots and identifies all interactive elements:
+
+```typescript
+// Analyze current screen
+POST /api/navigator
+{
+  "action": "analyze"
+}
+
+// Returns:
+{
+  "elements": [
+    { "id": "1", "type": "button", "label": "Submit", 
+      "location": {"x": 45, "y": 60, "width": 10, "height": 5} },
+    { "id": "2", "type": "input", "label": "Email", 
+      "location": {"x": 20, "y": 30, "width": 40, "height": 5} }
+  ],
+  "screenshot": "base64_image_data",
+  "analysis": "Login form with email and password fields"
+}
+```
+
+### Automated UI Interaction
+Create and execute navigation plans:
+```typescript
+// Create plan to achieve a goal
+POST /api/navigator
+{
+  "action": "create_plan",
+  "payload": {
+    "goal": "Fill out the contact form"
+  }
+}
+
+// Execute the plan
+POST /api/navigator
+{
+  "action": "execute_plan",
+  "payload": {
+    "plan": {
+      "goal": "Fill contact form",
+      "steps": [
+        { "type": "click", "coordinates": {"x": 30, "y": 40} },
+        { "type": "type", "text": "john@example.com" },
+        { "type": "click", "coordinates": {"x": 50, "y": 60} }
+      ]
+    }
+  }
+}
+```
+
+### Cross-Application Workflows
+Automate tasks across multiple apps:
+```typescript
+POST /api/navigator
+{
+  "action": "automate_workflow",
+  "payload": {
+    "steps": [
+      { "app": "Calculator", "action": "Calculate 2+2" },
+      { "app": "Notes", "action": "Paste result" }
+    ]
+  }
+}
+```
+
+### Visual QA Testing
+Automated UI testing:
+```typescript
+POST /api/navigator
+{
+  "action": "visual_qa",
+  "payload": {
+    "testCases": [
+      { "element": "Submit button", "expected": "visible" },
+      { "element": "Error message", "expected": "hidden" }
+    ]
+  }
+}
+```
+
+---
+
+## 🎯 All 60+ Features
+
+### Core Multimodal (All 3 Hackathon Categories)
+- ✅ **Live Voice Chat** - Gemini 2.5 Flash Native Audio (Live Agents)
+- ✅ **Screen Sharing** - Real-time screen analysis (Live Agents)
+- ✅ **Webcam Vision** - Camera feed to AI (Live Agents)
+- ✅ **Interleaved Output** - Text + images mixed (Creative Storyteller)
+- ✅ **Visual UI Analysis** - Screenshot → element detection (UI Navigator)
+- ✅ **Automated Interaction** - Click, type, scroll automation (UI Navigator)
+- ✅ **Cross-App Workflows** - Multi-application automation (UI Navigator)
+
+### Intelligence Layer
+- ✅ **Multi-Agent Swarm** - 6 AI agents working parallel
+- ✅ **Self-Healing Code** - Auto-fix runtime errors
+- ✅ **Code Review AI** - Deep PR analysis with fixes
+- ✅ **Documentation Generator** - Auto-create README, API docs
+- ✅ **Knowledge Graph** - Persistent memory across sessions
+- ✅ **Emotion Engine** - Detect and adapt to user sentiment
+
+### System Integration
+- ✅ **Email Integration** - Read/send emails, auto-reply
+- ✅ **Calendar Sync** - Google/Outlook integration
+- ✅ **Screenshot OCR** - Extract text from images
+- ✅ **Voice Transcription** - Notes from audio
+- ✅ **Document Templates** - Auto-generate proposals, reports
+- ✅ **Meeting Minutes** - Auto-generate from voice
+
+### Deployment & DevOps
+- ✅ **One-Click Deploy** - Cloud Run pipeline
+- ✅ **Predictive Alerts** - Smart notifications
+- ✅ **Health Monitoring** - Real-time CPU/RAM metrics
+- ✅ **Visual QA Testing** - Automated UI verification
+- ✅ **Deployment Pipeline** - Build, test, deploy automation
+
+---
 
 ---
 
