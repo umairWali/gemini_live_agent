@@ -4,20 +4,20 @@
 > **60+ Features | 3 Hackathon Categories | All-In-One Multimodal Agent**
 
 This document details the complete architecture of **Personal Operator** - a next-generation multimodal AI agent covering **ALL THREE** hackathon categories:
-- 🗣️ **Live Agents** - Real-time voice with interruptions
-- ✍️ **Creative Storyteller** - Interleaved multimedia output  
-- ☸️ **UI Navigator** - Visual understanding & interaction
+-  **Live Agents** - Real-time voice with interruptions
+-  **Creative Storyteller** - Interleaved multimedia output  
+-  **UI Navigator** - Visual understanding & interaction
 
 ---
 
-## 🏆 Hackathon Categories Coverage
+##  Hackathon Categories Coverage
 
 ```mermaid
 graph TB
     subgraph "Personal AI Operator"
-        A[Live Agents 🗣️]
-        B[Creative Storyteller ✍️]
-        C[UI Navigator ☸️]
+        A[Live Agents ]
+        B[Creative Storyteller ]
+        C[UI Navigator ]
         
         A --> A1[Native Audio Streaming]
         A --> A2[Screen/Camera Vision]
@@ -35,7 +35,7 @@ graph TB
 
 ---
 
-## 🧭 High-Level Architecture
+##  High-Level Architecture
 
 ```mermaid
 sequenceDiagram
@@ -61,7 +61,7 @@ sequenceDiagram
     end
 
     %% Live Agent - Voice
-    User->>Browser: Click 🔴 Mic
+    User->>Browser: Click  Mic
     Browser->>Server: START_VOICE (WebSocket)
     Server->>Gemini: ai.live.connect()
     Gemini-->>Server: [Setup Complete]
@@ -121,7 +121,7 @@ sequenceDiagram
 
 ---
 
-## 🏗️ Complete System Architecture
+##  Complete System Architecture
 
 ```mermaid
 graph TB
@@ -201,9 +201,9 @@ graph TB
 
 ---
 
-## 📊 Module Breakdown (60+ Features)
+##  Module Breakdown (60+ Features)
 
-### Category 1: Live Agents 🗣️
+### Category 1: Live Agents 
 
 | Module | Tech | Description |
 |--------|------|-------------|
@@ -213,7 +213,7 @@ graph TB
 | **Camera Vision** | `getUserMedia` | Webcam feed to AI |
 | **Interruption** | Native | Barge-in handling |
 
-### Category 2: Creative Storyteller ✍️
+### Category 2: Creative Storyteller 
 
 | Module | Endpoint | Description |
 |--------|----------|-------------|
@@ -223,7 +223,7 @@ graph TB
 | **Social Content** | `POST /api/storyteller` | Captions + hashtags |
 | **Video Generator** | `POST /api/storyteller` | Image sequences |
 
-### Category 3: UI Navigator ☸️
+### Category 3: UI Navigator 
 
 | Module | Endpoint | Description |
 |--------|----------|-------------|
@@ -254,7 +254,7 @@ graph TB
 
 ---
 
-## 🔧 Technical Specifications
+##  Technical Specifications
 
 ### Audio Pipeline
 ```typescript
@@ -301,7 +301,7 @@ interface UIElement {
 
 ---
 
-## 🔒 Security & Deployment
+##  Security & Deployment
 
 ### Infrastructure as Code (Bonus Points)
 ```hcl
@@ -324,28 +324,28 @@ google_cloud_run_v2_service "operator" {
 ```
 
 ### Security Measures
-- ✅ API keys in Secret Manager (never in code)
-- ✅ Service account with minimal permissions
-- ✅ HTTPS only (no HTTP)
-- ✅ Container vulnerability scanning
-- ✅ Audit logging for all actions
+-  API keys in Secret Manager (never in code)
+-  Service account with minimal permissions
+-  HTTPS only (no HTTP)
+-  Container vulnerability scanning
+-  Audit logging for all actions
 
 ---
 
-## 📈 Performance Metrics
+##  Performance Metrics
 
 | Metric | Target | Achieved |
 |--------|--------|----------|
-| Voice Latency | < 500ms | ~200ms ✅ |
-| Audio Quality | 16kHz | 16kHz ✅ |
-| Vision Processing | < 2s | ~1s ✅ |
-| Image Generation | < 5s | ~3s ✅ |
-| Uptime | 99% | 99.9% ✅ |
-| Concurrent Users | 100 | Tested ✅ |
+| Voice Latency | < 500ms | ~200ms  |
+| Audio Quality | 16kHz | 16kHz  |
+| Vision Processing | < 2s | ~1s  |
+| Image Generation | < 5s | ~3s  |
+| Uptime | 99% | 99.9%  |
+| Concurrent Users | 100 | Tested  |
 
 ---
 
-## 🌐 API Endpoints
+##  API Endpoints
 
 ### Core Endpoints
 ```
@@ -373,7 +373,7 @@ POST /api/deploy            # Cloud deployment
 
 ---
 
-## 🎯 Key Innovations
+##  Key Innovations
 
 ### 1. True Interleaved Output
 Unlike sequential text-then-image, we weave them together:
@@ -401,7 +401,7 @@ Not just seeing UI, but interacting with it through automated clicks, typing, an
 
 ---
 
-## 📚 Related Documentation
+##  Related Documentation
 
 - [README.md](./README.md) - Main documentation
 - [DEMO_SCRIPT.md](./DEMO_SCRIPT.md) - Video script
@@ -413,4 +413,4 @@ Not just seeing UI, but interacting with it through automated clicks, typing, an
 **Built for the Gemini Live Agent Challenge 2025**  
 **Live URL**: https://personal-ai-operator-677446941082.us-central1.run.app  
 **Author**: Umair Wali  
-**Features**: 60+ | **Categories**: All 3 | **Status**: 🥇 1st Prize Ready
+**Features**: 60+ | **Categories**: All 3 | **Status**:  1st Prize Ready

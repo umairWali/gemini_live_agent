@@ -2,7 +2,7 @@
   <h1> Personal Operator</h1>
   <i>A Next-Generation Real-Time Voice AI Agent powered by Gemini 2.5 Live API</i>
   <br/><br/>
-  <b>Built for the Gemini Live Agent Challenge — Live Agents 🗣 Category</b>
+  <b>Built for the Gemini Live Agent Challenge — Live Agents  Category</b>
   <br/><br/>
   <a href="https://personal-ai-operator-677446941082.us-central1.run.app/"> Live Demo</a> |
   <a href="./ARCHITECTURE.md"> Architecture Diagram</a>
@@ -37,43 +37,43 @@ It goes beyond a chatbot — it's a **personal system orchestrator** you can *ta
 ##  Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                         BROWSER (React)                          │
-│  ┌──────────────┐   PCM Audio   ┌────────────────────────────┐  │
-│  │ Microphone   │──────────────▶│    AudioWorklet Processor  │  │
-│  │ (16kHz)      │               │    (VAD + Buffering)       │  │
-│  └──────────────┘               └────────────┬───────────────┘  │
-│                                              │ Base64 PCM        │
-│  ┌───────────────────┐                       │ WebSocket Msg     │
-│  │  UI / HUD / Chat  │◀─────────────────────┐│                   │
-│  │  Visualizers      │  VOICE_TEXT / AUDIO   ││                   │
-│  └───────────────────┘                       ││                   │
-└──────────────────────────────────────────────┼┼───────────────────┘
-                                               ││
-                              WebSocket (/ws/) ││
-                                               ││
-┌──────────────────────────────────────────────┼┼───────────────────┐
-│             GOOGLE CLOUD RUN (Node.js)        ││                   │
-│                                               ▼│                   │
-│  ┌────────────────────────────────────────────┐│                   │
-│  │           server.ts (Express + WS)         ││                   │
-│  │  ┌────────────────────────────────────┐    ││                   │
-│  │  │  Gemini Live Session Manager       │    ││                   │
-│  │  │  ┌──────────────────────────────┐  │    ││                   │
-│  │  │  │ ai.live.connect(callbacks)   │  │    ││                   │
-│  │  │  │  onmessage → VOICE_RESPONSE  │  │◀───┘│                   │
-│  │  │  │  onopen → VOICE_READY        │  │     │                   │
-│  │  │  └──────────────┬───────────────┘  │     │                   │
-│  │  └─────────────────┼───────────────────┘     │                   │
-│  └────────────────────┼─────────────────────────┘                   │
-│                       │ sendRealtimeInput({audio})                    │
-│                       ▼                                               │
-│  ┌──────────────────────────────────────────────────────────────┐    │
-│  │            GEMINI 2.5 NATIVE AUDIO LIVE API                  │    │
-│  │  wss://generativelanguage.googleapis.com/...                 │    │
-│  │  Model: gemini-2.5-flash-native-audio-latest                 │    │
-│  └──────────────────────────────────────────────────────────────┘    │
-└───────────────────────────────────────────────────────────────────────┘
+
+                         BROWSER (React)                          
+     PCM Audio     
+   Microphone       AudioWorklet Processor    
+   (16kHz)                         (VAD + Buffering)         
+                   
+                                               Base64 PCM        
+                          WebSocket Msg     
+    UI / HUD / Chat                     
+    Visualizers        VOICE_TEXT / AUDIO                      
+                                            
+
+                                               
+                              WebSocket (/ws/) 
+                                               
+
+             GOOGLE CLOUD RUN (Node.js)                           
+                                                                  
+                     
+             server.ts (Express + WS)                            
+                           
+      Gemini Live Session Manager                              
+                               
+       ai.live.connect(callbacks)                            
+        onmessage → VOICE_RESPONSE                       
+        onopen → VOICE_READY                                  
+                                
+                            
+                     
+                        sendRealtimeInput({audio})                    
+                                                                      
+      
+              GEMINI 2.5 NATIVE AUDIO LIVE API                      
+    wss://generativelanguage.googleapis.com/...                     
+    Model: gemini-2.5-flash-native-audio-latest                     
+      
+
 ```
 
 ---
@@ -158,25 +158,25 @@ gcloud run deploy personal-ai-operator \
 
 ##  Hackathon Compliance
 
- ✅ **ALL THREE Categories Covered**:
-- **Live Agents 🗣️** — Real-time interruption-capable voice agent with Gemini Live API
-- **Creative Storyteller ✍️** — Interleaved multimedia output (text + generated images)
-- **UI Navigator ☸️** — Visual UI understanding & automated interaction
+  **ALL THREE Categories Covered**:
+- **Live Agents ** — Real-time interruption-capable voice agent with Gemini Live API
+- **Creative Storyteller ** — Interleaved multimedia output (text + generated images)
+- **UI Navigator ** — Visual UI understanding & automated interaction
 
  **Mandatory Requirements**:
-- ✅ **Gemini Live API** — `ai.live.connect()` with native audio streaming
-- ✅ **@google/genai SDK** — Official Google GenAI SDK v1.41+
-- ✅ **Google Cloud Run** — Backend deployed and live
-- ✅ **Multimodal** — Voice + Screen Vision + Text + Audio + Image Generation
-- ✅ **Architecture Diagram** — Included below
-- ✅ **Automated Deployment** — `deploy.sh` IaC script (bonus points)
+-  **Gemini Live API** — `ai.live.connect()` with native audio streaming
+-  **@google/genai SDK** — Official Google GenAI SDK v1.41+
+-  **Google Cloud Run** — Backend deployed and live
+-  **Multimodal** — Voice + Screen Vision + Text + Audio + Image Generation
+-  **Architecture Diagram** — Included below
+-  **Automated Deployment** — `deploy.sh` IaC script (bonus points)
 
 ---
 
-## 🎬 Demo Video Script (< 4 Minutes)
+##  Demo Video Script (< 4 Minutes)
 
 ### Scene 1: Live Agent Voice + Vision (0:00-1:00)
-1. Open app, click 🔴 Mic button
+1. Open app, click  Mic button
 2. Speak: "Hey Operator, can you see my screen?"
 3. Click screen share button
 4. Show a coding problem on screen
@@ -211,7 +211,7 @@ gcloud run deploy personal-ai-operator \
 
 ---
 
-## 🎯 NEW: Creative Storyteller Features
+##  NEW: Creative Storyteller Features
 
 ### Interleaved Multimedia Output
 The Creative Storyteller module generates **mixed media content** - text and images woven together in a single fluid output:
@@ -267,7 +267,7 @@ POST /api/storyteller
 
 ---
 
-## 🎯 NEW: UI Navigator Features
+##  NEW: UI Navigator Features
 
 ### Visual UI Understanding
 The UI Navigator captures screenshots and identifies all interactive elements:
@@ -353,39 +353,39 @@ POST /api/navigator
 
 ---
 
-## 🎯 All 60+ Features
+##  All 60+ Features
 
 ### Core Multimodal (All 3 Hackathon Categories)
-- ✅ **Live Voice Chat** - Gemini 2.5 Flash Native Audio (Live Agents)
-- ✅ **Screen Sharing** - Real-time screen analysis (Live Agents)
-- ✅ **Webcam Vision** - Camera feed to AI (Live Agents)
-- ✅ **Interleaved Output** - Text + images mixed (Creative Storyteller)
-- ✅ **Visual UI Analysis** - Screenshot → element detection (UI Navigator)
-- ✅ **Automated Interaction** - Click, type, scroll automation (UI Navigator)
-- ✅ **Cross-App Workflows** - Multi-application automation (UI Navigator)
+-  **Live Voice Chat** - Gemini 2.5 Flash Native Audio (Live Agents)
+-  **Screen Sharing** - Real-time screen analysis (Live Agents)
+-  **Webcam Vision** - Camera feed to AI (Live Agents)
+-  **Interleaved Output** - Text + images mixed (Creative Storyteller)
+-  **Visual UI Analysis** - Screenshot → element detection (UI Navigator)
+-  **Automated Interaction** - Click, type, scroll automation (UI Navigator)
+-  **Cross-App Workflows** - Multi-application automation (UI Navigator)
 
 ### Intelligence Layer
-- ✅ **Multi-Agent Swarm** - 6 AI agents working parallel
-- ✅ **Self-Healing Code** - Auto-fix runtime errors
-- ✅ **Code Review AI** - Deep PR analysis with fixes
-- ✅ **Documentation Generator** - Auto-create README, API docs
-- ✅ **Knowledge Graph** - Persistent memory across sessions
-- ✅ **Emotion Engine** - Detect and adapt to user sentiment
+-  **Multi-Agent Swarm** - 6 AI agents working parallel
+-  **Self-Healing Code** - Auto-fix runtime errors
+-  **Code Review AI** - Deep PR analysis with fixes
+-  **Documentation Generator** - Auto-create README, API docs
+-  **Knowledge Graph** - Persistent memory across sessions
+-  **Emotion Engine** - Detect and adapt to user sentiment
 
 ### System Integration
-- ✅ **Email Integration** - Read/send emails, auto-reply
-- ✅ **Calendar Sync** - Google/Outlook integration
-- ✅ **Screenshot OCR** - Extract text from images
-- ✅ **Voice Transcription** - Notes from audio
-- ✅ **Document Templates** - Auto-generate proposals, reports
-- ✅ **Meeting Minutes** - Auto-generate from voice
+-  **Email Integration** - Read/send emails, auto-reply
+-  **Calendar Sync** - Google/Outlook integration
+-  **Screenshot OCR** - Extract text from images
+-  **Voice Transcription** - Notes from audio
+-  **Document Templates** - Auto-generate proposals, reports
+-  **Meeting Minutes** - Auto-generate from voice
 
 ### Deployment & DevOps
-- ✅ **One-Click Deploy** - Cloud Run pipeline
-- ✅ **Predictive Alerts** - Smart notifications
-- ✅ **Health Monitoring** - Real-time CPU/RAM metrics
-- ✅ **Visual QA Testing** - Automated UI verification
-- ✅ **Deployment Pipeline** - Build, test, deploy automation
+-  **One-Click Deploy** - Cloud Run pipeline
+-  **Predictive Alerts** - Smart notifications
+-  **Health Monitoring** - Real-time CPU/RAM metrics
+-  **Visual QA Testing** - Automated UI verification
+-  **Deployment Pipeline** - Build, test, deploy automation
 
 ---
 
