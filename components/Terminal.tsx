@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Mic, MicOff, Send, User, Bot, Monitor, MonitorOff, Paperclip, FileText, Download, CircleDot } from 'lucide-react';
+import { Mic, MicOff, Send, User, Bot, Monitor, MonitorOff, Paperclip, FileText, Download, CircleDot, Plus, X } from 'lucide-react';
 import { AgentRole, Message } from '../types';
 
 interface TerminalProps {
@@ -28,6 +28,7 @@ const Terminal: React.FC<TerminalProps> = ({
   const prevLengthRef = useRef(0);
   const [meetingActive, setMeetingActive] = useState(false);
   const meetingStartRef = useRef<number | null>(null);
+  const [showExtraTools, setShowExtraTools] = useState(false);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -239,49 +240,64 @@ const Terminal: React.FC<TerminalProps> = ({
             </button>
           )}
 
-          {/* Attachment button */}
+          {/* Toggle Extra Tools Button */}
           <button
             type="button"
-            id="attachment-btn"
-            onClick={() => fileInputRef.current?.click()}
-            title="Attach a file — Gemini will read and analyze it"
-            className="w-11 h-11 rounded-xl flex items-center justify-center transition-all active:scale-90 bg-white/5 text-slate-400 hover:text-white hover:bg-white/10"
+            onClick={() => setShowExtraTools(!showExtraTools)}
+            title="More Tools"
+            className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all active:scale-90 ${showExtraTools || meetingActive || isRecording ? 'bg-violet-500/20 text-violet-400' : 'bg-white/5 text-slate-400 hover:text-white hover:bg-white/10'}`}
           >
-            <Paperclip size={18} />
+            {showExtraTools ? <X size={20} /> : <Plus size={20} />}
           </button>
 
-          {/* Meeting Minutes button */}
-          <button
-            type="button"
-            id="meeting-btn"
-            onClick={toggleMeeting}
-            title={meetingActive ? 'End Meeting & Generate Minutes' : 'Start Meeting (Gemini takes notes)'}
-            className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all active:scale-90 ${meetingActive ? 'bg-emerald-500 text-white shadow-[0_0_20px_rgba(16,185,129,0.4)] animate-pulse' : 'bg-white/5 text-slate-400 hover:text-white hover:bg-white/10'}`}
-          >
-            <FileText size={18} />
-          </button>
+          {/* Extra Tools Expanded */}
+          {(showExtraTools || meetingActive || isRecording) && (
+            <div className="flex gap-2 animate-in slide-in-from-left-2 duration-300">
+              {/* Attachment button */}
+              <button
+                type="button"
+                id="attachment-btn"
+                onClick={() => fileInputRef.current?.click()}
+                title="Attach a file — Gemini will read and analyze it"
+                className="w-11 h-11 rounded-xl flex items-center justify-center transition-all active:scale-90 bg-white/5 text-slate-400 hover:text-white hover:bg-white/10"
+              >
+                <Paperclip size={18} />
+              </button>
 
-          {/* Download last response */}
-          <button
-            type="button"
-            id="download-btn"
-            onClick={downloadLastResponse}
-            title="Download last AI response as .txt file"
-            className="w-11 h-11 rounded-xl flex items-center justify-center transition-all active:scale-90 bg-white/5 text-slate-400 hover:text-white hover:bg-white/10"
-          >
-            <Download size={18} />
-          </button>
+              {/* Meeting Minutes button */}
+              <button
+                type="button"
+                id="meeting-btn"
+                onClick={toggleMeeting}
+                title={meetingActive ? 'End Meeting & Generate Minutes' : 'Start Meeting (Gemini takes notes)'}
+                className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all active:scale-90 ${meetingActive ? 'bg-emerald-500 text-white shadow-[0_0_20px_rgba(16,185,129,0.4)] animate-pulse' : 'bg-white/5 text-slate-400 hover:text-white hover:bg-white/10'}`}
+              >
+                <FileText size={18} />
+              </button>
 
-          {/* Session Recording button */}
-          <button
-            type="button"
-            id="record-btn"
-            onClick={toggleRecording}
-            title={isRecording ? 'Stop Recording Session' : 'Record Session'}
-            className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all active:scale-90 ${isRecording ? 'bg-red-600 text-white shadow-[0_0_20px_rgba(220,38,38,0.4)] animate-pulse' : 'bg-white/5 text-slate-400 hover:text-white hover:bg-white/10'}`}
-          >
-            <CircleDot size={18} />
-          </button>
+              {/* Download last response */}
+              <button
+                type="button"
+                id="download-btn"
+                onClick={downloadLastResponse}
+                title="Download last AI response as .txt file"
+                className="w-11 h-11 rounded-xl flex items-center justify-center transition-all active:scale-90 bg-white/5 text-slate-400 hover:text-white hover:bg-white/10"
+              >
+                <Download size={18} />
+              </button>
+
+              {/* Session Recording button */}
+              <button
+                type="button"
+                id="record-btn"
+                onClick={toggleRecording}
+                title={isRecording ? 'Stop Recording Session' : 'Record Session'}
+                className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all active:scale-90 ${isRecording ? 'bg-red-600 text-white shadow-[0_0_20px_rgba(220,38,38,0.4)] animate-pulse' : 'bg-white/5 text-slate-400 hover:text-white hover:bg-white/10'}`}
+              >
+                <CircleDot size={18} />
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Text input */}
