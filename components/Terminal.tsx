@@ -1,6 +1,5 @@
-
 import React, { useState, useRef, useEffect } from 'react';
-import { Mic, MicOff, Send, User, Bot, Monitor, MonitorOff, Paperclip, FileText, Download, CircleDot, Plus, X } from 'lucide-react';
+import { Mic, MicOff, Send, User, Bot, Monitor, MonitorOff, Camera, CameraOff, Paperclip, FileText, Download, CircleDot, Plus, X } from 'lucide-react';
 import { AgentRole, Message } from '../types';
 
 interface TerminalProps {
@@ -14,12 +13,15 @@ interface TerminalProps {
   isDark?: boolean;
   isScreenSharing?: boolean;
   onToggleScreenShare?: () => void;
+  isCameraActive?: boolean;
+  onToggleCamera?: () => void;
 }
 
 const Terminal: React.FC<TerminalProps> = ({
   history, onSend, isProcessing, onExecute, onToggleExplain,
   isVoiceActive, onToggleVoice, isDark = false,
-  isScreenSharing, onToggleScreenShare
+  isScreenSharing, onToggleScreenShare,
+  isCameraActive, onToggleCamera
 }) => {
   const [input, setInput] = useState('');
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -237,6 +239,19 @@ const Terminal: React.FC<TerminalProps> = ({
               className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all active:scale-90 ${isScreenSharing ? 'bg-sky-500 text-white shadow-[0_0_20px_rgba(14,165,233,0.4)]' : 'bg-white/5 text-slate-400 hover:text-white hover:bg-white/10'}`}
             >
               {isScreenSharing ? <Monitor size={20} strokeWidth={2.5} /> : <MonitorOff size={20} />}
+            </button>
+          )}
+
+          {/* Camera button */}
+          {onToggleCamera && (
+            <button
+              type="button"
+              id="camera-btn"
+              onClick={onToggleCamera}
+              title={isCameraActive ? 'Stop Camera' : 'Start Camera — Gemini will see through your webcam'}
+              className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all active:scale-90 ${isCameraActive ? 'bg-amber-500 text-white shadow-[0_0_20px_rgba(245,158,11,0.4)]' : 'bg-white/5 text-slate-400 hover:text-white hover:bg-white/10'}`}
+            >
+              {isCameraActive ? <Camera size={20} strokeWidth={2.5} /> : <CameraOff size={20} />}
             </button>
           )}
 

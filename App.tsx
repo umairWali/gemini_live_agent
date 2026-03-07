@@ -131,6 +131,10 @@ const AppContent: React.FC = () => {
   const screenStreamRef = useRef<MediaStream | null>(null);
   const screenCaptureIntervalRef = useRef<any>(null);
 
+  const [isCameraActive, setIsCameraActive] = useState(false);
+  const cameraStreamRef = useRef<MediaStream | null>(null);
+  const cameraCaptureIntervalRef = useRef<any>(null);
+
   useEffect(() => {
     localStorage.setItem('operator_master_prod_v11', JSON.stringify(state));
   }, [state]);
@@ -418,6 +422,58 @@ const AppContent: React.FC = () => {
     }
   }, [isScreenSharing]);
 
+  const toggleCamera = useCallback(async () => {
+    const ws = (window as any).operatorWs;
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+      if (isCameraActive) {
+        setIsCameraActive(false);
+        if (cameraStreamRef.current) cameraStreamRef.current.getTracks().forEach(t => t.stop());
+        if (cameraCaptureIntervalRef.current) clearInterval(cameraCaptureIntervalRef.current);
+      } else {
+        addToast({ type: 'error', title: 'Connection Error', message: 'WebSocket is disconnected.' });
+      }
+      return;
+    }
+
+    if (isCameraActive) {
+      setIsCameraActive(false);
+      if (cameraStreamRef.current) cameraStreamRef.current.getTracks().forEach(t => t.stop());
+      if (cameraCaptureIntervalRef.current) clearInterval(cameraCaptureIntervalRef.current);
+      return;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 360, frameRate: 5 } });
+      cameraStreamRef.current = stream;
+      setIsCameraActive(true);
+
+      const video = document.createElement('video');
+      video.srcObject = stream;
+      video.play();
+
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+
+      cameraCaptureIntervalRef.current = setInterval(() => {
+        if (ctx && video.readyState === video.HAVE_ENOUGH_DATA) {
+          canvas.width = 640;
+          canvas.height = 360;
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          const jpeg = canvas.toDataURL('image/jpeg', 0.6);
+          ws.send(JSON.stringify({ type: 'CAMERA_FRAME', data: jpeg }));
+        }
+      }, 500);
+
+      stream.getVideoTracks()[0].onended = () => {
+        setIsCameraActive(false);
+        if (cameraCaptureIntervalRef.current) clearInterval(cameraCaptureIntervalRef.current);
+      };
+    } catch (e) {
+      console.error(e);
+      addToast({ type: 'error', title: 'Camera Error', message: 'Could not access webcam.' });
+    }
+  }, [isCameraActive]);
+
   useEffect(() => {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsUrl = `${protocol}//${window.location.host}/ws/`;
@@ -600,6 +656,8 @@ const AppContent: React.FC = () => {
             isDark={isDark}
             isScreenSharing={isScreenSharing}
             onToggleScreenShare={toggleScreenShare}
+            isCameraActive={isCameraActive}
+            onToggleCamera={toggleCamera}
           />
         </div>
       </main>

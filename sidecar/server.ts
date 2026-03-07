@@ -297,8 +297,8 @@ wss.on('connection', (ws) => {
                 // Clean stop — no error message needed
                 console.log('[AI_LIVE]: Session stopped cleanly by user.');
 
-            } else if (message.type === 'SCREEN_FRAME') {
-                // User is sharing their screen — send frame to active Gemini Live session
+            } else if (message.type === 'SCREEN_FRAME' || message.type === 'CAMERA_FRAME') {
+                // User is sharing their screen or camera — send frame to active Gemini Live session
                 const session = liveSessions.get(ws);
                 if (session && message.data) {
                     try {
