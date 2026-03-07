@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Mic, MicOff, Send, User, Bot, Monitor, MonitorOff, Camera, CameraOff, Paperclip, FileText, Download, CircleDot, Plus, X } from 'lucide-react';
+import { Mic, MicOff, Send, User, Bot, Monitor, MonitorOff, Camera, CameraOff, Paperclip, FileText, Download, CircleDot, Plus, X, Zap, Sliders, Info } from 'lucide-react';
 import { AgentRole, Message } from '../types';
 
 interface TerminalProps {
@@ -31,6 +31,8 @@ const Terminal: React.FC<TerminalProps> = ({
   const [meetingActive, setMeetingActive] = useState(false);
   const meetingStartRef = useRef<number | null>(null);
   const [showExtraTools, setShowExtraTools] = useState(false);
+  const [sensitivity, setSensitivity] = useState(50);
+  const [attachedFile, setAttachedFile] = useState<{ name: string, type: string } | null>(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -59,12 +61,22 @@ const Terminal: React.FC<TerminalProps> = ({
         filename: file.name,
         content: content
       }));
+      setAttachedFile({ name: file.name, type: file.type });
+      onSend(`[SYSTEM] File attached: ${file.name}`);
     };
     // Read as text for .txt .md .csv .json .docx-text, etc.
     reader.readAsText(file);
 
     // Reset file input
     if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const handleSensitivityChange = (val: number) => {
+    setSensitivity(val);
+    const ws = (window as any).operatorWs as WebSocket;
+    if (ws?.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({ type: 'SET_INTERRUPT_SENSITIVITY', value: val }));
+    }
   };
 
   // Meeting minutes
@@ -137,6 +149,22 @@ const Terminal: React.FC<TerminalProps> = ({
             </div>
             <h2 className={`text-2xl font-black uppercase tracking-[0.4em] mb-4 ${isDark ? 'text-white' : 'text-slate-900'}`}>Personal Operator</h2>
             <p className={`text-sm ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Press the mic to start a voice conversation</p>
+          </div>
+        )}
+
+        {/* Deep Dive Context HUD */}
+        {attachedFile && (
+          <div className="sticky top-0 z-10 flex justify-end p-2 animate-in fade-in slide-in-from-top-2">
+            <div className={`flex items-center gap-3 px-3 py-2 rounded-xl border backdrop-blur-md ${isDark ? 'bg-indigo-500/10 border-indigo-500/20 text-indigo-300' : 'bg-white border-indigo-100 text-indigo-600 shadow-lg'}`}>
+              <Info size={14} className="animate-pulse" />
+              <div className="flex flex-col">
+                <span className="text-[9px] uppercase font-black tracking-widest opacity-60">Deep Context HUD</span>
+                <span className="text-[11px] font-bold truncate max-w-[120px]">{attachedFile.name} (Active)</span>
+              </div>
+              <button onClick={() => setAttachedFile(null)} className="p-1 hover:bg-white/10 rounded-lg">
+                <X size={12} />
+              </button>
+            </div>
           </div>
         )}
 
@@ -264,6 +292,20 @@ const Terminal: React.FC<TerminalProps> = ({
           >
             {showExtraTools ? <X size={20} /> : <Plus size={20} />}
           </button>
+
+          {/* Interruption Slider (Sci-fi themed) */}
+          <div className={`hidden lg:flex items-center gap-3 px-4 h-11 rounded-xl border transition-all ${isDark ? 'bg-white/5 border-white/5' : 'bg-slate-50 border-slate-200'}`}>
+            <Zap size={14} className={sensitivity > 70 ? 'text-amber-400 animate-pulse' : 'text-slate-500'} />
+            <input
+              type="range"
+              min="0"
+              max="100"
+              value={sensitivity}
+              onChange={(e) => handleSensitivityChange(parseInt(e.target.value))}
+              className="w-16 h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-violet-500 focus:accent-violet-400"
+            />
+            <span className="text-[10px] font-black w-6 tabular-nums">{sensitivity}%</span>
+          </div>
 
           {/* Extra Tools Expanded */}
           {(showExtraTools || meetingActive || isRecording) && (

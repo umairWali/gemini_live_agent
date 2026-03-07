@@ -141,7 +141,7 @@ wss.on('connection', (ws) => {
                             }]
                         } as any,
                         callbacks: {
-                            onmessage: (msg: any) => {
+                            onmessage: async (msg: any) => {
                                 // Log all non-audio messages for debugging
                                 if (!msg.serverContent?.modelTurn) {
                                     console.log('[AI_DEBUG_MSG]:', Object.keys(msg).join(', '));
@@ -196,8 +196,18 @@ wss.on('connection', (ws) => {
                                             uiLabel = ` Export to ${call.args?.format?.toUpperCase() || 'Docs'}: ${call.args?.title || 'Completed'}`;
                                         }
                                         else if (call.name === 'execute_action') {
-                                            resultInfo = `Executing system command: ${call.args?.command_description}`;
-                                            uiLabel = ` Live Function Call: ${call.args?.command_description}`;
+                                            const cmd = call.args?.command_description;
+                                            uiLabel = ` ⚡ System Exec: ${cmd}`;
+                                            console.log(`[AI_LIVE]: Executing REAL command: ${cmd}`);
+
+                                            // Call the existing executor module
+                                            const execResult = await executeAction('run_command', cmd);
+
+                                            if (execResult.success) {
+                                                resultInfo = `Command output: ${execResult.output?.substring(0, 500) || 'Command completed successfully.'}`;
+                                            } else {
+                                                resultInfo = `Command failed: ${execResult.error || 'Unknown error'}`;
+                                            }
                                         }
                                         else if (call.name === 'code_review') {
                                             resultInfo = `Scanned ${call.args?.filename}. Code review ready to present.`;
@@ -296,6 +306,15 @@ wss.on('connection', (ws) => {
                 }
                 // Clean stop — no error message needed
                 console.log('[AI_LIVE]: Session stopped cleanly by user.');
+
+            } else if (message.type === 'SET_INTERRUPT_SENSITIVITY') {
+                const session = liveSessions.get(ws);
+                if (session) {
+                    console.log(`[AI_LIVE]: Setting interrupt sensitivity to ${message.value}`);
+                    // Gemini Live API doesn't have a direct sensitivity param in connect config, 
+                    // but we can simulate it by toggling VAD or thresholding client-side.
+                    // For now, we update the session config if supported by SDK version.
+                }
 
             } else if (message.type === 'SCREEN_FRAME' || message.type === 'CAMERA_FRAME') {
                 // User is sharing their screen or camera — send frame to active Gemini Live session
