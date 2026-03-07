@@ -172,34 +172,34 @@ wss.on('connection', (ws) => {
                                     console.log('[AI_LIVE]: Turn complete — waiting for next input.');
                                 }
 
-                                // 🎯 LIVE FUNCTION CALLING HANDLING 🎯
+                                //  LIVE FUNCTION CALLING HANDLING 
                                 if (msg.toolCall) {
                                     console.log('[AI_LIVE_TOOL_CALL]:', JSON.stringify(msg.toolCall.functionCalls));
                                     const functionResponses: any[] = [];
 
                                     for (const call of msg.toolCall.functionCalls) {
                                         let resultInfo = "Action executed successfully.";
-                                        let uiLabel = `⚙️ Executed: ${call.name}`;
+                                        let uiLabel = ` Executed: ${call.name}`;
 
                                         if (call.name === 'summarize_url') {
                                             resultInfo = `Successfully accessed and analyzed the URL: ${call.args?.url || 'provided URL'}.`;
-                                            uiLabel = `🌐 URL Summarizer: Analyzing ${call.args?.url}...`;
+                                            uiLabel = ` URL Summarizer: Analyzing ${call.args?.url}...`;
                                         }
                                         else if (call.name === 'set_reminder') {
                                             resultInfo = `Reminder set for ${call.args?.time_in_minutes} minutes from now to: ${call.args?.task}`;
-                                            uiLabel = `⏰ Smart Reminder: ${call.args?.task} set for ${call.args?.time_in_minutes || 10} mins.`;
+                                            uiLabel = ` Smart Reminder: ${call.args?.task} set for ${call.args?.time_in_minutes || 10} mins.`;
                                         }
                                         else if (call.name === 'export_to_docs') {
                                             resultInfo = `Content successfully exported to ${call.args?.format?.toUpperCase() || 'Google Docs'} with title "${call.args?.title || 'Document'}".`;
-                                            uiLabel = `📄 Export to ${call.args?.format?.toUpperCase() || 'Docs'}: ${call.args?.title || 'Completed'}`;
+                                            uiLabel = ` Export to ${call.args?.format?.toUpperCase() || 'Docs'}: ${call.args?.title || 'Completed'}`;
                                         }
                                         else if (call.name === 'execute_action') {
                                             resultInfo = `Executing system command: ${call.args?.command_description}`;
-                                            uiLabel = `💻 Live Function Call: ${call.args?.command_description}`;
+                                            uiLabel = ` Live Function Call: ${call.args?.command_description}`;
                                         }
                                         else if (call.name === 'code_review') {
                                             resultInfo = `Scanned ${call.args?.filename}. Code review ready to present.`;
-                                            uiLabel = `🔎 Voice Code Review: Analyzing ${call.args?.filename || 'code'}...`;
+                                            uiLabel = ` Voice Code Review: Analyzing ${call.args?.filename || 'code'}...`;
                                         }
 
                                         // Broadcast the action to UI so user can see what Gemini is doing in real-time
@@ -312,7 +312,7 @@ wss.on('connection', (ws) => {
                             }],
                             turnComplete: true
                         });
-                        ws.send(JSON.stringify({ type: 'VOICE_TEXT', text: `📎 Attachment "${message.filename}" sent to Gemini for analysis.` }));
+                        ws.send(JSON.stringify({ type: 'VOICE_TEXT', text: ` Attachment "${message.filename}" sent to Gemini for analysis.` }));
                     } catch (err: any) {
                         console.error('[ATTACH_ERR]:', err.message);
                     }

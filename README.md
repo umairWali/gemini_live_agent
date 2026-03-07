@@ -1,16 +1,16 @@
 <div align="center">
-  <h1>🤖 Personal Operator</h1>
+  <h1> Personal Operator</h1>
   <i>A Next-Generation Real-Time Voice AI Agent powered by Gemini 2.5 Live API</i>
   <br/><br/>
-  <b>Built for the Gemini Live Agent Challenge — Live Agents 🗣️ Category</b>
+  <b>Built for the Gemini Live Agent Challenge — Live Agents 🗣 Category</b>
   <br/><br/>
-  <a href="https://personal-ai-operator-677446941082.us-central1.run.app/">🌐 Live Demo</a> |
-  <a href="./ARCHITECTURE.md">🏗️ Architecture Diagram</a>
+  <a href="https://personal-ai-operator-677446941082.us-central1.run.app/"> Live Demo</a> |
+  <a href="./ARCHITECTURE.md"> Architecture Diagram</a>
 </div>
 
 ---
 
-## 🌟 What Problem Does It Solve?
+##  What Problem Does It Solve?
 
 Most AI assistants feel slow and robotic — they wait for you to finish speaking, then take seconds to respond. **Personal Operator** eliminates this friction by enabling **natural, interruption-friendly real-time voice conversations** powered by Google Gemini 2.5 Native Audio Live API.
 
@@ -18,23 +18,23 @@ It goes beyond a chatbot — it's a **personal system orchestrator** you can *ta
 
 ---
 
-## ✨ Key Features
+##  Key Features
 
 | Feature | Description |
 |---|---|
-| 🎙️ **Real-Time Voice Streaming** | Bidirectional PCM audio streaming at 16kHz using Gemini Live API |
-| ⚡ **Zero Delay Interruption** | VAD-based barge-in: interrupt Gemini mid-sentence naturally |
-| 🔤 **Live Transcription** | Shows what you said and what Gemini replied, in real-time text |
-| 🌍 **Bilingual** | Understands and responds in Urdu + English natively |
-| 🖥️ **Screen Vision** | Share your screen and let Gemini "see" and comment on it |
-| 🤖 **Autonomous Missions** | AI autonomously tracks and updates your active goals |
-| 📊 **System Health Monitor** | Real-time CPU/RAM monitoring with HUD dashboard |
-| 🔧 **Live Tool Execution** | Voice-triggered shell commands, code fixes, file operations |
-| ☁️ **Cloud Native** | Fully deployed on Google Cloud Run |
+|  **Real-Time Voice Streaming** | Bidirectional PCM audio streaming at 16kHz using Gemini Live API |
+|  **Zero Delay Interruption** | VAD-based barge-in: interrupt Gemini mid-sentence naturally |
+|  **Live Transcription** | Shows what you said and what Gemini replied, in real-time text |
+|  **Bilingual** | Understands and responds in Urdu + English natively |
+|  **Screen Vision** | Share your screen and let Gemini "see" and comment on it |
+|  **Autonomous Missions** | AI autonomously tracks and updates your active goals |
+|  **System Health Monitor** | Real-time CPU/RAM monitoring with HUD dashboard |
+|  **Live Tool Execution** | Voice-triggered shell commands, code fixes, file operations |
+|  **Cloud Native** | Fully deployed on Google Cloud Run |
 
 ---
 
-## 🏗️ Architecture
+##  Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -78,7 +78,7 @@ It goes beyond a chatbot — it's a **personal system orchestrator** you can *ta
 
 ---
 
-## 🚀 Running Locally (Spin-Up Instructions)
+##  Running Locally (Spin-Up Instructions)
 
 ### Prerequisites
 - Node.js v20+
@@ -107,11 +107,11 @@ npm start
 ```
 App will be available at `http://localhost:3000`
 
-> ⚠️ Chrome requires HTTPS or `localhost` for microphone access.
+>  Chrome requires HTTPS or `localhost` for microphone access.
 
 ---
 
-## ☁️ Cloud Deployment (Automated)
+##  Cloud Deployment (Automated)
 
 This project earns the **Infrastructure-as-Code bonus** with a fully automated deploy script.
 
@@ -142,7 +142,7 @@ gcloud run deploy personal-ai-operator \
 
 ---
 
-## 🔑 Tech Stack
+##  Tech Stack
 
 | Technology | Purpose |
 |---|---|
@@ -156,19 +156,19 @@ gcloud run deploy personal-ai-operator \
 
 ---
 
-## 📋 Hackathon Compliance
+##  Hackathon Compliance
 
-✅ **Live Agents Category** — Real-time interruption-capable voice agent  
-✅ **Gemini Live API** — `ai.live.connect()` with `onmessage` callbacks  
-✅ **@google/genai SDK** — Official Google GenAI SDK  
-✅ **Google Cloud Run** — Backend deployed and live  
-✅ **Automated Deployment** — `deploy.sh` IaC script (bonus)  
-✅ **Multimodal** — Voice + Screen Vision + Text + Audio Output  
-✅ **Architecture Diagram** — Included in this README  
+ **Live Agents Category** — Real-time interruption-capable voice agent  
+ **Gemini Live API** — `ai.live.connect()` with `onmessage` callbacks  
+ **@google/genai SDK** — Official Google GenAI SDK  
+ **Google Cloud Run** — Backend deployed and live  
+ **Automated Deployment** — `deploy.sh` IaC script (bonus)  
+ **Multimodal** — Voice + Screen Vision + Text + Audio Output  
+ **Architecture Diagram** — Included in this README  
 
 ---
 
-## 🔗 Live URLs
+##  Live URLs
 
 - **App**: https://personal-ai-operator-677446941082.us-central1.run.app/
 - **API Key Model**: `gemini-2.5-flash-native-audio-latest`

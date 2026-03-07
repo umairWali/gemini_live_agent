@@ -312,10 +312,10 @@ const Terminal: React.FC<TerminalProps> = ({
           background: isDark ? '#0f1115' : '#ffffff',
           letterSpacing: '0.05em', textTransform: 'uppercase'
         }}>
-          {isRecording && <span style={{ color: '#ef4444' }}>🔴 Recording Session</span>}
-          {isVoiceActive && <span style={{ color: '#ef4444' }}>🎙️ Listening... Speak now</span>}
-          {isScreenSharing && <span style={{ color: '#0ea5e9' }}>🖥️ Screen sharing active</span>}
-          {meetingActive && <span style={{ color: '#10b981' }}>📋 Meeting in progress — Gemini is taking notes</span>}
+          {isRecording && <span style={{ color: '#ef4444' }}> Recording Session</span>}
+          {isVoiceActive && <span style={{ color: '#ef4444' }}> Listening... Speak now</span>}
+          {isScreenSharing && <span style={{ color: '#0ea5e9' }}> Screen sharing active</span>}
+          {meetingActive && <span style={{ color: '#10b981' }}> Meeting in progress — Gemini is taking notes</span>}
         </div>
       )}
 

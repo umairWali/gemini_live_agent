@@ -1,4 +1,4 @@
-# 🏗️ System Architecture: Personal Operator
+#  System Architecture: Personal Operator
 
 This document details the high-level architecture of the **Personal Operator** system. Built for the Google Gemini Live Agent Challenge, this system orchestrates real-time bidirectional voice (PCM), computer vision (screen sharing), and autonomous tool calling via Google Cloud Run and WebSockets.
 
@@ -28,7 +28,7 @@ sequenceDiagram
     end
 
     %% Session Initialization
-    User->>Browser: Click 🎙️ / 🖥️ / 📎
+    User->>Browser: Click  /  / 
     Browser->>Server: START_VOICE (WebSocket Handshake)
     Server->>Gemini: ai.live.connect()
     Gemini-->>Server: [Setup Complete]
@@ -49,7 +49,7 @@ sequenceDiagram
     %% Autonomous Tool Calling (Live Function Calling)
     opt If Action Requested
         Gemini->>Server: ToolCall (e.g. summarize_url, execute_action)
-        Server->>Browser: VOICE_TEXT [⚙️ Executing Action...]
+        Server->>Browser: VOICE_TEXT [ Executing Action...]
         Server->>Context: Perform Action (fetch URL, save docs)
         Context-->>Server: Action Result
         Server->>Gemini: session.sendToolResponse({result})
@@ -73,7 +73,7 @@ sequenceDiagram
 
 ---
 
-## ⚙️ Core Components
+##  Core Components
 
 ### 1. Browser Interface (React 19 + Vite)
 - **Audio Recorder**: Uses the native Web Audio API and `AudioWorkletNode` to capture raw audio chunks at `16kHz` (the format natively supported by Gemini).
