@@ -34,46 +34,29 @@ It goes beyond a chatbot — it's a **personal system orchestrator** you can *ta
 
 ---
 
-##  Architecture
+## Architecture
 
-```
+```mermaid
+graph TD
+    subgraph Browser["BROWSER (React)"]
+        A[Microphone 16kHz] --> B[AudioWorklet Processor]
+        B --> C[WebSocket Manager]
+        D[UI / HUD / Visualizers]
+        C <--> D
+    end
 
-                         BROWSER (React)                          
-     PCM Audio     
-   Microphone       AudioWorklet Processor    
-   (16kHz)                         (VAD + Buffering)         
-                   
-                                               Base64 PCM        
-                          WebSocket Msg     
-    UI / HUD / Chat                     
-    Visualizers        VOICE_TEXT / AUDIO                      
-                                            
+    subgraph Backend["GOOGLE CLOUD RUN (Node.js)"]
+        E[Express + WebSocket Server]
+        F[Gemini Live Session Manager]
+        E --> F
+    end
 
-                                               
-                              WebSocket (/ws/) 
-                                               
+    subgraph Gemini["GEMINI 2.5 NATIVE AUDIO API"]
+        G[Gemini Live Session]
+    end
 
-             GOOGLE CLOUD RUN (Node.js)                           
-                                                                  
-                     
-             server.ts (Express + WS)                            
-                           
-      Gemini Live Session Manager                              
-                               
-       ai.live.connect(callbacks)                            
-        onmessage → VOICE_RESPONSE                       
-        onopen → VOICE_READY                                  
-                                
-                            
-                     
-                        sendRealtimeInput({audio})                    
-                                                                      
-      
-              GEMINI 2.5 NATIVE AUDIO LIVE API                      
-    wss://generativelanguage.googleapis.com/...                     
-    Model: gemini-2.5-flash-native-audio-latest                     
-      
-
+    C <== WebSocket /ws/ ==> E
+    F <== RTC Stream ==> G
 ```
 
 ---
