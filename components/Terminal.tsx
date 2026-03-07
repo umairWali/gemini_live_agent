@@ -213,8 +213,8 @@ const Terminal: React.FC<TerminalProps> = ({
       />
 
       {/* Input Bar */}
-      <div className={`border-t p-4 flex items-center gap-3 transition-colors ${isDark ? 'bg-black border-white/5' : 'bg-white border-slate-200 shadow-2xl z-10'}`}>
-        <div className="flex gap-2 p-1.5 bg-slate-900/50 rounded-2xl border border-white/5">
+      <div className={`border-t p-4 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 transition-colors ${isDark ? 'bg-black border-white/5' : 'bg-white border-slate-200 shadow-2xl z-10'}`}>
+        <div className="flex flex-wrap sm:flex-nowrap gap-2 p-1.5 bg-slate-900/50 rounded-2xl border border-white/5 justify-center sm:justify-start">
           {/* Mic button */}
           <button
             type="button"

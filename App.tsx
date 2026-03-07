@@ -567,7 +567,7 @@ const AppContent: React.FC = () => {
 
   return (
     <div className={`flex w-screen h-screen overflow-hidden ${isDark ? 'bg-black text-white' : 'bg-slate-50 text-slate-900'} font-sans tracking-tight`}>
-      <div className={`flex flex-col border-r transition-colors w-72 h-full overflow-hidden ${isDark ? 'bg-slate-950 border-white/5 shadow-2xl' : 'bg-white border-slate-200'} z-20 shrink-0`}>
+      <div className={`hidden md:flex flex-col border-r transition-colors w-72 h-full overflow-hidden ${isDark ? 'bg-slate-950 border-white/5 shadow-2xl' : 'bg-white border-slate-200'} z-20 shrink-0`}>
         <ChatSidebar
           isDark={isDark}
           savedSessions={state.savedSessions || []}

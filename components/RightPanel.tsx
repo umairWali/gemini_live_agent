@@ -58,7 +58,7 @@ const RightPanel: React.FC<RightPanelProps> = ({ state }) => {
   ];
 
   return (
-    <aside className="w-[350px] flex flex-col bg-slate-950 border-l border-white/5 shrink-0 shadow-4xl overflow-hidden relative">
+    <aside className="hidden xl:flex w-[350px] flex-col bg-slate-950 border-l border-white/5 shrink-0 shadow-4xl overflow-hidden relative">
       <div className="grid grid-cols-4 border-b border-slate-900 bg-black/40">
         {[
           { id: 'SYSTEM', icon: Monitor },
