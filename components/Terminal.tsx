@@ -288,64 +288,97 @@ const Terminal: React.FC<TerminalProps> = ({
         </div>
 
         {showExtraTools && (
-          <div className={`p-2 grid grid-cols-2 gap-2 rounded-2xl border animate-in slide-in-from-bottom-2 duration-200 ${isDark ? 'bg-slate-900/95 border-white/10' : 'bg-white border-slate-200 shadow-2xl'}`}>
-            <button
-              onClick={() => { fileInputRef.current?.click(); setShowExtraTools(false); }}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-[10px] font-black tracking-widest transition-all ${isDark ? 'hover:bg-white/5 text-slate-400 hover:text-white' : 'hover:bg-slate-50 text-slate-600 hover:text-slate-900'}`}
-            >
-              <Paperclip size={14} className="text-violet-500" />
-              ATTACH
-            </button>
+          <div className={`mt-2 p-1 rounded-3xl border animate-in zoom-in-95 slide-in-from-bottom-4 duration-300 ${isDark ? 'bg-slate-950/90 border-white/10 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.7)]' : 'bg-white border-slate-200 shadow-[0_20px_50px_rgba(0,0,0,0.1)]'} backdrop-blur-2xl z-50 overflow-hidden`}>
             
-            {onToggleScreenShare && (
+            <div className="p-3 grid grid-cols-2 gap-1.5">
               <button
-                onClick={() => { onToggleScreenShare(); setShowExtraTools(false); }}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-[10px] font-black tracking-widest transition-all ${isScreenSharing ? 'bg-sky-500/10 text-sky-400 border border-sky-500/20' : isDark ? 'hover:bg-white/5 text-slate-400 hover:text-white' : 'hover:bg-slate-50 text-slate-600 hover:text-slate-900'}`}
+                onClick={() => { fileInputRef.current?.click(); setShowExtraTools(false); }}
+                className={`flex flex-col items-start gap-1 p-3 rounded-2xl transition-all ${isDark ? 'hover:bg-white/5 text-slate-400 hover:text-white' : 'hover:bg-slate-50 text-slate-600 hover:text-slate-900'}`}
               >
-                <Monitor size={14} className={isScreenSharing ? 'text-sky-400' : 'text-slate-500'} />
-                {isScreenSharing ? 'STOP_SHARE' : 'SHARE_SCR'}
+                <div className="p-2 rounded-xl bg-violet-500/10 text-violet-500 mb-1">
+                  <Paperclip size={18} strokeWidth={2.5} />
+                </div>
+                <span className="text-[11px] font-bold tracking-tight">Attach File</span>
+                <span className="text-[9px] opacity-50 font-medium">Text, PDF, Code</span>
               </button>
-            )}
+              
+              {onToggleScreenShare && (
+                <button
+                  onClick={() => { onToggleScreenShare(); setShowExtraTools(false); }}
+                  className={`flex flex-col items-start gap-1 p-3 rounded-2xl transition-all ${isScreenSharing ? 'bg-sky-500/10 text-sky-400' : isDark ? 'hover:bg-white/5 text-slate-400 hover:text-white' : 'hover:bg-slate-50 text-slate-600 hover:text-slate-900'}`}
+                >
+                  <div className={`p-2 rounded-xl mb-1 ${isScreenSharing ? 'bg-sky-500/20 text-sky-400' : 'bg-slate-500/10 text-slate-500'}`}>
+                    <Monitor size={18} strokeWidth={2.5} />
+                  </div>
+                  <span className="text-[11px] font-bold tracking-tight">{isScreenSharing ? 'Stop Share' : 'Share Screen'}</span>
+                  <span className="text-[9px] opacity-50 font-medium">Capture Desktop</span>
+                </button>
+              )}
 
-            {onToggleCamera && (
+              {onToggleCamera && (
+                <button
+                  onClick={() => { onToggleCamera(); setShowExtraTools(false); }}
+                  className={`flex flex-col items-start gap-1 p-3 rounded-2xl transition-all ${isCameraActive ? 'bg-amber-500/10 text-amber-500' : isDark ? 'hover:bg-white/5 text-slate-400 hover:text-white' : 'hover:bg-slate-50 text-slate-600 hover:text-slate-900'}`}
+                >
+                  <div className={`p-2 rounded-xl mb-1 ${isCameraActive ? 'bg-amber-500/20 text-amber-500' : 'bg-slate-500/10 text-slate-500'}`}>
+                    <Camera size={18} strokeWidth={2.5} />
+                  </div>
+                  <span className="text-[11px] font-bold tracking-tight">{isCameraActive ? 'Close Camera' : 'Camera Feed'}</span>
+                  <span className="text-[9px] opacity-50 font-medium">Analyze View</span>
+                </button>
+              )}
+
               <button
-                onClick={() => { onToggleCamera(); setShowExtraTools(false); }}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-[10px] font-black tracking-widest transition-all ${isCameraActive ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20' : isDark ? 'hover:bg-white/5 text-slate-400 hover:text-white' : 'hover:bg-slate-50 text-slate-600 hover:text-slate-900'}`}
+                onClick={() => { toggleMeeting(); setShowExtraTools(false); }}
+                className={`flex flex-col items-start gap-1 p-3 rounded-2xl transition-all ${meetingActive ? 'bg-emerald-500/10 text-emerald-500' : isDark ? 'hover:bg-white/5 text-slate-400 hover:text-white' : 'hover:bg-slate-50 text-slate-600 hover:text-slate-900'}`}
               >
-                <Camera size={14} className={isCameraActive ? 'text-amber-500' : 'text-slate-500'} />
-                {isCameraActive ? 'STOP_CAM' : 'CAMERA'}
+                <div className={`p-2 rounded-xl mb-1 ${meetingActive ? 'bg-emerald-500/20 text-emerald-500' : 'bg-slate-500/10 text-slate-500'}`}>
+                  <FileText size={18} strokeWidth={2.5} />
+                </div>
+                <span className="text-[11px] font-bold tracking-tight">{meetingActive ? 'End Meeting' : 'Meeting Mode'}</span>
+                <span className="text-[9px] opacity-50 font-medium">Automatic Minutes</span>
               </button>
-            )}
 
-            <button
-              onClick={() => { toggleMeeting(); setShowExtraTools(false); }}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-[10px] font-black tracking-widest transition-all ${meetingActive ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' : isDark ? 'hover:bg-white/5 text-slate-400 hover:text-white' : 'hover:bg-slate-50 text-slate-600 hover:text-slate-900'}`}
-            >
-              <FileText size={14} className={meetingActive ? 'text-emerald-500' : 'text-slate-500'} />
-              {meetingActive ? 'END_MEET' : 'START_MEET'}
-            </button>
+              <button
+                  onClick={() => { downloadLastResponse(); setShowExtraTools(false); }}
+                  className={`flex flex-col items-start gap-1 p-3 rounded-2xl transition-all ${isDark ? 'hover:bg-white/5 text-slate-400 hover:text-white' : 'hover:bg-slate-50 text-slate-600 hover:text-slate-900'}`}
+                >
+                  <div className="p-2 rounded-xl bg-sky-500/10 text-sky-500 mb-1">
+                    <Download size={18} strokeWidth={2.5} />
+                  </div>
+                  <span className="text-[11px] font-bold tracking-tight">Export Response</span>
+                  <span className="text-[9px] opacity-50 font-medium">Save as .TXT</span>
+              </button>
+            </div>
 
-            <button
-                onClick={() => { downloadLastResponse(); setShowExtraTools(false); }}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-[10px] font-black tracking-widest transition-all ${isDark ? 'hover:bg-white/5 text-slate-400 hover:text-white' : 'hover:bg-slate-50 text-slate-600 hover:text-slate-900'}`}
-              >
-                <Download size={14} className="text-sky-500" />
-                EXPORT
-            </button>
-
-            <div className="col-span-2 px-3 py-3 border-t border-white/10 mt-2">
-               <div className="flex items-center justify-between mb-2">
-                  <span className="text-[8px] font-black text-slate-500 uppercase tracking-[0.2em]">Sensitivity</span>
-                  <span className="text-[8px] font-black text-violet-500">{sensitivity}%</span>
+            <div className={`mx-3 mb-3 p-4 rounded-2xl ${isDark ? 'bg-white/5' : 'bg-slate-50 border border-slate-100'}`}>
+               <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <Sliders size={12} className="text-violet-500" />
+                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">VAD Sensitivity</span>
+                  </div>
+                  <span className="text-[10px] font-black text-violet-500 bg-violet-500/10 px-2 py-0.5 rounded-full">{sensitivity}%</span>
                </div>
-               <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  value={sensitivity}
-                  onChange={(e) => handleSensitivityChange(parseInt(e.target.value))}
-                  className="w-full h-1 bg-slate-800 rounded-full appearance-none cursor-pointer accent-violet-500"
-                />
+               <div className="relative flex items-center h-6">
+                 <div className={`absolute w-full h-1.5 rounded-full ${isDark ? 'bg-white/10' : 'bg-slate-200'}`} />
+                 <div 
+                   className="absolute h-1.5 rounded-full bg-gradient-to-r from-violet-600 to-indigo-500" 
+                   style={{ width: `${sensitivity}%` }} 
+                 />
+                 <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={sensitivity}
+                    onChange={(e) => handleSensitivityChange(parseInt(e.target.value))}
+                    className="absolute w-full h-4 bg-transparent appearance-none cursor-pointer z-10 accent-transparent"
+                    style={{
+                      WebkitAppearance: 'none',
+                      margin: 0
+                    }}
+                  />
+               </div>
+               <p className="text-[8px] mt-2 opacity-40 font-bold uppercase tracking-tighter">Increase for louder environments</p>
             </div>
           </div>
         )}
