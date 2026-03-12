@@ -122,16 +122,12 @@ const Terminal: React.FC<TerminalProps> = ({
     }
   };
 
-  const visibleHistory = history.filter(msg => {
+  const visibleHistory = isVoiceActive ? [] : history.filter(msg => {
     const t = msg.text || '';
     if (t.startsWith('[IPC_ACK]') || t.startsWith('[HEALER_SIGNAL]') ||
       t.startsWith('PROTOCOL_LOCK') || t.startsWith('[VISION_SIGNAL]') ||
       t.startsWith('MANUAL_SIGNAL') || t.startsWith('SYSTEM_BOOT') ||
       t.startsWith('[IPC_EVENT_DETECTED]') || t.startsWith('[SYSTEM]')) return false;
-    
-    // Hide AI responses while mic is active to avoid "reading" or interference
-    if (isVoiceActive && msg.role === 'ai') return false;
-
     return true;
   });
 
