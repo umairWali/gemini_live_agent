@@ -121,6 +121,7 @@ const watcher = new WatcherEngine(path.resolve(__dirname, '..'));
 // Event Bus (WebSocket)
 let clients: WebSocket[] = [];
 const liveSessions = new Map<WebSocket, any>();
+const interruptedSessions = new Set<WebSocket>();
 
 wss.on('connection', (ws) => {
     clients.push(ws);
@@ -154,7 +155,7 @@ wss.on('connection', (ws) => {
                         config: {
                             responseModalities: ["AUDIO"],
                             systemInstruction: {
-                                parts: [{ text: 'You are Personal Operator, an elite AI orchestrator. You have advanced tools to summarize URLs, set reminders, export documents, execute system actions, and review code. When the user asks you to do these tasks, ALWAYS use the provided tool and then immediately confirm it verbally. Speak naturally and concisely.' }]
+                                parts: [{ text: 'You are Personal Operator, an elite AI orchestrator. You have advanced tools to summarize URLs, set reminders, export documents, execute system actions, and review code. When the user asks you to do these tasks, ALWAYS use the provided tool and then immediately confirm it verbally. Speak naturally and concisely. CRITICAL: If the user interrupts you while you are speaking, STOP IMMEDIATELY and listen to their new input. Do not finish your previous sentence if interrupted.' }]
                             },
                             tools: [{
                                 functionDeclarations: [
@@ -183,10 +184,15 @@ wss.on('connection', (ws) => {
                                     let hasAudio = false;
                                     for (const part of (msg.serverContent.modelTurn.parts || [])) {
                                         if (part.inlineData?.data) {
+                                            if (interruptedSessions.has(ws)) {
+                                                console.log('[AI_LIVE]: Dropping audio chunk due to interruption.');
+                                                continue;
+                                            }
                                             hasAudio = true;
                                             ws.send(JSON.stringify({ type: 'VOICE_RESPONSE', data: part.inlineData.data }));
                                         }
                                         if (part.text) {
+                                            if (interruptedSessions.has(ws)) continue;
                                             console.log('[AI_LIVE_REPLY]:', part.text.substring(0, 80) + '...');
                                             ws.send(JSON.stringify({ type: 'VOICE_TEXT', text: part.text }));
                                         }
@@ -200,6 +206,7 @@ wss.on('connection', (ws) => {
 
                                 if (msg.serverContent?.turnComplete) {
                                     console.log('[AI_LIVE]: Turn complete — waiting for next input.');
+                                    interruptedSessions.delete(ws);
                                 }
 
                                 //  LIVE FUNCTION CALLING HANDLING 
@@ -316,11 +323,19 @@ wss.on('connection', (ws) => {
                 }
 
             } else if (message.type === 'STOP_AI_SPEECH') {
-                console.log('[WS]: Interrupt signal received — Clearing session');
+                console.log('[WS]: Interrupt signal received — Marking session as interrupted');
+                interruptedSessions.add(ws);
+            } else if (message.type === 'TURN_COMPLETE') {
                 const session = liveSessions.get(ws);
+                interruptedSessions.delete(ws); // Turn finished, AI can speak again
                 if (session) {
-                    // Simplest way to clear is to send turnComplete or just close and reopen
-                    // But for now, we just rely on client stopping playback and being ready for new turn
+                    console.log('[WS]: TURN_COMPLETE received from client.');
+                    try {
+                        session.sendRealtimeInput({ turnComplete: true });
+                        console.log('[AI_LIVE]: Flow confirmed -> turnComplete sent to Gemini.');
+                    } catch (e: any) {
+                        console.error('[AI_LIVE_ERROR]: Failed to send turnComplete:', e.message);
+                    }
                 }
             } else if (message.type === 'VOICE_AUDIO') {
                 const session = liveSessions.get(ws);

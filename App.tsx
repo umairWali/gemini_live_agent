@@ -163,11 +163,9 @@ const AppContent: React.FC = () => {
   };
 
   const speakText = (text: string) => {
-    if (!('speechSynthesis' in window)) return;
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'en-US';
-    window.speechSynthesis.speak(utterance);
+    // DISABLED: Pure voice mode - no TTS
+    // Audio only flows through WebSocket VOICE_RESPONSE
+    return;
   };
 
   const processInput = async (txt: string, origin: 'user' | 'system' = 'user') => {
@@ -220,7 +218,8 @@ const AppContent: React.FC = () => {
           }));
         }, 3000);
 
-        if (isVoiceActive) speakText(data.reply);
+        // PURE VOICE MODE: No text display, no TTS
+        // Only native audio through WebSocket VOICE_RESPONSE
       } else {
         addToast({ type: 'error', title: 'AI Operator Error', message: data.error || 'Failed to generate response.' });
       }
@@ -312,7 +311,15 @@ const AppContent: React.FC = () => {
 
   const startMediaStream = useCallback(() => {
     const ws = (window as any).operatorWs as WebSocket;
-    navigator.mediaDevices.getUserMedia({ audio: { sampleRate: 16000, channelCount: 1, noiseSuppression: false } })
+    navigator.mediaDevices.getUserMedia({ 
+      audio: { 
+        sampleRate: 16000, 
+        channelCount: 1, 
+        echoCancellation: true, 
+        noiseSuppression: true,
+        autoGainControl: true
+      } 
+    })
       .then(async stream => {
         mediaStreamRef.current = stream;
         const ctx = audioContextRef.current!;
@@ -336,10 +343,13 @@ const AppContent: React.FC = () => {
         workletNode.port.onmessage = (e) => {
           if (ws.readyState === WebSocket.OPEN) {
             if (e.data.event === 'speech_start') {
+              console.log('[CLIENT]: Speech started - Killing AI playback.');
               stopAllPlayback();
               ws.send(JSON.stringify({ type: 'STOP_AI_SPEECH' }));
+            } else if (e.data.event === 'turnComplete') {
+              console.log('[CLIENT]: Silence detected (2s) - Turn complete. Signaling server.');
+              ws.send(JSON.stringify({ type: 'TURN_COMPLETE' }));
             } else if (e.data.event === 'speech_end') {
-              ws.send(JSON.stringify({ type: 'VOICE_TURN_COMPLETE' }));
             } else if (e.data.event === 'data') {
               const inputData = e.data.buffer; // Float32Array
               const pcmData = new Int16Array(inputData.length);
@@ -555,14 +565,8 @@ const AppContent: React.FC = () => {
             console.error('[CLIENT_PLAYBACK_ERR]:', err.message);
           }
         } else if (data.type === 'VOICE_TEXT' || data.type === 'VOICE_PROACTIVE_ALERT' || data.type === 'VOICE_INPUT_TEXT') {
-          const role = data.type === 'VOICE_INPUT_TEXT' ? 'user' : 'ai';
-          if (data.text && !data.text.startsWith('SYSTEM:')) {
-            setState(p => ({
-              ...p,
-              history: [...p.history, { role, text: data.text, timestamp: Date.now(), agentBadge: role === 'ai' ? AgentRole.SUPERVISOR : undefined }].slice(-50)
-            }));
-            if (data.type === 'VOICE_PROACTIVE_ALERT') speakText(data.text);
-          }
+          // PURE VOICE MODE: Ignore all text messages - only audio in/out
+          // Text is not displayed during voice conversation
         } else if (data.type === 'VOICE_READY') {
           setIsVoiceReady(true);
           startMediaStream();

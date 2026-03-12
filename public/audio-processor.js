@@ -3,8 +3,8 @@ class AudioProcessor extends AudioWorkletProcessor {
         super();
         this.lastSpeechTime = 0;
         this.isSpeaking = false;
-        this.threshold = 0.02; // Standard voice sensitivity
-        this.silenceDelay = 1.0;
+        this.threshold = 0.005; // High sensitivity
+        this.silenceDelay = 0.5; // Near-instant turn switching (User requested no delay)
     }
 
     process(inputs) {
@@ -24,16 +24,22 @@ class AudioProcessor extends AudioWorkletProcessor {
                 if (!this.isSpeaking) {
                     this.isSpeaking = true;
                     this.port.postMessage({ event: 'speech_start' });
+                    console.log('[WORKLET]: User started speaking.');
                 }
             } else {
                 if (this.isSpeaking && (currentTime - this.lastSpeechTime > this.silenceDelay)) {
                     this.isSpeaking = false;
                     this.port.postMessage({ event: 'speech_end' });
+                    this.port.postMessage({ event: 'turnComplete' });
+                    console.log('[WORKLET]: Silence detected (2s) - Sending turnComplete.');
                 }
             }
 
-            // Continuous data stream
-            this.port.postMessage({ event: 'data', buffer: new Float32Array(channelData) });
+            // Continuous streaming of raw audio data
+            this.port.postMessage({ 
+                event: 'data', 
+                buffer: new Float32Array(channelData) 
+            });
         }
         return true;
     }
