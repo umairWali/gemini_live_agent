@@ -288,81 +288,76 @@ const Terminal: React.FC<TerminalProps> = ({
         </div>
 
         {showExtraTools && (
-          <div className={`mt-2 p-1 rounded-3xl border animate-in zoom-in-95 slide-in-from-bottom-4 duration-300 ${isDark ? 'bg-slate-950/90 border-white/10 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.7)]' : 'bg-white border-slate-200 shadow-[0_20px_50px_rgba(0,0,0,0.1)]'} backdrop-blur-2xl z-50 overflow-hidden`}>
+          <div className={`mt-2 p-1 rounded-2xl border animate-in zoom-in-95 slide-in-from-bottom-4 duration-300 ${isDark ? 'bg-slate-950/95 border-white/10 shadow-2xl' : 'bg-white border-slate-200 shadow-xl'} backdrop-blur-2xl z-50 overflow-hidden max-w-[400px]`}>
             
-            <div className="p-3 grid grid-cols-2 gap-1.5">
+            <div className="p-2 grid grid-cols-3 gap-1">
               <button
                 onClick={() => { fileInputRef.current?.click(); setShowExtraTools(false); }}
-                className={`flex flex-col items-start gap-1 p-3 rounded-2xl transition-all ${isDark ? 'hover:bg-white/5 text-slate-400 hover:text-white' : 'hover:bg-slate-50 text-slate-600 hover:text-slate-900'}`}
+                className={`flex flex-col items-center gap-1.5 p-2 rounded-xl transition-all ${isDark ? 'hover:bg-white/5 text-slate-400 hover:text-white' : 'hover:bg-slate-50 text-slate-600 hover:text-slate-900'}`}
               >
-                <div className="p-2 rounded-xl bg-violet-500/10 text-violet-500 mb-1">
-                  <Paperclip size={18} strokeWidth={2.5} />
+                <div className="p-2 rounded-lg bg-violet-500/10 text-violet-500">
+                  <Paperclip size={16} strokeWidth={2.5} />
                 </div>
-                <span className="text-[11px] font-bold tracking-tight">Attach File</span>
-                <span className="text-[9px] opacity-50 font-medium">Text, PDF, Code</span>
+                <span className="text-[10px] font-bold">Attach</span>
               </button>
               
               {onToggleScreenShare && (
                 <button
                   onClick={() => { onToggleScreenShare(); setShowExtraTools(false); }}
-                  className={`flex flex-col items-start gap-1 p-3 rounded-2xl transition-all ${isScreenSharing ? 'bg-sky-500/10 text-sky-400' : isDark ? 'hover:bg-white/5 text-slate-400 hover:text-white' : 'hover:bg-slate-50 text-slate-600 hover:text-slate-900'}`}
+                  className={`flex flex-col items-center gap-1.5 p-2 rounded-xl transition-all ${isScreenSharing ? 'bg-sky-500/10 text-sky-400' : isDark ? 'hover:bg-white/5 text-slate-400 hover:text-white' : 'hover:bg-slate-50 text-slate-600 hover:text-slate-900'}`}
                 >
-                  <div className={`p-2 rounded-xl mb-1 ${isScreenSharing ? 'bg-sky-500/20 text-sky-400' : 'bg-slate-500/10 text-slate-500'}`}>
-                    <Monitor size={18} strokeWidth={2.5} />
+                  <div className={`p-2 rounded-lg ${isScreenSharing ? 'bg-sky-500/20 text-sky-400' : 'bg-slate-500/10 text-slate-500'}`}>
+                    <Monitor size={16} strokeWidth={2.5} />
                   </div>
-                  <span className="text-[11px] font-bold tracking-tight">{isScreenSharing ? 'Stop Share' : 'Share Screen'}</span>
-                  <span className="text-[9px] opacity-50 font-medium">Capture Desktop</span>
+                  <span className="text-[10px] font-bold">Screen</span>
                 </button>
               )}
 
               {onToggleCamera && (
                 <button
                   onClick={() => { onToggleCamera(); setShowExtraTools(false); }}
-                  className={`flex flex-col items-start gap-1 p-3 rounded-2xl transition-all ${isCameraActive ? 'bg-amber-500/10 text-amber-500' : isDark ? 'hover:bg-white/5 text-slate-400 hover:text-white' : 'hover:bg-slate-50 text-slate-600 hover:text-slate-900'}`}
+                  className={`flex flex-col items-center gap-1.5 p-2 rounded-xl transition-all ${isCameraActive ? 'bg-amber-500/10 text-amber-500' : isDark ? 'hover:bg-white/5 text-slate-400 hover:text-white' : 'hover:bg-slate-50 text-slate-600 hover:text-slate-900'}`}
                 >
-                  <div className={`p-2 rounded-xl mb-1 ${isCameraActive ? 'bg-amber-500/20 text-amber-500' : 'bg-slate-500/10 text-slate-500'}`}>
-                    <Camera size={18} strokeWidth={2.5} />
+                  <div className={`p-2 rounded-lg ${isCameraActive ? 'bg-amber-500/20 text-amber-500' : 'bg-slate-500/10 text-slate-500'}`}>
+                    <Camera size={16} strokeWidth={2.5} />
                   </div>
-                  <span className="text-[11px] font-bold tracking-tight">{isCameraActive ? 'Close Camera' : 'Camera Feed'}</span>
-                  <span className="text-[9px] opacity-50 font-medium">Analyze View</span>
+                  <span className="text-[10px] font-bold">Camera</span>
                 </button>
               )}
 
               <button
                 onClick={() => { toggleMeeting(); setShowExtraTools(false); }}
-                className={`flex flex-col items-start gap-1 p-3 rounded-2xl transition-all ${meetingActive ? 'bg-emerald-500/10 text-emerald-500' : isDark ? 'hover:bg-white/5 text-slate-400 hover:text-white' : 'hover:bg-slate-50 text-slate-600 hover:text-slate-900'}`}
+                className={`flex flex-col items-center gap-1.5 p-2 rounded-xl transition-all ${meetingActive ? 'bg-emerald-500/10 text-emerald-500' : isDark ? 'hover:bg-white/5 text-slate-400 hover:text-white' : 'hover:bg-slate-50 text-slate-600 hover:text-slate-900'}`}
               >
-                <div className={`p-2 rounded-xl mb-1 ${meetingActive ? 'bg-emerald-500/20 text-emerald-500' : 'bg-slate-500/10 text-slate-500'}`}>
-                  <FileText size={18} strokeWidth={2.5} />
+                <div className={`p-2 rounded-lg ${meetingActive ? 'bg-emerald-500/20 text-emerald-500' : 'bg-slate-500/10 text-slate-500'}`}>
+                  <FileText size={16} strokeWidth={2.5} />
                 </div>
-                <span className="text-[11px] font-bold tracking-tight">{meetingActive ? 'End Meeting' : 'Meeting Mode'}</span>
-                <span className="text-[9px] opacity-50 font-medium">Automatic Minutes</span>
+                <span className="text-[10px] font-bold">Meeting</span>
               </button>
 
               <button
                   onClick={() => { downloadLastResponse(); setShowExtraTools(false); }}
-                  className={`flex flex-col items-start gap-1 p-3 rounded-2xl transition-all ${isDark ? 'hover:bg-white/5 text-slate-400 hover:text-white' : 'hover:bg-slate-50 text-slate-600 hover:text-slate-900'}`}
+                  className={`flex flex-col items-center gap-1.5 p-2 rounded-xl transition-all ${isDark ? 'hover:bg-white/5 text-slate-400 hover:text-white' : 'hover:bg-slate-50 text-slate-600 hover:text-slate-900'}`}
                 >
-                  <div className="p-2 rounded-xl bg-sky-500/10 text-sky-500 mb-1">
-                    <Download size={18} strokeWidth={2.5} />
+                  <div className="p-2 rounded-lg bg-sky-500/10 text-sky-500">
+                    <Download size={16} strokeWidth={2.5} />
                   </div>
-                  <span className="text-[11px] font-bold tracking-tight">Export Response</span>
-                  <span className="text-[9px] opacity-50 font-medium">Save as .TXT</span>
+                  <span className="text-[10px] font-bold">Export</span>
               </button>
             </div>
 
-            <div className={`mx-3 mb-3 p-4 rounded-2xl ${isDark ? 'bg-white/5' : 'bg-slate-50 border border-slate-100'}`}>
-               <div className="flex items-center justify-between mb-3">
+            <div className={`mx-2 mb-2 p-3 rounded-xl ${isDark ? 'bg-white/5' : 'bg-slate-50 border border-slate-100'}`}>
+               <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
-                    <Sliders size={12} className="text-violet-500" />
-                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">VAD Sensitivity</span>
+                    <Sliders size={11} className="text-violet-500" />
+                    <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Sensitivity</span>
                   </div>
-                  <span className="text-[10px] font-black text-violet-500 bg-violet-500/10 px-2 py-0.5 rounded-full">{sensitivity}%</span>
+                  <span className="text-[9px] font-black text-violet-500 px-1.5 py-0.5 rounded-full">{sensitivity}%</span>
                </div>
-               <div className="relative flex items-center h-6">
-                 <div className={`absolute w-full h-1.5 rounded-full ${isDark ? 'bg-white/10' : 'bg-slate-200'}`} />
+               <div className="relative flex items-center h-4">
+                 <div className={`absolute w-full h-1 rounded-full ${isDark ? 'bg-white/10' : 'bg-slate-200'}`} />
                  <div 
-                   className="absolute h-1.5 rounded-full bg-gradient-to-r from-violet-600 to-indigo-500" 
+                   className="absolute h-1 rounded-full bg-gradient-to-r from-violet-600 to-indigo-500" 
                    style={{ width: `${sensitivity}%` }} 
                  />
                  <input
@@ -372,13 +367,9 @@ const Terminal: React.FC<TerminalProps> = ({
                     value={sensitivity}
                     onChange={(e) => handleSensitivityChange(parseInt(e.target.value))}
                     className="absolute w-full h-4 bg-transparent appearance-none cursor-pointer z-10 accent-transparent"
-                    style={{
-                      WebkitAppearance: 'none',
-                      margin: 0
-                    }}
+                    style={{ WebkitAppearance: 'none', margin: 0 }}
                   />
                </div>
-               <p className="text-[8px] mt-2 opacity-40 font-bold uppercase tracking-tighter">Increase for louder environments</p>
             </div>
           </div>
         )}
