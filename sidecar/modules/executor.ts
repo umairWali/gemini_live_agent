@@ -3,6 +3,7 @@ import { exec } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 import shell from 'shelljs';
+import ExcelJS from 'exceljs';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -139,6 +140,9 @@ export const executeAction = async (action: string, target: string, args?: strin
                 break;
             case 'update_goal':
                 result = { success: true, output: `Goal ${target} updated successfully.` };
+                break;
+            case 'generate_excel':
+                result = await generateExcel(target, args || '[]');
                 break;
             default:
                 result = { success: false, error: `Unknown action: ${action}` };
@@ -320,5 +324,50 @@ async function runFix(command: string, errorMessage: string): Promise<ExecutionR
         };
     } catch (e: any) {
         return { success: false, error: e.message };
+    }
+}
+async function generateExcel(filename: string, jsonString: string): Promise<ExecutionResult> {
+    try {
+        const data = JSON.parse(jsonString);
+        if (!Array.isArray(data)) throw new Error("Data must be an array of objects for Excel generation.");
+
+        const workbook = new ExcelJS.Workbook();
+        const sheet = workbook.addWorksheet('Sheet 1');
+
+        if (data.length > 0) {
+            const columns = Object.keys(data[0]).map(key => ({
+                header: key.toUpperCase(),
+                key: key,
+                width: 20
+            }));
+            sheet.columns = columns;
+
+            // Add rows
+            data.forEach(item => sheet.addRow(item));
+
+            // Formatting
+            sheet.getRow(1).font = { bold: true };
+            sheet.getRow(1).fill = {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: { argb: 'FFE0E0E0' }
+            };
+        }
+
+        const cleanFilename = filename.endsWith('.xlsx') ? filename : `${filename}.xlsx`;
+        const publicPath = `/var/www/html/operator/downloads/${cleanFilename}`;
+        
+        await workbook.xlsx.writeFile(publicPath);
+
+        return {
+            success: true,
+            output: `Excel file generated successfully: ${cleanFilename}`,
+            metadata: {
+                filename: cleanFilename,
+                downloadUrl: `/downloads/${cleanFilename}`
+            }
+        };
+    } catch (e: any) {
+        return { success: false, error: `Excel generation failed: ${e.message}` };
     }
 }

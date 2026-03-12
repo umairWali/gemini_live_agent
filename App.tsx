@@ -133,6 +133,15 @@ const AppContent: React.FC = () => {
   const analyzerRef = useRef<AnalyserNode | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const playbackScheduleRef = useRef<number>(0);
+  const activeAudioSourcesRef = useRef<AudioBufferSourceNode[]>([]);
+
+  const stopAllPlayback = useCallback(() => {
+    activeAudioSourcesRef.current.forEach(source => {
+      try { source.stop(); } catch (e) { }
+    });
+    activeAudioSourcesRef.current = [];
+    playbackScheduleRef.current = 0;
+  }, []);
 
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const screenStreamRef = useRef<MediaStream | null>(null);
@@ -326,7 +335,10 @@ const AppContent: React.FC = () => {
 
         workletNode.port.onmessage = (e) => {
           if (ws.readyState === WebSocket.OPEN) {
-            if (e.data.event === 'speech_end') {
+            if (e.data.event === 'speech_start') {
+              stopAllPlayback();
+              ws.send(JSON.stringify({ type: 'STOP_AI_SPEECH' }));
+            } else if (e.data.event === 'speech_end') {
               ws.send(JSON.stringify({ type: 'VOICE_TURN_COMPLETE' }));
             } else if (e.data.event === 'data') {
               const inputData = e.data.buffer; // Float32Array
@@ -529,6 +541,11 @@ const AppContent: React.FC = () => {
             source.connect(analyzerRef.current!);
             // CRITICAL: Also connect directly to speakers so we actually hear Gemini's voice
             source.connect(ctx.destination);
+
+            source.onended = () => {
+              activeAudioSourcesRef.current = activeAudioSourcesRef.current.filter(s => s !== source);
+            };
+            activeAudioSourcesRef.current.push(source);
 
             const startAt = Math.max(ctx.currentTime, playbackScheduleRef.current || 0);
             source.start(startAt);

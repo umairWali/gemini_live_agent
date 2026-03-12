@@ -160,7 +160,7 @@ wss.on('connection', (ws) => {
                                 functionDeclarations: [
                                     { name: "summarize_url", description: "Summarize a YouTube video or webpage URL.", parameters: { type: "OBJECT", properties: { url: { type: "STRING" } } } },
                                     { name: "set_reminder", description: "Set a smart reminder.", parameters: { type: "OBJECT", properties: { task: { type: "STRING" }, time_in_minutes: { type: "NUMBER" } } } },
-                                    { name: "export_to_docs", description: "Export the generated meeting minutes or content to a Google Doc or Excel sheet.", parameters: { type: "OBJECT", properties: { title: { type: "STRING" }, content: { type: "STRING" }, format: { type: "STRING", description: "'doc' or 'excel'" } } } },
+                                    { name: "export_to_docs", description: "Export the generated meeting minutes, lists, or any structured content to a Google Doc or Excel sheet. For Excel, the content MUST be a JSON array of objects.", parameters: { type: "OBJECT", properties: { title: { type: "STRING" }, content: { type: "STRING", description: "The content to export. If format is excel, this must be a valid JSON array string." }, format: { type: "STRING", description: "'doc' or 'excel'" } } } },
                                     { name: "execute_action", description: "Execute a live system action or command.", parameters: { type: "OBJECT", properties: { command_description: { type: "STRING" } } } },
                                     { name: "code_review", description: "Perform a code review via voice.", parameters: { type: "OBJECT", properties: { filename: { type: "STRING" } } } },
                                     { name: "update_memory", description: "Add a fact about the user or the environment to the real-time Memory Knowledge Graph. Use this proactively.", parameters: { type: "OBJECT", properties: { subject: { type: "STRING" }, relation: { type: "STRING" }, object: { type: "STRING" } } } },
@@ -220,8 +220,28 @@ wss.on('connection', (ws) => {
                                             uiLabel = ` Smart Reminder: ${call.args?.task} set for ${call.args?.time_in_minutes || 10} mins.`;
                                         }
                                         else if (call.name === 'export_to_docs') {
-                                            resultInfo = `Content successfully exported to ${call.args?.format?.toUpperCase() || 'Google Docs'} with title "${call.args?.title || 'Document'}".`;
-                                            uiLabel = ` Export to ${call.args?.format?.toUpperCase() || 'Docs'}: ${call.args?.title || 'Completed'}`;
+                                            const format = (call.args?.format || 'doc').toLowerCase();
+                                            const title = call.args?.title || 'Export';
+                                            const content = call.args?.content || '';
+
+                                            if (format === 'excel') {
+                                                const excelResult = await executeAction('generate_excel', title, content);
+                                                if (excelResult.success) {
+                                                    resultInfo = `Excel file generated successfully: ${excelResult.metadata.filename}. Download link: ${excelResult.metadata.downloadUrl}`;
+                                                    uiLabel = ` ✅ Excel Created: ${excelResult.metadata.filename}`;
+                                                    ws.send(JSON.stringify({ 
+                                                        type: 'VOICE_TEXT', 
+                                                        text: `SYSTEM: [Download Excel File](${excelResult.metadata.downloadUrl})` 
+                                                    }));
+                                                } else {
+                                                    resultInfo = `Excel generation failed: ${excelResult.error}`;
+                                                    uiLabel = ` ❌ Excel Error`;
+                                                }
+                                            } else {
+                                                const docResult = await executeAction('write_file', `${title}.txt`, content);
+                                                resultInfo = `Content exported as text file: ${title}.txt`;
+                                                uiLabel = ` 📄 Exported: ${title}.txt`;
+                                            }
                                         }
                                         else if (call.name === 'execute_action') {
                                             const cmd = call.args?.command_description;
@@ -295,6 +315,13 @@ wss.on('connection', (ws) => {
                     ws.send(JSON.stringify({ type: 'VOICE_ERROR', error: 'Init Failed: ' + e.message }));
                 }
 
+            } else if (message.type === 'STOP_AI_SPEECH') {
+                console.log('[WS]: Interrupt signal received — Clearing session');
+                const session = liveSessions.get(ws);
+                if (session) {
+                    // Simplest way to clear is to send turnComplete or just close and reopen
+                    // But for now, we just rely on client stopping playback and being ready for new turn
+                }
             } else if (message.type === 'VOICE_AUDIO') {
                 const session = liveSessions.get(ws);
                 if (session && message.data) {
