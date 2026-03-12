@@ -134,13 +134,22 @@ const AppContent: React.FC = () => {
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const playbackScheduleRef = useRef<number>(0);
   const activeAudioSourcesRef = useRef<AudioBufferSourceNode[]>([]);
+  const isUserSpeakingRef = useRef<boolean>(false);
+  const aiGainNodeRef = useRef<GainNode | null>(null);
 
   const stopAllPlayback = useCallback(() => {
+    // 1. Mute the master gain instantly
+    if (aiGainNodeRef.current) {
+      aiGainNodeRef.current.gain.setValueAtTime(0, audioContextRef.current?.currentTime || 0);
+    }
+    // 2. Kill all active source nodes
     activeAudioSourcesRef.current.forEach(source => {
       try { source.stop(); } catch (e) { }
     });
     activeAudioSourcesRef.current = [];
+    // 3. Reset the schedule
     playbackScheduleRef.current = 0;
+    console.log('[CLIENT]: All AI playback killed and master-muted.');
   }, []);
 
   const [isScreenSharing, setIsScreenSharing] = useState(false);
@@ -324,6 +333,12 @@ const AppContent: React.FC = () => {
           try { workletNodeRef.current.disconnect(); } catch (e) { }
         }
 
+        // Initialize AI Master Gain Node if not exists
+        if (!aiGainNodeRef.current) {
+          aiGainNodeRef.current = ctx.createGain();
+          aiGainNodeRef.current.connect(ctx.destination);
+        }
+
         await ctx.audioWorklet.addModule('/audio-processor.js');
         const source = ctx.createMediaStreamSource(stream);
         const workletNode = new AudioWorkletNode(ctx, 'audio-processor');
@@ -338,13 +353,16 @@ const AppContent: React.FC = () => {
         workletNode.port.onmessage = (e) => {
           if (ws.readyState === WebSocket.OPEN) {
             if (e.data.event === 'speech_start') {
-              console.log('[CLIENT]: Speech started - Killing AI playback.');
+              console.log('[CLIENT]: User Speech Detected - Interrupting AI.');
+              isUserSpeakingRef.current = true;
               stopAllPlayback();
               ws.send(JSON.stringify({ type: 'STOP_AI_SPEECH' }));
             } else if (e.data.event === 'turnComplete') {
-              console.log('[CLIENT]: Silence detected (2s) - Turn complete. Signaling server.');
+              console.log('[CLIENT]: Turn complete - Signaling Gemini.');
+              isUserSpeakingRef.current = false;
               ws.send(JSON.stringify({ type: 'TURN_COMPLETE' }));
             } else if (e.data.event === 'speech_end') {
+              isUserSpeakingRef.current = false;
             } else if (e.data.event === 'data') {
               const inputData = e.data.buffer; // Float32Array
               const pcmData = new Int16Array(inputData.length);
@@ -522,10 +540,21 @@ const AppContent: React.FC = () => {
       if (typeof event.data === 'string') {
         const data = JSON.parse(event.data);
         if (data.type === 'VOICE_RESPONSE') {
+          // INTERPRETATION PROTECTION: If user is talking, dump the AI chunk immediately
+          if (isUserSpeakingRef.current) {
+            console.log('[CLIENT]: Dumping AI audio chunk (User is talking).');
+            return;
+          }
+
           try {
             const ctx = audioContextRef.current;
             if (!ctx) return;
             if (ctx.state === 'suspended') await ctx.resume();
+
+            // Ensure gain is audible for new turn
+            if (aiGainNodeRef.current && aiGainNodeRef.current.gain.value === 0 && !isUserSpeakingRef.current) {
+              aiGainNodeRef.current.gain.setValueAtTime(1, ctx.currentTime);
+            }
 
             const binaryString = atob(data.data);
             const bytes = new Uint8Array(binaryString.length);
@@ -542,10 +571,10 @@ const AppContent: React.FC = () => {
             const source = ctx.createBufferSource();
             source.buffer = buffer;
 
-            // Connect to analyzer for waveform visualization
+            // Connect to Master AI Gain Node for instant interruption
+            source.connect(aiGainNodeRef.current!);
+            // Also connect to analyzer for visual feedback
             source.connect(analyzerRef.current!);
-            // CRITICAL: Also connect directly to speakers so we actually hear Gemini's voice
-            source.connect(ctx.destination);
 
             source.onended = () => {
               activeAudioSourcesRef.current = activeAudioSourcesRef.current.filter(s => s !== source);
