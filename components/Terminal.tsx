@@ -33,6 +33,7 @@ const Terminal: React.FC<TerminalProps> = ({
   const [showExtraTools, setShowExtraTools] = useState(false);
   const [sensitivity, setSensitivity] = useState(50);
   const [attachedFile, setAttachedFile] = useState<{ name: string, type: string } | null>(null);
+  const [showSettings, setShowSettings] = useState(false);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -46,7 +47,6 @@ const Terminal: React.FC<TerminalProps> = ({
     }
   };
 
-  // Handle file attachment
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -64,10 +64,7 @@ const Terminal: React.FC<TerminalProps> = ({
       setAttachedFile({ name: file.name, type: file.type });
       onSend(`[SYSTEM] File attached: ${file.name}`);
     };
-    // Read as text for .txt .md .csv .json .docx-text, etc.
     reader.readAsText(file);
-
-    // Reset file input
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
@@ -79,7 +76,6 @@ const Terminal: React.FC<TerminalProps> = ({
     }
   };
 
-  // Meeting minutes
   const toggleMeeting = () => {
     const ws = (window as any).operatorWs as WebSocket;
     if (!ws || ws.readyState !== WebSocket.OPEN) {
@@ -88,12 +84,11 @@ const Terminal: React.FC<TerminalProps> = ({
     }
 
     if (meetingActive) {
-      // End meeting — request minutes
       setMeetingActive(false);
       const duration = meetingStartRef.current ? Math.round((Date.now() - meetingStartRef.current) / 60000) : 0;
       ws.send(JSON.stringify({
         type: 'MEETING_MINUTES',
-        transcript: null // Gemini will use conversation context
+        transcript: null
       }));
       onSend(`[SYSTEM] Meeting ended after ${duration} min. Please generate formal meeting minutes.`);
     } else {
@@ -103,7 +98,6 @@ const Terminal: React.FC<TerminalProps> = ({
     }
   };
 
-  // Download last AI response as a file
   const downloadLastResponse = () => {
     const aiMessages = history.filter(m => m.role === 'ai' && m.text);
     if (aiMessages.length === 0) return;
@@ -128,7 +122,6 @@ const Terminal: React.FC<TerminalProps> = ({
     }
   };
 
-  // Filter internal system messages
   const visibleHistory = history.filter(msg => {
     const t = msg.text || '';
     if (t.startsWith('[IPC_ACK]') || t.startsWith('[HEALER_SIGNAL]') ||
@@ -140,7 +133,6 @@ const Terminal: React.FC<TerminalProps> = ({
 
   return (
     <div className={`flex-1 flex flex-col h-full transition-colors ${isDark ? 'bg-black text-white' : 'bg-[#f7f8fa] text-slate-800'}`} style={{ fontFamily: 'Inter, sans-serif' }}>
-      {/* Chat Messages */}
       <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3 custom-scrollbar">
         {visibleHistory.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full text-center py-20 animate-in fade-in zoom-in duration-1000">
@@ -152,7 +144,6 @@ const Terminal: React.FC<TerminalProps> = ({
           </div>
         )}
 
-        {/* Deep Dive Context HUD */}
         {attachedFile && (
           <div className="sticky top-0 z-10 flex justify-end p-2 animate-in fade-in slide-in-from-top-2">
             <div className={`flex items-center gap-3 px-3 py-2 rounded-xl border backdrop-blur-md ${isDark ? 'bg-indigo-500/10 border-indigo-500/20 text-indigo-300' : 'bg-white border-indigo-100 text-indigo-600 shadow-lg'}`}>
@@ -198,7 +189,6 @@ const Terminal: React.FC<TerminalProps> = ({
                 </div>
               </div>
 
-              {/* User avatar */}
               {msg.role === 'user' && (
                 <div style={{
                   width: 30, height: 30, borderRadius: 10,
@@ -213,7 +203,6 @@ const Terminal: React.FC<TerminalProps> = ({
           );
         })}
 
-        {/* Typing indicator */}
         {isProcessing && (
           <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
             <div style={{
@@ -230,11 +219,9 @@ const Terminal: React.FC<TerminalProps> = ({
             </div>
           </div>
         )}
-
         <div ref={bottomRef} />
       </div>
 
-      {/* Hidden file input */}
       <input
         ref={fileInputRef}
         type="file"
@@ -243,183 +230,132 @@ const Terminal: React.FC<TerminalProps> = ({
         onChange={handleFileSelect}
       />
 
-      {/* Input Bar - Clean & Smart Design */}
-      <div className={`border-t p-3 flex flex-col gap-3 transition-colors ${isDark ? 'bg-black border-white/5' : 'bg-white border-slate-200 shadow-lg z-10'}`}>
-        
-        {/* Mobile: Input takes full width */}
-        <form onSubmit={handleSubmit} className="flex-1 gap-2 sm:flex-row sm:items-center">
-          <div className="flex-1 relative">
-            <input
-              ref={inputRef}
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              placeholder={meetingActive ? '🟢 Meeting mode — type or speak...' : 'Ask your Operator...'}
-              disabled={isProcessing}
-              className={`w-full px-4 py-3 pr-12 rounded-xl text-sm outline-none transition-all ${isDark ? 'bg-white/5 border border-white/10 text-white focus:border-violet-500/50 placeholder:text-slate-600' : 'bg-slate-100 border border-slate-200 text-slate-900 focus:border-violet-400 placeholder:text-slate-400'} ${meetingActive ? 'border-emerald-500/40' : ''}`}
-            />
-            {attachedFile && (
-              <div className={`absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] ${isDark ? 'bg-violet-500/20 text-violet-300' : 'bg-violet-100 text-violet-700'}`}>
-                <Paperclip size={10} />
-                {attachedFile.name.length > 12 ? attachedFile.name.slice(0, 12) + '...' : attachedFile.name}
-                <button type="button" onClick={() => setAttachedFile(null)} className="hover:text-white ml-1">
-                  <X size={10} />
-                </button>
-              </div>
-            )}
-          </div>
-          
-          {/* Mobile: Send button - larger */}
-          <button
-            type="submit"
-            disabled={!input.trim() || isProcessing}
-            className={`w-14 h-10 sm:w-11 sm:h-10 rounded-xl flex items-center justify-center transition-all active:scale-90 ${input.trim() && !isProcessing ? 'bg-gradient-to-br from-violet-500 to-purple-600 text-white shadow-lg shadow-violet-500/30' : 'bg-white/5 text-slate-600 cursor-not-allowed'}`}
-          >
-            <Send size={18} strokeWidth={2.5} />
-          </button>
-        </form>
+      {/* Input Bar - Unified horizontal layout */}
+      <div className={`border-t px-2 py-3 sm:px-4 sm:py-4 flex flex-col gap-2 transition-colors ${isDark ? 'bg-black border-white/5' : 'bg-white border-slate-200 shadow-2xl z-10'}`}>
 
-        {/* Desktop: Compact Controls - Hidden on Mobile */}
-        <div className="hidden sm:flex items-center gap-1.5 p-1.5 bg-slate-900/60 rounded-xl border border-white/5">
-          {/* Voice - Primary Action */}
-          <button
-            type="button"
-            onClick={onToggleVoice}
-            title={isVoiceActive ? 'Stop voice' : 'Start voice conversation'}
-            className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all active:scale-90 ${isVoiceActive ? 'bg-gradient-to-br from-rose-500 to-pink-600 text-white shadow-lg shadow-rose-500/30' : 'hover:bg-white/10 text-slate-400 hover:text-white'}`}
-          >
-            {isVoiceActive ? <Mic size={18} /> : <MicOff size={18} />}
-          </button>
+        {/* Main interaction row: [Tools] [Input] [Send] */}
+        <div className="flex items-center gap-2">
 
-          {/* Vision Controls - Group */}
-          <div className="flex items-center gap-1 px-1 border-l border-white/10">
-            {onToggleScreenShare && (
-              <button
-                type="button"
-                onClick={onToggleScreenShare}
-                title={isScreenSharing ? 'Stop screen share' : 'Share screen'}
-                className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all active:scale-90 ${isScreenSharing ? 'bg-sky-500 text-white shadow-lg shadow-sky-500/30' : 'hover:bg-white/10 text-slate-400 hover:text-sky-400'}`}
-              >
-                {isScreenSharing ? <Monitor size={16} /> : <MonitorOff size={16} />}
-              </button>
-            )}
-            {onToggleCamera && (
-              <button
-                type="button"
-                onClick={onToggleCamera}
-                title={isCameraActive ? 'Stop camera' : 'Start camera'}
-                className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all active:scale-90 ${isCameraActive ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/30' : 'hover:bg-white/10 text-slate-400 hover:text-amber-400'}`}
-              >
-                {isCameraActive ? <Camera size={16} /> : <CameraOff size={16} />}
-              </button>
-            )}
-          </div>
-
-          {/* Tools Dropdown Trigger */}
-          <div className="relative">
+          {/* Action Group (The "Black" tools sidebar element replaced by a sleek group) */}
+          <div className={`p-1 flex items-center gap-1 rounded-2xl border transition-all ${isDark ? 'bg-slate-900 border-white/10' : 'bg-slate-800 border-slate-700 shadow-lg'}`}>
             <button
               type="button"
-              onClick={() => setShowExtraTools(!showExtraTools)}
-              title="More tools"
-              className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all active:scale-90 ${showExtraTools ? 'bg-violet-500/30 text-violet-300' : 'hover:bg-white/10 text-slate-400 hover:text-violet-400'}`}
+              onClick={onToggleVoice}
+              title={isVoiceActive ? 'Stop' : 'Start Voice'}
+              className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${isVoiceActive ? 'bg-rose-500 text-white shadow-[0_0_15px_rgba(244,63,94,0.4)]' : 'text-slate-400 hover:text-white'}`}
             >
-              <MoreVertical size={16} />
+              {isVoiceActive ? <Mic size={18} strokeWidth={2.5} /> : <MicOff size={18} />}
             </button>
 
-            {/* Dropdown Menu - Mobile Optimized */}
-            {showExtraTools && (
-              <div className={`absolute bottom-full left-0 mb-2 w-56 sm:w-48 rounded-xl border shadow-2xl overflow-hidden z-50 ${isDark ? 'bg-slate-900 border-white/10' : 'bg-white border-slate-200'}`}>
-                <div className="p-1">
-                  <button
-                    onClick={() => { fileInputRef.current?.click(); setShowExtraTools(false); }}
-                    className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg text-sm sm:text-xs transition-colors ${isDark ? 'hover:bg-white/10 text-slate-300' : 'hover:bg-slate-100 text-slate-700'}`}
-                  >
-                    <Paperclip size={18} className="text-violet-400" />
-                    <span className="hidden sm:inline sm:text-xs">Attach file</span>
-                  </button>
-                  <button
-                    onClick={() => { toggleMeeting(); setShowExtraTools(false); }}
-                    className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg text-sm sm:text-xs transition-colors ${meetingActive ? 'bg-emerald-500/20 text-emerald-400' : isDark ? 'hover:bg-white/10 text-slate-300' : 'hover:bg-slate-100 text-slate-700'}`}
-                  >
-                    <FileText size={18} className={meetingActive ? 'text-emerald-400' : 'text-emerald-500'} />
-                    <span className="hidden sm:inline sm:text-xs">{meetingActive ? 'End meeting' : 'Meeting mode'}</span>
-                  </button>
-                  <button
-                    onClick={() => { toggleRecording(); setShowExtraTools(false); }}
-                    className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg text-sm sm:text-xs transition-colors ${isRecording ? 'bg-rose-500/20 text-rose-400' : isDark ? 'hover:bg-white/10 text-slate-300' : 'hover:bg-slate-100 text-slate-700'}`}
-                  >
-                    <CircleDot size={18} className={isRecording ? 'text-rose-400 animate-pulse' : 'text-rose-500'} />
-                    <span className="hidden sm:inline sm:text-xs">{isRecording ? 'Stop recording' : 'Record session'}</span>
-                  </button>
-                  <button
-                    onClick={() => { downloadLastResponse(); setShowExtraTools(false); }}
-                    className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg text-sm sm:text-xs transition-colors ${isDark ? 'hover:bg-white/10 text-slate-300' : 'hover:bg-slate-100 text-slate-700'}`}
-                  >
-                    <Download size={18} className="text-sky-400" />
-                    <span className="hidden sm:inline sm:text-xs">Download response</span>
-                  </button>
+            <div className="flex items-center px-1 border-l border-white/10 ml-1">
+              <button
+                type="button"
+                onClick={() => setShowExtraTools(!showExtraTools)}
+                className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all ${showExtraTools ? 'bg-violet-500/20 text-violet-400' : 'text-slate-500 hover:text-violet-400'}`}
+              >
+                {showExtraTools ? <X size={16} /> : <Plus size={16} />}
+              </button>
+            </div>
+          </div>
+
+          {/* Form Area: Center Input + Right Send */}
+          <form onSubmit={handleSubmit} className="flex-1 flex items-center gap-2">
+            <div className="flex-1 relative">
+              <input
+                ref={inputRef}
+                value={input}
+                onChange={e => setInput(e.target.value)}
+                placeholder={meetingActive ? 'Listening...' : 'Ask your Operator...'}
+                disabled={isProcessing}
+                className={`w-full h-11 sm:h-12 px-4 rounded-2xl text-[14px] font-medium outline-none transition-all ${isDark ? 'bg-white/5 border border-white/10 text-white focus:border-violet-500/50' : 'bg-slate-50 border border-slate-200 text-slate-900 focus:border-violet-400'}`}
+              />
+              {attachedFile && (
+                <div className={`absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1.5 px-2 py-0.5 rounded text-[8px] uppercase font-black tracking-widest ${isDark ? 'bg-violet-500/20 text-violet-400' : 'bg-violet-100 text-violet-700'}`}>
+                  <Paperclip size={10} />
+                  {attachedFile.name.length > 6 ? attachedFile.name.slice(0, 6) + '..' : attachedFile.name}
                 </div>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+
+            <button
+              type="submit"
+              disabled={!input.trim() || isProcessing}
+              className={`w-11 h-11 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center transition-all active:scale-90 ${input.trim() && !isProcessing ? 'bg-gradient-to-br from-violet-500 to-purple-600 text-white shadow-lg shadow-violet-500/20' : 'bg-white/5 text-slate-600 border border-white/5'}`}
+            >
+              <Send size={20} strokeWidth={2.5} />
+            </button>
+          </form>
         </div>
 
-        {/* Middle: Sensitivity Control - Mobile Optimized */}
-        <div className={`hidden sm:flex items-center gap-2 px-3 py-2 rounded-xl border ${isDark ? 'bg-white/5 border-white/5' : 'bg-slate-100 border-slate-200'}`}>
-          <Zap size={14} className={sensitivity > 70 ? 'text-amber-400' : 'text-slate-500'} />
-          <input
-            type="range"
-            min="0"
-            max="100"
-            value={sensitivity}
-            onChange={(e) => handleSensitivityChange(parseInt(e.target.value))}
-            className="w-20 h-1 bg-slate-700 rounded-full appearance-none cursor-pointer accent-violet-500"
-          />
-          <span className="text-[10px] font-mono w-5 text-center text-slate-500 sm:text-xs">{sensitivity}</span>
-        </div>
-
-        {/* Right: Text Input */}
-        <form onSubmit={handleSubmit} className="flex-1 flex gap-2">
-          <div className="flex-1 relative">
-            <input
-              ref={inputRef}
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              placeholder={meetingActive ? '🟢 Meeting mode — type or speak...' : 'Ask your Operator...'}
-              disabled={isProcessing}
-              className={`w-full px-4 py-2.5 pr-10 rounded-xl text-sm outline-none transition-all ${isDark ? 'bg-white/5 border border-white/10 text-white focus:border-violet-500/50 placeholder:text-slate-600' : 'bg-slate-100 border border-slate-200 text-slate-900 focus:border-violet-400 placeholder:text-slate-400'} ${meetingActive ? 'border-emerald-500/40' : ''}`}
-            />
-            {attachedFile && (
-              <div className={`absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] ${isDark ? 'bg-violet-500/20 text-violet-300' : 'bg-violet-100 text-violet-700'}`}>
-                <Paperclip size={10} />
-                {attachedFile.name.length > 12 ? attachedFile.name.slice(0, 12) + '...' : attachedFile.name}
-                <button type="button" onClick={() => setAttachedFile(null)} className="hover:text-white ml-1">
-                  <X size={10} />
-                </button>
-              </div>
+        {showExtraTools && (
+          <div className={`p-2 grid grid-cols-2 gap-2 rounded-2xl border animate-in slide-in-from-bottom-2 duration-200 ${isDark ? 'bg-slate-900/95 border-white/10' : 'bg-white border-slate-200 shadow-2xl'}`}>
+            <button
+              onClick={() => { fileInputRef.current?.click(); setShowExtraTools(false); }}
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-[10px] font-black tracking-widest transition-all ${isDark ? 'hover:bg-white/5 text-slate-400 hover:text-white' : 'hover:bg-slate-50 text-slate-600 hover:text-slate-900'}`}
+            >
+              <Paperclip size={14} className="text-violet-500" />
+              ATTACH
+            </button>
+            
+            {onToggleScreenShare && (
+              <button
+                onClick={() => { onToggleScreenShare(); setShowExtraTools(false); }}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-[10px] font-black tracking-widest transition-all ${isScreenSharing ? 'bg-sky-500/10 text-sky-400 border border-sky-500/20' : isDark ? 'hover:bg-white/5 text-slate-400 hover:text-white' : 'hover:bg-slate-50 text-slate-600 hover:text-slate-900'}`}
+              >
+                <Monitor size={14} className={isScreenSharing ? 'text-sky-400' : 'text-slate-500'} />
+                {isScreenSharing ? 'STOP_SHARE' : 'SHARE_SCR'}
+              </button>
             )}
+
+            {onToggleCamera && (
+              <button
+                onClick={() => { onToggleCamera(); setShowExtraTools(false); }}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-[10px] font-black tracking-widest transition-all ${isCameraActive ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20' : isDark ? 'hover:bg-white/5 text-slate-400 hover:text-white' : 'hover:bg-slate-50 text-slate-600 hover:text-slate-900'}`}
+              >
+                <Camera size={14} className={isCameraActive ? 'text-amber-500' : 'text-slate-500'} />
+                {isCameraActive ? 'STOP_CAM' : 'CAMERA'}
+              </button>
+            )}
+
+            <button
+              onClick={() => { toggleMeeting(); setShowExtraTools(false); }}
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-[10px] font-black tracking-widest transition-all ${meetingActive ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' : isDark ? 'hover:bg-white/5 text-slate-400 hover:text-white' : 'hover:bg-slate-50 text-slate-600 hover:text-slate-900'}`}
+            >
+              <FileText size={14} className={meetingActive ? 'text-emerald-500' : 'text-slate-500'} />
+              {meetingActive ? 'END_MEET' : 'START_MEET'}
+            </button>
+
+            <button
+                onClick={() => { downloadLastResponse(); setShowExtraTools(false); }}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-[10px] font-black tracking-widest transition-all ${isDark ? 'hover:bg-white/5 text-slate-400 hover:text-white' : 'hover:bg-slate-50 text-slate-600 hover:text-slate-900'}`}
+              >
+                <Download size={14} className="text-sky-500" />
+                EXPORT
+            </button>
+
+            <div className="col-span-2 px-3 py-3 border-t border-white/10 mt-2">
+               <div className="flex items-center justify-between mb-2">
+                  <span className="text-[8px] font-black text-slate-500 uppercase tracking-[0.2em]">Sensitivity</span>
+                  <span className="text-[8px] font-black text-violet-500">{sensitivity}%</span>
+               </div>
+               <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={sensitivity}
+                  onChange={(e) => handleSensitivityChange(parseInt(e.target.value))}
+                  className="w-full h-1 bg-slate-800 rounded-full appearance-none cursor-pointer accent-violet-500"
+                />
+            </div>
           </div>
-          <button
-            type="submit"
-            disabled={!input.trim() || isProcessing}
-            className={`w-11 h-10 rounded-xl flex items-center justify-center transition-all active:scale-90 ${input.trim() && !isProcessing ? 'bg-gradient-to-br from-violet-500 to-purple-600 text-white shadow-lg shadow-violet-500/30' : 'bg-white/5 text-slate-600 cursor-not-allowed'}`}
-          >
-            <Send size={16} strokeWidth={2.5} />
-          </button>
-        </form>
+        )}
+
       </div>
 
-      {/* Status bar */}
       {(isVoiceActive || isScreenSharing || meetingActive || isRecording) && (
-        <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16,
-          textAlign: 'center', fontSize: 11, fontWeight: 600, padding: '6px 0 10px',
-          background: isDark ? '#0f1115' : '#ffffff',
-          letterSpacing: '0.05em', textTransform: 'uppercase'
-        }}>
-          {isRecording && <span style={{ color: '#ef4444' }}> Recording Session</span>}
-          {isVoiceActive && <span style={{ color: '#ef4444' }}> Listening... Speak now</span>}
-          {isScreenSharing && <span style={{ color: '#0ea5e9' }}> Screen sharing active</span>}
-          {meetingActive && <span style={{ color: '#10b981' }}> Meeting in progress — Gemini is taking notes</span>}
+        <div className={`flex items-center justify-center gap-5 py-2 px-4 text-[9px] font-black uppercase tracking-[0.2em] transition-all border-t ${isDark ? 'bg-black border-white/5 text-slate-500' : 'bg-white border-slate-100 text-slate-400 shadow-inner'}`}>
+          {isRecording && <span className="flex items-center gap-1.5 text-rose-500"><div className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />Recording</span>}
+          {isVoiceActive && <span className="flex items-center gap-1.5 text-rose-500"><div className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-ping" />Listening</span>}
         </div>
       )}
 
@@ -427,6 +363,14 @@ const Terminal: React.FC<TerminalProps> = ({
         @keyframes bounce {
           0%, 80%, 100% { transform: translateY(0); opacity: 0.5; }
           40% { transform: translateY(-5px); opacity: 1; }
+        }
+        input[type='range']::-webkit-slider-thumb {
+          width: 12px;
+          height: 12px;
+          border-radius: 50%;
+          background: #8b5cf6;
+          cursor: pointer;
+          appearance: none;
         }
       `}</style>
     </div>

@@ -32,6 +32,7 @@ import { DocumentationGenerator } from './modules/documentation_generator';
 import { DeploymentPipeline } from './modules/deployment_pipeline';
 import { CreativeStoryteller } from './modules/creative_storyteller';
 import { UINavigator } from './modules/ui_navigator';
+import { IncomeEngine } from './modules/income_engine/engine';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import os from 'os';
@@ -114,6 +115,7 @@ const documentationGenerator = new DocumentationGenerator(stateManager);
 const deploymentPipeline = new DeploymentPipeline(stateManager);
 const creativeStoryteller = new CreativeStoryteller(stateManager);
 const uiNavigator = new UINavigator(stateManager);
+const incomeEngine = new IncomeEngine(stateManager, creativeStoryteller, uiNavigator);
 const watcher = new WatcherEngine(path.resolve(__dirname, '..'));
 
 // Event Bus (WebSocket)
@@ -643,6 +645,33 @@ app.post('/api/goal', (req, res) => {
                 break;
             default:
                 result = { success: false, error: 'Unknown goal action' };
+        }
+    } catch (e: any) {
+        result = { success: false, error: e.message };
+    }
+
+    res.json(result);
+});
+
+// Income Engine Endpoint
+app.post('/api/income', async (req, res) => {
+    const { action, payload } = req.body;
+    let result: any = { success: false };
+
+    try {
+        switch (action) {
+            case 'pulse':
+                result = await incomeEngine.runPulse();
+                break;
+            case 'get_config':
+                result = { success: true, data: incomeEngine.getConfig() };
+                break;
+            case 'save_config':
+                incomeEngine.saveConfig(payload);
+                result = { success: true };
+                break;
+            default:
+                result = { success: false, error: 'Unknown income action' };
         }
     } catch (e: any) {
         result = { success: false, error: e.message };

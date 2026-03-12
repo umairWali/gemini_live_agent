@@ -10,11 +10,9 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ mode, onModeChange }) => {
   const modes = [
-    { id: WorkMode.DAILY_CONTROL, label: 'Control', icon: Activity, color: 'text-violet-400' },
-    { id: WorkMode.DEVELOPMENT, label: 'Dev', icon: Terminal, color: 'text-sky-400' },
-    { id: WorkMode.DAEMON, label: 'System', icon: Server, color: 'text-violet-400' },
-    { id: WorkMode.AUDIT, label: 'Logs', icon: ClipboardCheck, color: 'text-sky-400' },
-    { id: WorkMode.SELF_UPGRADE, label: 'Evolve', icon: Zap, color: 'text-violet-400' },
+    { id: WorkMode.DAILY_CONTROL, label: 'Chat', icon: Activity, color: 'text-violet-400' },
+    { id: WorkMode.DAEMON, label: 'System', icon: Server, color: 'text-sky-400' },
+    { id: WorkMode.AUDIT, label: 'Logs', icon: ClipboardCheck, color: 'text-violet-400' },
   ];
 
   return (
