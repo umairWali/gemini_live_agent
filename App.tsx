@@ -663,12 +663,31 @@ const AppContent: React.FC = () => {
           console.log('[CLIENT]: Voice session ended:', data.reason);
           stopAllPlayback();
           isAiSpeakingRef.current = false;
-          isUserSpeakingRef.current = false;
-          setIsVoiceActive(false);
-          setIsVoiceReady(false);
-          addToast({ type: 'info', title: 'Voice Ended', message: 'Session ended. Press mic to reconnect.' });
+          
+          if (mediaStreamRef.current) {
+            // User did NOT manually press STOP. The provider dropped.
+            // Automatically and seamlessly reconnect the AI session!
+            console.log('[CLIENT]: System dropped connection but mic is active. Auto-reconnecting...');
+            const sessionId = ++voiceSessionCounterRef.current;
+            (ws as any).voiceSessionId = sessionId;
+            ws.send(JSON.stringify({ type: 'START_VOICE', sessionId, clientId: clientId.current }));
+          } else {
+            isUserSpeakingRef.current = false;
+            setIsVoiceActive(false);
+            setIsVoiceReady(false);
+          }
         } else if (data.type === 'VOICE_ERROR') {
           addToast({ type: 'error', title: 'Gemini Error', message: data.error });
+          stopAllPlayback();
+          isAiSpeakingRef.current = false;
+          if (mediaStreamRef.current) {
+            mediaStreamRef.current.getTracks().forEach(t => t.stop());
+            mediaStreamRef.current = null;
+          }
+          if (workletNodeRef.current) {
+            try { workletNodeRef.current.disconnect(); } catch (e) { }
+            workletNodeRef.current = null;
+          }
           setIsVoiceActive(false);
           setIsVoiceReady(false);
         } else if (data.type === 'SYSTEM_PULSE') {
