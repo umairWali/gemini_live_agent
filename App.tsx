@@ -152,9 +152,9 @@ const AppContent: React.FC = () => {
       try { source.stop(); source.disconnect(); } catch (e) { }
     });
     activeAudioSourcesRef.current = [];
-    // Reset schedule so next AI chunk plays immediately, not after stale queue
     playbackScheduleRef.current = 0;
     isAiSpeakingRef.current = false;
+    console.log('[CLIENT]: All playback stopped and speaker flag reset.');
   }, []);
 
   const [isScreenSharing, setIsScreenSharing] = useState(false);
@@ -360,11 +360,12 @@ const AppContent: React.FC = () => {
           if (ws.readyState === WebSocket.OPEN && e.data.event === 'data') {
             // MUTE PROTECTION: If AI is speaking, don't send mic data (stops Echo loop)
             if (isAiSpeakingRef.current) {
+                // If it's been more than 500ms since last AI chunk, maybe it's safe to talk?
+                // But for now, just gate it.
                 audioBuffer = [];
                 bufferLength = 0;
                 return;
             }
-
             const inputData = e.data.buffer;
             const pcmData = new Int16Array(inputData.length);
             for (let i = 0; i < inputData.length; i++) {
@@ -564,17 +565,25 @@ const AppContent: React.FC = () => {
         }
 
         if (data.type === 'VOICE_RESPONSE') {
-          // Absolute session validation: must match the most recent ID
           const currentId = (ws as any).voiceSessionId;
           const msgId = data.sessionId;
-                    if (msgId && currentId && String(msgId) !== String(currentId)) {
-              console.warn(`[CLIENT]: Ignoring audio from zombie session (expected ${currentId}, got ${msgId})`);
-              return;
-            }
+          
+          // Debug log for every chunk to help identify issues
+          if (Math.random() < 0.01) {
+            console.log(`[CLIENT_DEBUG]: Receive chunk. ClientSession=${currentId}, MsgSession=${msgId}`);
+          }
 
-            isAiSpeakingRef.current = true; // AI is now speaking
-            if (isUserSpeakingRef.current) return;
-            try {
+          // Strict block only if IDs explicitly mismatch
+          if (msgId && currentId && String(msgId) !== String(currentId)) {
+            return;
+          }
+
+          isAiSpeakingRef.current = true;
+          // if (isUserSpeakingRef.current) return; // Removed this line to allow AI to speak even if user is speaking
+
+          console.log(`[CLIENT]: Playing AI audio chunk (Session: ${msgId || 'legacy'})`);
+          
+          try {
             const ctx = audioContextRef.current;
             if (!ctx) return;
             if (ctx.state === 'suspended') await ctx.resume();
@@ -583,7 +592,6 @@ const AppContent: React.FC = () => {
               aiGainNodeRef.current.gain.cancelScheduledValues(ctx.currentTime);
               aiGainNodeRef.current.gain.setValueAtTime(1, ctx.currentTime);
             }
-
             const binaryString = atob(data.data);
             const bytes = new Uint8Array(binaryString.length);
             for (let i = 0; i < binaryString.length; i++) bytes[i] = binaryString.charCodeAt(i);
@@ -599,12 +607,20 @@ const AppContent: React.FC = () => {
             source.onended = () => {
               try { source.disconnect(); } catch (e) {}
               activeAudioSourcesRef.current = activeAudioSourcesRef.current.filter(s => s !== source);
-              // If no more sources, AI has finished speaking
               if (activeAudioSourcesRef.current.length === 0) {
                 isAiSpeakingRef.current = false;
               }
             };
             activeAudioSourcesRef.current.push(source);
+
+            // Safety fallback: if AI hasn't spoken in 5 seconds of chunks, something is wrong
+            if ((window as any).aiMuteTimeout) clearTimeout((window as any).aiMuteTimeout);
+            (window as any).aiMuteTimeout = setTimeout(() => {
+                if (isAiSpeakingRef.current && activeAudioSourcesRef.current.length === 0) {
+                    console.log('[CLIENT]: Safety reset of AiSpeaking flag.');
+                    isAiSpeakingRef.current = false;
+                }
+            }, 5000);
 
             // Cap the schedule: if queue is more than 2s ahead, reset to now to avoid hang
             const now = ctx.currentTime;

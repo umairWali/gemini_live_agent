@@ -205,7 +205,8 @@ wss.on('connection', (ws) => {
                         callbacks: {
                             onmessage: async (msg: any) => {
                                 // CRITICAL: Only process if this is the GLOBAL ACTIVE session
-                                if (globalSessionId !== sessionId || globalActiveWs !== ws) {
+                                // RELAXED: If global ID isn't set yet (race condition), allow this session to become global
+                                if (globalSessionId && (globalSessionId !== sessionId || globalActiveWs !== ws)) {
                                     console.log('[AI_LIVE]: Zombie session detected — closing.');
                                     try { session.close(); } catch {}
                                     return;
@@ -219,9 +220,9 @@ wss.on('connection', (ws) => {
                                 if (msg.setupComplete) {
                                     console.log('[AI_LIVE]: Setup complete — Gemini VAD active.');
                                 }
-
                                 // AI is speaking - stream audio to client
                                 if (msg.serverContent?.modelTurn) {
+                                    if (Math.random() < 0.05) console.log('[AI_AUDIO_OUT]: Gemini is speaking...');
                                     for (const part of (msg.serverContent.modelTurn.parts || [])) {
                                         if (part.inlineData?.data) {
                                             if (interruptedSessions.has(ws)) {
@@ -309,6 +310,12 @@ wss.on('connection', (ws) => {
                             },
                             onopen: () => {
                                 connectingSockets.delete(ws); // Release mutex
+                                
+                                // SET GLOBAL STATE IMMEDIATELY ON OPEN
+                                globalActiveSession = session;
+                                globalActiveWs = ws;
+                                globalSessionId = sessionId;
+
                                 if ((ws as any).currentVoiceSessionId !== sessionId) {
                                     try { session.close(); } catch {}
                                     return;
@@ -330,9 +337,7 @@ wss.on('connection', (ws) => {
                         }
                     });
 
-                    globalActiveSession = session;
-                    globalActiveWs = ws;
-                    globalSessionId = sessionId;
+                    // Global state already set in onopen
                     liveSessions.set(ws, session);
 
                 } catch (e: any) {
@@ -450,7 +455,9 @@ wss.on('connection', (ws) => {
                     }
                 }
             }
-        } catch (e) { }
+        } catch (e: any) {
+            console.error('[WS_ERROR]: Failed to process message:', e.message);
+        }
     });
 
 
