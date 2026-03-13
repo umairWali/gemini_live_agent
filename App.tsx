@@ -739,10 +739,13 @@ const AppContent: React.FC = () => {
             }}
             onNewChat={() => {
               if (state.history.length > 0) {
-                const title = state.history[0].text.slice(0, 20) + '...';
+                const title = state.history[0].text.replace(/\*\*/g, '').slice(0, 20) + '...';
                 setState(p => ({ ...p, savedSessions: [{ id: Date.now().toString(), title, history: p.history, timestamp: Date.now() }, ...(p.savedSessions || [])], history: [] }));
                 setShowMobileSidebar(false);
               }
+            }}
+            onDeleteSession={(id) => {
+              setState(p => ({ ...p, savedSessions: p.savedSessions?.filter(s => s.id !== id) }));
             }}
           />
         </div>
@@ -759,9 +762,12 @@ const AppContent: React.FC = () => {
           }}
           onNewChat={() => {
             if (state.history.length > 0) {
-              const title = state.history[0].text.slice(0, 20) + '...';
+              const title = state.history[0].text.replace(/\*\*/g, '').slice(0, 20) + '...';
               setState(p => ({ ...p, savedSessions: [{ id: Date.now().toString(), title, history: p.history, timestamp: Date.now() }, ...(p.savedSessions || [])], history: [] }));
             }
+          }}
+          onDeleteSession={(id) => {
+            setState(p => ({ ...p, savedSessions: p.savedSessions?.filter(s => s.id !== id) }));
           }}
         />
         <div className="p-4 overflow-y-auto custom-scrollbar flex-1 border-t border-white/5 space-y-4">

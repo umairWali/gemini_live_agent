@@ -1,14 +1,15 @@
 import React from 'react';
-import { Plus, MessageSquare, Sparkles } from 'lucide-react';
+import { Plus, MessageSquare, Sparkles, Trash2 } from 'lucide-react';
 
 interface ChatSidebarProps {
     onNewChat: () => void;
     isDark: boolean;
     savedSessions?: { id: string, title: string, history: any[], timestamp: number }[];
     onSelectSession?: (id: string) => void;
+    onDeleteSession?: (id: string) => void;
 }
 
-const ChatSidebar: React.FC<ChatSidebarProps> = ({ onNewChat, isDark, savedSessions = [], onSelectSession }) => {
+const ChatSidebar: React.FC<ChatSidebarProps> = ({ onNewChat, isDark, savedSessions = [], onSelectSession, onDeleteSession }) => {
     return (
         <aside className={`w-64 flex flex-col transition-colors ${isDark ? 'bg-slate-950 border-white/5 text-white' : 'bg-white border-slate-200 text-slate-800'} z-20 shrink-0 flex-1`}>
             <div className="p-6">
@@ -28,14 +29,25 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({ onNewChat, isDark, savedSessi
                     <div className={`text-center py-4 text-xs ${isDark ? 'text-slate-600' : 'text-slate-400'}`}>No recent sessions</div>
                 ) : (
                     savedSessions.map((session) => (
-                        <button
-                            key={session.id}
-                            onClick={() => onSelectSession && onSelectSession(session.id)}
-                            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors text-left ${isDark ? 'hover:bg-slate-800' : 'hover:bg-slate-100'}`}
-                        >
-                            <MessageSquare size={16} className={isDark ? 'text-slate-500' : 'text-slate-400'} />
-                            <span className="truncate font-medium">{session.title}</span>
-                        </button>
+                        <div key={session.id} className="group flex items-center gap-2 px-3 py-1 rounded-lg transition-colors hover:bg-slate-400/10">
+                            <button
+                                onClick={() => onSelectSession && onSelectSession(session.id)}
+                                className="flex-1 flex items-center gap-3 py-2 text-sm text-left truncate"
+                            >
+                                <MessageSquare size={16} className={isDark ? 'text-slate-500' : 'text-slate-400'} />
+                                <span className="truncate font-medium">{session.title.replace(/\*\*/g, '')}</span>
+                            </button>
+                            <button 
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onDeleteSession && onDeleteSession(session.id);
+                                }}
+                                className={`p-1.5 rounded-md opacity-0 group-hover:opacity-100 transition-opacity hover:bg-rose-500/20 text-slate-500 hover:text-rose-500`}
+                                title="Delete Session"
+                            >
+                                <Trash2 size={14} />
+                            </button>
+                        </div>
                     ))
                 )}
             </div>

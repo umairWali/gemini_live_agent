@@ -185,7 +185,7 @@ const Terminal: React.FC<TerminalProps> = ({
                   whiteSpace: 'pre-wrap',
                   wordBreak: 'break-word'
                 }}>
-                  {msg.text}
+                  {msg.text.replace(/\*\*/g, '')}
                 </div>
               </div>
 
