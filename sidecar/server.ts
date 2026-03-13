@@ -139,32 +139,28 @@ wss.on('connection', (ws) => {
             const message = JSON.parse(raw);
 
             if (message.type === 'START_VOICE') {
-                const sessionId = message.sessionId || Date.now().toString();
+                const sessionId = message.sessionId || String(Date.now());
                 const clientId = message.clientId || 'default';
                 console.log(`[WS]: Voice Request: Client=${clientId}, Session=${sessionId}`);
                 
-                // Track current session ID on the WebSocket itself
                 (ws as any).currentVoiceSessionId = sessionId;
 
-                // KILL PREVIOUS GLOBAL SESSION ONLY
+                // Stop previous global session if exists
                 if (globalActiveSession) {
-                    console.log('[AI_LIVE]: Killing previous global session.');
                     try { globalActiveSession.close(); } catch (e) { }
                     globalActiveSession = null;
-                    globalActiveWs = null;
                 }
                 
-                // Cleanup current socket's entry in MAP
-                const existing = liveSessions.get(ws);
-                if (existing) {
-                    try { existing.close(); } catch(e) {}
-                    liveSessions.delete(ws);
+                // Cleanup MAP for this specific WS
+                const old = liveSessions.get(ws);
+                if (old) {
+                   try { old.close(); } catch(e) {}
                 }
+                liveSessions.delete(ws);
                 interruptedSessions.clear();
                 globalActiveClientId = clientId;
 
                 if (!process.env.API_KEY) {
-                    connectingSockets.delete(ws);
                     ws.send(JSON.stringify({ type: 'VOICE_ERROR', error: 'API Key missing' }));
                     return;
                 }
@@ -172,12 +168,12 @@ wss.on('connection', (ws) => {
                 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
                 try {
-                    console.log('[AI_LIVE]: Connecting to Gemini Provider...');
+                    console.log(`[AI_LIVE]: Connecting to Gemini Provider (Model: gemini-2.0-flash-exp)...`);
                     const session = await ai.live.connect({
-                        model: 'models/gemini-2.5-flash-native-audio-latest',
+                        model: 'models/gemini-2.0-flash-exp',
                         config: {
                             responseModalities: ["AUDIO"],
-                            // Enable Gemini's built-in turn-taking (like Google Gemini app)
+ Broadway                           // Enable Gemini's built-in turn-taking (like Google Gemini app)
                             realtimeInputConfig: {
                                 automaticActivityDetection: {
                                     disabled: false, // Let Gemini detect speech automatically
