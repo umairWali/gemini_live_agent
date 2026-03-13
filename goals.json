@@ -35,5 +35,18 @@
             "Stress test CPU monitoring"
         ],
         "createdAt": 1709560500000
+    },
+    {
+        "id": "goal_4",
+        "title": "Be an ERPNext Developer",
+        "description": "Master Frappe and ERPNext ecosystem for full-stack developer proficiency.",
+        "status": "active",
+        "progress": 5,
+        "tasks": [
+            "Learn Frappe Framework",
+            "Contribute to ERPNext codebase",
+            "Complete ERPNext tutorial"
+        ],
+        "createdAt": 1710363600000
     }
 ]

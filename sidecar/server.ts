@@ -95,6 +95,103 @@ app.get('/manifest.json', (_req, res) => {
 
 const recovery = new RecoveryEngine();
 const stateManager = new StateManager();
+
+const OPERATOR_TOOLS = [
+    { name: "summarize_url", description: "Summarize a YouTube video or webpage URL.", parameters: { type: "OBJECT", properties: { url: { type: "STRING" } } } },
+    { name: "set_reminder", description: "Set a smart reminder.", parameters: { type: "OBJECT", properties: { task: { type: "STRING" }, time_in_minutes: { type: "NUMBER" } } } },
+    { name: "export_to_docs", description: "Export content to a Google Doc or Excel sheet.", parameters: { type: "OBJECT", properties: { title: { type: "STRING" }, content: { type: "STRING" }, format: { type: "STRING" } } } },
+    { name: "execute_action", description: "Execute a live system action.", parameters: { type: "OBJECT", properties: { command_description: { type: "STRING" } } } },
+    { name: "code_review", description: "Perform a code review.", parameters: { type: "OBJECT", properties: { filename: { type: "STRING" } } } },
+    { name: "manage_mission", description: "Add, update, or delete missions on the Mission Board.", parameters: { type: "OBJECT", properties: { action: { type: "STRING", enum: ["add", "update", "delete"] }, title: { type: "STRING" }, progress: { type: "NUMBER" }, status: { type: "STRING", enum: ["pending", "active", "completed", "paused"] } }, required: ["action", "title"] } },
+    { name: "manage_knowledge_graph", description: "Add nodes or links to the Neural Knowledge Graph.", parameters: { type: "OBJECT", properties: { action: { type: "STRING", enum: ["add_node", "add_link"] }, label: { type: "STRING" }, type: { type: "STRING", enum: ["person", "project", "fact", "preference"] }, source: { type: "STRING" }, target: { type: "STRING" } }, required: ["action"] } },
+    { name: "system_security", description: "Trigger security protocols or audit logs.", parameters: { type: "OBJECT", properties: { action: { type: "STRING", enum: ["lockdown", "audit", "set_threshold"] }, threshold: { type: "NUMBER" } }, required: ["action"] } },
+];
+
+async function handleOperatorFunctionCall(call: any): Promise<string> {
+    let resultInfo = "Action executed successfully.";
+
+    if (call.name === 'summarize_url') {
+        resultInfo = `Analyzed URL: ${call.args?.url}`;
+    } else if (call.name === 'set_reminder') {
+        resultInfo = `Reminder set: ${call.args?.task} in ${call.args?.time_in_minutes} minutes.`;
+    } else if (call.name === 'execute_action') {
+        const execResult = await executeAction('run_command', call.args?.command_description);
+        resultInfo = execResult.success
+            ? `Command output: ${execResult.output?.substring(0, 500)}`
+            : `Command failed: ${execResult.error}`;
+    } else if (call.name === 'export_to_docs') {
+        const format = (call.args?.format || 'doc').toLowerCase();
+        if (format === 'excel') {
+            const excelResult = await executeAction('generate_excel', call.args?.title, call.args?.content);
+            resultInfo = excelResult.success
+                ? `Excel file created: ${excelResult.metadata?.filename}`
+                : `Excel failed: ${excelResult.error}`;
+        } else {
+            await executeAction('write_file', `${call.args?.title}.txt`, call.args?.content);
+            resultInfo = `Exported as ${call.args?.title}.txt`;
+        }
+    } else if (call.name === 'code_review') {
+        resultInfo = `Code review ready for ${call.args?.filename}`;
+    } else if (call.name === 'manage_mission') {
+        const { action, title, progress, status } = call.args;
+        const state = stateManager.getState();
+        if (action === 'add') {
+            state.goals.push({
+                id: Math.random().toString(36).substr(2, 9),
+                title: title || "New Mission",
+                description: title || "New Mission",
+                status: status || 'pending',
+                progress: progress || 0,
+                tasks: [],
+                createdAt: Date.now()
+            });
+            resultInfo = `Mission "${title}" added to the board.`;
+        } else if (action === 'update') {
+            const goal = state.goals.find((g: any) => g.title === title || g.id === title);
+            if (goal) {
+                if (progress !== undefined) goal.progress = progress;
+                if (status) goal.status = status;
+                resultInfo = `Mission "${title}" updated.`;
+            } else {
+                resultInfo = `Mission "${title}" not found.`;
+            }
+        } else if (action === 'delete') {
+            state.goals = state.goals.filter((g: any) => g.title !== title && g.id !== title);
+            resultInfo = `Mission "${title}" removed.`;
+        }
+        stateManager.save();
+        broadcast({ type: 'GOALS_UPDATED', goals: state.goals });
+    } else if (call.name === 'manage_knowledge_graph') {
+        const { action, label, type, source, target } = call.args;
+        const state = stateManager.getState();
+        if (action === 'add_node') {
+            state.knowledgeGraph.nodes.push({
+                id: Math.random().toString(36).substr(2, 9),
+                label: label || "New Node",
+                type: type || 'fact',
+                relevance: 0.8
+            });
+            resultInfo = `Knowledge node "${label}" added.`;
+        } else if (action === 'add_link') {
+            state.knowledgeGraph.links.push({ source, target });
+            resultInfo = `Knowledge link established between ${source} and ${target}.`;
+        }
+        stateManager.save();
+        broadcast({ type: 'KNOWLEDGE_UPDATED', graph: state.knowledgeGraph });
+    } else if (call.name === 'system_security') {
+        const { action, threshold } = call.args;
+        if (action === 'lockdown') {
+            stateManager.addAuditEntry(`[SECURITY ALERT]: Global lockdown initiated.`, 'ai');
+            resultInfo = `System in LOCKDOWN mode. All protocols secured.`;
+        } else if (action === 'audit') {
+            resultInfo = `Security Audit complete. 0 threats detected. 5 protocols verified.`;
+        }
+        broadcast({ type: 'SECURITY_ALERT', text: resultInfo });
+    }
+
+    return resultInfo;
+}
+
 const judgment = new JudgmentEngine();
 const health = new HealthMonitor();
 const confidence = new ConfidenceEngine();
@@ -207,18 +304,7 @@ wss.on('connection', (ws) => {
                             systemInstruction: {
                                 parts: [{ text: 'You are Personal Operator, an elite AI assistant. Respond naturally and conversationally. You have tools to help users with tasks. When the user speaks, listen carefully. When they pause, respond helpfully and concisely. Speak naturally like a human assistant.' }]
                             },
-                            tools: [{
-                                functionDeclarations: [
-                                    { name: "summarize_url", description: "Summarize a YouTube video or webpage URL.", parameters: { type: "OBJECT", properties: { url: { type: "STRING" } } } },
-                                    { name: "set_reminder", description: "Set a smart reminder.", parameters: { type: "OBJECT", properties: { task: { type: "STRING" }, time_in_minutes: { type: "NUMBER" } } } },
-                                    { name: "export_to_docs", description: "Export content to a Google Doc or Excel sheet.", parameters: { type: "OBJECT", properties: { title: { type: "STRING" }, content: { type: "STRING" }, format: { type: "STRING" } } } },
-                                    { name: "execute_action", description: "Execute a live system action.", parameters: { type: "OBJECT", properties: { command_description: { type: "STRING" } } } },
-                                    { name: "code_review", description: "Perform a code review.", parameters: { type: "OBJECT", properties: { filename: { type: "STRING" } } } },
-                                    { name: "manage_mission", description: "Add, update, or delete missions on the Mission Board.", parameters: { type: "OBJECT", properties: { action: { type: "STRING", enum: ["add", "update", "delete"] }, title: { type: "STRING" }, progress: { type: "NUMBER" }, status: { type: "STRING", enum: ["pending", "active", "completed", "paused"] } }, required: ["action", "title"] } },
-                                    { name: "manage_knowledge_graph", description: "Add nodes or links to the Neural Knowledge Graph.", parameters: { type: "OBJECT", properties: { action: { type: "STRING", enum: ["add_node", "add_link"] }, label: { type: "STRING" }, type: { type: "STRING", enum: ["person", "project", "fact", "preference"] }, source: { type: "STRING" }, target: { type: "STRING" } }, required: ["action"] } },
-                                    { name: "system_security", description: "Trigger security protocols or audit logs.", parameters: { type: "OBJECT", properties: { action: { type: "STRING", enum: ["lockdown", "audit", "set_threshold"] }, threshold: { type: "NUMBER" } }, required: ["action"] } },
-                                ]
-                            }]
+                            tools: [{ functionDeclarations: OPERATOR_TOOLS }]
                         } as any,
                         callbacks: {
                             onmessage: async (msg: any) => {
@@ -275,33 +361,8 @@ wss.on('connection', (ws) => {
                                 if (msg.toolCall) {
                                     console.log('[AI_LIVE_TOOL_CALL]:', JSON.stringify(msg.toolCall.functionCalls));
                                     const functionResponses: any[] = [];
-
                                     for (const call of msg.toolCall.functionCalls) {
-                                        let resultInfo = "Action executed successfully.";
-
-                                        if (call.name === 'summarize_url') {
-                                            resultInfo = `Analyzed URL: ${call.args?.url}`;
-                                        } else if (call.name === 'set_reminder') {
-                                            resultInfo = `Reminder set: ${call.args?.task} in ${call.args?.time_in_minutes} minutes.`;
-                                        } else if (call.name === 'execute_action') {
-                                            const execResult = await executeAction('run_command', call.args?.command_description);
-                                            resultInfo = execResult.success
-                                                ? `Command output: ${execResult.output?.substring(0, 500)}`
-                                                : `Command failed: ${execResult.error}`;
-                                        } else if (call.name === 'export_to_docs') {
-                                            const format = (call.args?.format || 'doc').toLowerCase();
-                                            if (format === 'excel') {
-                                                const excelResult = await executeAction('generate_excel', call.args?.title, call.args?.content);
-                                                resultInfo = excelResult.success
-                                                    ? `Excel file created: ${excelResult.metadata?.filename}`
-                                                    : `Excel failed: ${excelResult.error}`;
-                                            } else {
-                                                await executeAction('write_file', `${call.args?.title}.txt`, call.args?.content);
-                                                resultInfo = `Exported as ${call.args?.title}.txt`;
-                                            }
-                                        } else if (call.name === 'code_review') {
-                                            resultInfo = `Code review ready for ${call.args?.filename}`;
-                                        } else if (call.name === 'manage_mission') {
+                                        const resultInfo = await handleOperatorFunctionCall(call);
                                             const { action, title, progress, status } = call.args;
                                             const state = stateManager.getState();
                                             if (action === 'add') {
@@ -1374,13 +1435,31 @@ app.post('/api/chat', async (req, res) => {
             model: 'gemini-2.0-flash',
             history: chatHistory,
             config: {
-                systemInstruction: (systemPrompt || '') + '\n\nIMPORTANT: Always respond with a helpful conversational text reply. Never respond with empty text.'
+                systemInstruction: (systemPrompt || '') + '\n\nIMPORTANT: Always respond with a helpful conversational text reply. Never respond with empty text.',
+                tools: [{ functionDeclarations: OPERATOR_TOOLS }]
             }
         });
 
-        const response = await chat.sendMessage({ message });
+        let response = await chat.sendMessage({ message });
+        let functionCalls = (response as any).functionCalls || [];
+
+        // If tools are called, execute them and send results back for a final text response
+        if (functionCalls.length > 0) {
+            const functionResponses: any[] = [];
+            for (const call of functionCalls) {
+                const result = await handleOperatorFunctionCall(call);
+                functionResponses.push({
+                    id: call.id,
+                    name: call.name,
+                    response: { status: "success", result }
+                });
+            }
+            // Send the results back to get the final conversational reply
+            response = await chat.sendMessage({ toolResponse: { functionResponses } });
+        }
+
         const text = response.text || '';
-        const functionCalls = (response as any).functionCalls || [];
+        functionCalls = (response as any).functionCalls || [];
 
         console.log(`[AI_CHAT]: text=${text.length}chars, fcalls=${functionCalls.length}`);
 
