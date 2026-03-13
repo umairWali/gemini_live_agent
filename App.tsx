@@ -658,6 +658,15 @@ const AppContent: React.FC = () => {
           setIsVoiceReady(false);
         } else if (data.type === 'SYSTEM_PULSE') {
           setState(p => ({ ...p, realtimeMetrics: data.metrics }));
+        } else if (data.type === 'GOALS_UPDATED') {
+          setState(p => ({ ...p, goals: data.goals }));
+          playNotification();
+        } else if (data.type === 'KNOWLEDGE_UPDATED') {
+          setState(p => ({ ...p, knowledgeGraph: data.graph }));
+          playSuccess();
+        } else if (data.type === 'SECURITY_ALERT') {
+          addToast({ type: 'warning', title: 'Security Protocol', message: data.text });
+          playError();
         }
       }
     };

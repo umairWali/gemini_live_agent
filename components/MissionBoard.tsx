@@ -15,7 +15,7 @@ const MissionBoard: React.FC<MissionBoardProps> = ({ goals, isDark }) => {
                 <div className={`p-2 rounded-xl ${isDark ? 'bg-white/5' : 'bg-slate-50'}`}>
                     <Target className="w-5 h-5 text-violet-500" />
                 </div>
-                <h3 className="text-[11px] font-black uppercase tracking-[0.3em]">Mission_Board</h3>
+                <h3 className="text-[11px] font-black uppercase tracking-[0.3em]">Mission Board</h3>
             </div>
 
             <div className="space-y-4">

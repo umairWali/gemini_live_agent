@@ -80,7 +80,7 @@ const RightPanel: React.FC<RightPanelProps> = ({ state }) => {
       <div className="flex-1 overflow-y-auto p-8 space-y-12 custom-scrollbar">
         {activeTab === 'SECURITY' && (
           <div className="space-y-10 animate-in fade-in duration-500">
-            <h2 className="text-[12px] font-black uppercase tracking-[0.4em] text-rose-500 flex items-center gap-4"><ShieldCheck className="w-5 h-5" /> Security_Protocol</h2>
+            <h2 className="text-[12px] font-black uppercase tracking-[0.4em] text-rose-500 flex items-center gap-4"><ShieldCheck className="w-5 h-5" /> Security Protocol</h2>
 
             {/* Live Audit Trail */}
             <div className="space-y-4">
@@ -128,7 +128,7 @@ const RightPanel: React.FC<RightPanelProps> = ({ state }) => {
 
         {activeTab === 'SYSTEM' && (
           <section className="space-y-10 animate-in fade-in duration-500">
-            <h2 className="text-[12px] font-black uppercase tracking-[0.4em] text-slate-500 flex items-center gap-4"><Monitor className="w-5 h-5" /> Orchestrator_HUD</h2>
+            <h2 className="text-[12px] font-black uppercase tracking-[0.4em] text-slate-500 flex items-center gap-4"><Monitor className="w-5 h-5" /> Orchestrator HUD</h2>
 
             <div className="grid grid-cols-2 gap-5">
               <div className="bg-slate-50/90 backdrop-blur-md p-6 rounded-3xl text-center relative overflow-hidden group border border-white/20 shadow-[0_8px_32px_rgba(255,255,255,0.1)]">

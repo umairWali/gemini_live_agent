@@ -56,7 +56,7 @@ const NeuralKnowledgeGraph: React.FC<KnowledgeGraphProps> = ({ data, isDark }) =
     return (
         <div className="space-y-6">
             <h3 className={`text-[11px] font-black uppercase tracking-[0.3em] flex items-center gap-3 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
-                <Brain className="w-5 h-5 text-violet-400 shadow-[0_0_10px_rgba(139,92,246,0.3)]" /> Neural_Knowledge_Graph
+                <Brain className="w-5 h-5 text-violet-400 shadow-[0_0_10px_rgba(139,92,246,0.3)]" /> Neural Knowledge Graph
             </h3>
 
             <div className={`p-6 rounded-[2.5rem] border ${isDark ? 'bg-black/50 border-white/5 shadow-2xl overflow-hidden' : 'bg-white border-slate-100 shadow-sm overflow-hidden'}`}>

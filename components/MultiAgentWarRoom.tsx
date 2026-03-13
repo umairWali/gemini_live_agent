@@ -25,7 +25,7 @@ const MultiAgentWarRoom: React.FC<WarRoomProps> = ({ activities, isDark }) => {
     return (
         <div className="space-y-6">
             <h3 className={`text-[11px] font-black uppercase tracking-[0.3em] flex items-center gap-3 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
-                <Activity className="w-5 h-5" /> Agent_War_Room
+                <Activity className="w-5 h-5" /> Agent War Room
             </h3>
             <div className="space-y-4">
                 {activities.map((activity) => (

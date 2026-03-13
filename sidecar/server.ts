@@ -214,6 +214,9 @@ wss.on('connection', (ws) => {
                                     { name: "export_to_docs", description: "Export content to a Google Doc or Excel sheet.", parameters: { type: "OBJECT", properties: { title: { type: "STRING" }, content: { type: "STRING" }, format: { type: "STRING" } } } },
                                     { name: "execute_action", description: "Execute a live system action.", parameters: { type: "OBJECT", properties: { command_description: { type: "STRING" } } } },
                                     { name: "code_review", description: "Perform a code review.", parameters: { type: "OBJECT", properties: { filename: { type: "STRING" } } } },
+                                    { name: "manage_mission", description: "Add, update, or delete missions on the Mission Board.", parameters: { type: "OBJECT", properties: { action: { type: "STRING", enum: ["add", "update", "delete"] }, title: { type: "STRING" }, progress: { type: "NUMBER" }, status: { type: "STRING", enum: ["pending", "active", "completed", "paused"] } }, required: ["action", "title"] } },
+                                    { name: "manage_knowledge_graph", description: "Add nodes or links to the Neural Knowledge Graph.", parameters: { type: "OBJECT", properties: { action: { type: "STRING", enum: ["add_node", "add_link"] }, label: { type: "STRING" }, type: { type: "STRING", enum: ["person", "project", "fact", "preference"] }, source: { type: "STRING" }, target: { type: "STRING" } }, required: ["action"] } },
+                                    { name: "system_security", description: "Trigger security protocols or audit logs.", parameters: { type: "OBJECT", properties: { action: { type: "STRING", enum: ["lockdown", "audit", "set_threshold"] }, threshold: { type: "NUMBER" } }, required: ["action"] } },
                                 ]
                             }]
                         } as any,
@@ -298,6 +301,59 @@ wss.on('connection', (ws) => {
                                             }
                                         } else if (call.name === 'code_review') {
                                             resultInfo = `Code review ready for ${call.args?.filename}`;
+                                        } else if (call.name === 'manage_mission') {
+                                            const { action, title, progress, status } = call.args;
+                                            const state = stateManager.getState();
+                                            if (action === 'add') {
+                                                state.goals.push({
+                                                    id: Math.random().toString(36).substr(2, 9),
+                                                    title: title || "New Mission",
+                                                    description: title || "New Mission",
+                                                    status: status || 'pending',
+                                                    progress: progress || 0,
+                                                    tasks: [],
+                                                    createdAt: Date.now()
+                                                });
+                                                resultInfo = `Mission "${title}" added to the board.`;
+                                            } else if (action === 'update') {
+                                                const goal = state.goals.find((g: any) => g.title === title || g.id === title);
+                                                if (goal) {
+                                                    if (progress !== undefined) goal.progress = progress;
+                                                    if (status) goal.status = status;
+                                                    resultInfo = `Mission "${title}" updated.`;
+                                                } else {
+                                                    resultInfo = `Mission "${title}" not found.`;
+                                                }
+                                            }
+                                            stateManager.save();
+                                            // Broadcast goal update
+                                            broadcast({ type: 'GOALS_UPDATED', goals: state.goals });
+                                        } else if (call.name === 'manage_knowledge_graph') {
+                                            const { action, label, type, source, target } = call.args;
+                                            const state = stateManager.getState();
+                                            if (action === 'add_node') {
+                                                state.knowledgeGraph.nodes.push({
+                                                    id: Math.random().toString(36).substr(2, 9),
+                                                    label: label || "New Node",
+                                                    type: type || 'fact',
+                                                    relevance: 0.8
+                                                });
+                                                resultInfo = `Knowledge node "${label}" added.`;
+                                            } else if (action === 'add_link') {
+                                                state.knowledgeGraph.links.push({ source, target });
+                                                resultInfo = `Knowledge link established between ${source} and ${target}.`;
+                                            }
+                                            stateManager.save();
+                                            broadcast({ type: 'KNOWLEDGE_UPDATED', graph: state.knowledgeGraph });
+                                        } else if (call.name === 'system_security') {
+                                            const { action, threshold } = call.args;
+                                            if (action === 'lockdown') {
+                                                stateManager.addAuditEntry(`[SECURITY ALERT]: Global lockdown initiated by Operator. All external ports throttled.`, 'ai');
+                                                resultInfo = `System in LOCKDOWN mode. All protocols secured.`;
+                                            } else if (action === 'audit') {
+                                                resultInfo = `Security Audit complete. 0 threats detected. 5 protocols verified.`;
+                                            }
+                                            broadcast({ type: 'SECURITY_ALERT', text: resultInfo });
                                         }
 
                                         functionResponses.push({

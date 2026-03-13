@@ -12,6 +12,7 @@ export interface OperatorState {
     tasks: any[];
     auditTrail: any[];
     vault: any[];
+    knowledgeGraph: { nodes: any[]; links: any[] };
     lastSeen: number;
 }
 
@@ -30,6 +31,7 @@ export class StateManager {
                 tasks: [],
                 auditTrail: [],
                 vault: [],
+                knowledgeGraph: { nodes: [], links: [] },
                 lastSeen: Date.now()
             };
             this.save();
