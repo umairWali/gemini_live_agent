@@ -211,7 +211,7 @@ const AppContent: React.FC = () => {
             a.agent === AgentRole.PLANNER ? { ...a, status: 'idle', message: 'Directive complete.' } :
               a.agent === AgentRole.EXECUTOR ? { ...a, status: 'acting', message: 'Rendering response...' } : a
           ),
-          // history: [...p.history, { role: 'ai', text: data.reply, timestamp: Date.now(), agentBadge: AgentRole.EXECUTOR }].slice(-50)
+          history: [...p.history, { role: 'ai', text: data.reply, timestamp: Date.now(), agentBadge: AgentRole.EXECUTOR }].slice(-50)
         }));
 
         setTimeout(() => {
@@ -222,9 +222,6 @@ const AppContent: React.FC = () => {
             )
           }));
         }, 3000);
-
-        // PURE VOICE MODE: No text display, no TTS
-        // Only native audio through WebSocket VOICE_RESPONSE
       } else {
         addToast({ type: 'error', title: 'AI Operator Error', message: data.error || 'Failed to generate response.' });
       }
@@ -580,6 +577,11 @@ const AppContent: React.FC = () => {
           console.log('[CLIENT]: Gemini VAD: User interrupted AI.');
           stopAllPlayback();
           isUserSpeakingRef.current = true;
+          // Also signal server to stop sending AI audio chunks
+          const wsRef = (window as any).operatorWs as WebSocket;
+          if (wsRef?.readyState === WebSocket.OPEN) {
+            wsRef.send(JSON.stringify({ type: 'STOP_AI_SPEECH' }));
+          }
         } else if (data.type === 'AI_TURN_COMPLETE') {
           // Gemini finished speaking → ready to listen again
           console.log('[CLIENT]: AI turn complete — listening.');
