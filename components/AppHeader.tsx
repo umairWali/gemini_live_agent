@@ -10,9 +10,10 @@ interface AppHeaderProps {
     onSettingsClick?: () => void;
     onMobileMenuClick?: () => void;
     onNewChat?: () => void;
+    isConnected?: boolean;
 }
 
-const AppHeader: React.FC<AppHeaderProps> = ({ isDark, isVoiceActive, emotionState = 'normal', audioLevel = 0, onThemeToggle, onSettingsClick, onMobileMenuClick, onNewChat }) => {
+const AppHeader: React.FC<AppHeaderProps> = ({ isDark, isVoiceActive, emotionState = 'normal', audioLevel = 0, onThemeToggle, onSettingsClick, onMobileMenuClick, onNewChat, isConnected = true }) => {
 
     // Emotion-based styling
     let accentColor = 'text-violet-500';
@@ -90,7 +91,6 @@ const AppHeader: React.FC<AppHeaderProps> = ({ isDark, isVoiceActive, emotionSta
                     </div>
                 ) : null}
                 
-                {/* Settings Button */}
                 <button
                     onClick={onSettingsClick}
                     className={`p-2 rounded-lg transition-colors ${isDark ? 'hover:bg-white/10 text-slate-400' : 'hover:bg-slate-100 text-slate-600'}`}
@@ -98,6 +98,13 @@ const AppHeader: React.FC<AppHeaderProps> = ({ isDark, isVoiceActive, emotionSta
                 >
                     <Settings className="w-4 h-4" />
                 </button>
+
+                <div className="flex items-center gap-1.5 ml-1">
+                    <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-rose-500 animate-pulse shadow-[0_0_8px_rgba(244,63,94,0.5)]'}`} />
+                    <span className={`text-[9px] font-black uppercase tracking-tighter ${isConnected ? 'text-emerald-500' : 'text-rose-500'}`}>
+                        {isConnected ? 'Sync' : 'Lost'}
+                    </span>
+                </div>
             </div>
         </header>
     );

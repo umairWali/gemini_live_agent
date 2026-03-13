@@ -127,6 +127,7 @@ const AppContent: React.FC = () => {
   const [isVoiceReady, setIsVoiceReady] = useState(false);
   const [isVoiceConnecting, setIsVoiceConnecting] = useState(false);
   const [audioLevel, setAudioLevel] = useState(0);
+  const [isConnected, setIsConnected] = useState(false);
   const voiceSocketRef = useRef<WebSocket | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const workletNodeRef = useRef<AudioWorkletNode | null>(null);
@@ -242,28 +243,17 @@ const AppContent: React.FC = () => {
   };
 
   const toggleVoice = useCallback(async () => {
-    const ws = (window as any).operatorWs as WebSocket;
-
-    // Handle the case where the server disconnected while the mic was active
-    if (!ws || ws.readyState !== WebSocket.OPEN) {
-      if (isVoiceActive || isVoiceConnecting || isVoiceReady) {
-        setIsVoiceActive(false);
-        setIsVoiceReady(false);
-        setIsVoiceConnecting(false);
-        if (workletNodeRef.current) {
-          try { workletNodeRef.current.disconnect(); } catch (e) { }
-          workletNodeRef.current = null;
-        }
-        if (mediaStreamRef.current) {
-          mediaStreamRef.current.getTracks().forEach(t => t.stop());
-          mediaStreamRef.current = null;
-        }
-        addToast({ type: 'success', title: 'Voice Offline', message: 'Session closed locally (server was disconnected).' });
-      } else {
-        addToast({ type: 'error', title: 'Connection Error', message: 'WebSocket not connected.' });
-      }
+    // Handle the case where the server disconnected
+    if (!isConnected) {
+      addToast({ 
+        type: 'error', 
+        title: 'System Offline', 
+        message: 'Establishing connection to Orchestrator... Please wait.' 
+      });
       return;
     }
+
+    const ws = (window as any).operatorWs as WebSocket;
 
     // Initialize AudioContext immediately on user gesture
     if (!audioContextRef.current) {
@@ -516,14 +506,22 @@ const AppContent: React.FC = () => {
     }
   }, [isCameraActive]);
 
-  useEffect(() => {
+  // --- WebSocket Connection Management ---
+  const reconnectTimeoutRef = useRef<any>(null);
+
+  const connectWebSocket = useCallback(() => {
+    if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
+
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsUrl = `${protocol}//${window.location.host}/ws/`;
     const ws = new WebSocket(wsUrl);
     (window as any).operatorWs = ws;
 
     ws.onopen = () => {
+      console.log('[WS]: Connected');
+      setIsConnected(true);
       setState(p => ({ ...p, osState: { ...p.osState, connected: true } }));
+      
       // Fetch goals
       fetch('/api/execute', {
         method: 'POST',
@@ -532,65 +530,42 @@ const AppContent: React.FC = () => {
       }).then(r => r.json()).then(d => {
         if (d.success) setState(p => ({ ...p, goals: JSON.parse(d.output) }));
       });
-
-      // Removed text briefing as native-audio only accepts audio input.
     };
 
     ws.onmessage = async (event) => {
       if (typeof event.data === 'string') {
         const data = JSON.parse(event.data);
         if (data.type === 'VOICE_RESPONSE') {
-          // INTERPRETATION PROTECTION: If user is talking, dump the AI chunk immediately
-          if (isUserSpeakingRef.current) {
-            console.log('[CLIENT]: Dumping AI audio chunk (User is talking).');
-            return;
-          }
-
+          if (isUserSpeakingRef.current) return;
           try {
             const ctx = audioContextRef.current;
             if (!ctx) return;
             if (ctx.state === 'suspended') await ctx.resume();
-
-            // Ensure gain is audible for new turn
             if (aiGainNodeRef.current && aiGainNodeRef.current.gain.value === 0 && !isUserSpeakingRef.current) {
               aiGainNodeRef.current.gain.setValueAtTime(1, ctx.currentTime);
             }
-
             const binaryString = atob(data.data);
             const bytes = new Uint8Array(binaryString.length);
             for (let i = 0; i < binaryString.length; i++) bytes[i] = binaryString.charCodeAt(i);
-
-            // Native audio usually comes at 24kHz. Let's handle it.
             const pcmData = new Int16Array(bytes.buffer);
             const floatData = new Float32Array(pcmData.length);
             for (let i = 0; i < pcmData.length; i++) floatData[i] = pcmData[i] / 32768;
-
             const buffer = ctx.createBuffer(1, floatData.length, 24000);
             buffer.getChannelData(0).set(floatData);
-
             const source = ctx.createBufferSource();
             source.buffer = buffer;
-
-            // Connect to Master AI Gain Node for instant interruption
             source.connect(aiGainNodeRef.current!);
-            // Also connect to analyzer for visual feedback
             source.connect(analyzerRef.current!);
-
             source.onended = () => {
               activeAudioSourcesRef.current = activeAudioSourcesRef.current.filter(s => s !== source);
             };
             activeAudioSourcesRef.current.push(source);
-
             const startAt = Math.max(ctx.currentTime, playbackScheduleRef.current || 0);
             source.start(startAt);
             playbackScheduleRef.current = startAt + buffer.duration;
-            console.log(`[CLIENT]: Playing ${Math.round(buffer.duration * 1000)}ms audio chunk.`);
           } catch (err: any) {
             console.error('[CLIENT_PLAYBACK_ERR]:', err.message);
           }
-        } else if (data.type === 'VOICE_TEXT' || data.type === 'VOICE_PROACTIVE_ALERT' || data.type === 'VOICE_INPUT_TEXT') {
-          // PURE VOICE MODE: Ignore all text messages - only audio in/out
-          // Text is not displayed during voice conversation
         } else if (data.type === 'VOICE_READY') {
           setIsVoiceReady(true);
           startMediaStream();
@@ -598,80 +573,43 @@ const AppContent: React.FC = () => {
           addToast({ type: 'error', title: 'Gemini Error', message: data.error });
           setIsVoiceActive(false);
           setIsVoiceReady(false);
-          setIsVoiceConnecting(false);
-          if (workletNodeRef.current) {
-            workletNodeRef.current.disconnect();
-            workletNodeRef.current = null;
-          }
-          if (audioContextRef.current) {
-            audioContextRef.current.close().catch(() => { });
-            audioContextRef.current = null;
-          }
-          if (mediaStreamRef.current) {
-            mediaStreamRef.current.getTracks().forEach(t => t.stop());
-            mediaStreamRef.current = null;
-          }
         } else if (data.type === 'SYSTEM_PULSE') {
           setState(p => ({ ...p, realtimeMetrics: data.metrics }));
-        } else if (data.type === 'UPDATE_MEMORY') {
-          setState(p => {
-            const subjectId = data.data.subject.toLowerCase().replace(/\s+/g, '_');
-            const objectId = data.data.object.toLowerCase().replace(/\s+/g, '_');
-
-            // Check if nodes already exist to prevent dupes
-            const nodes = [...p.knowledgeGraph.nodes];
-            if (!nodes.find(n => n.id === subjectId)) {
-              nodes.push({ id: subjectId, label: data.data.subject, type: 'concept', relevance: 0.8 });
-            }
-            if (!nodes.find(n => n.id === objectId)) {
-              nodes.push({ id: objectId, label: data.data.object, type: 'fact', relevance: 0.7 });
-            }
-
-            // Find if link exists
-            const links = [...p.knowledgeGraph.links];
-            if (!links.find(l => l.source === subjectId && l.target === objectId)) {
-              links.push({ source: subjectId, target: objectId });
-            }
-
-            return { ...p, knowledgeGraph: { nodes, links } };
-          });
-          addToast({ type: 'success', title: 'Memory Updated', message: `Learned: ${data.data.subject} -> ${data.data.object}` });
-        } else if (data.type === 'UPDATE_SENTIMENT') {
-          setState(p => ({ ...p, emotionState: data.emotion }));
-          addToast({ type: 'info', title: 'Empathy Engine', message: `Emotional state shifted to: ${data.emotion}` });
         }
       }
     };
 
+    ws.onclose = () => {
+      console.log('[WS]: Disconnected. Retrying in 3s...');
+      setIsConnected(false);
+      setIsVoiceActive(false);
+      setIsVoiceReady(false);
+      setState(p => ({ ...p, osState: { ...p.osState, connected: false } }));
+      reconnectTimeoutRef.current = setTimeout(connectWebSocket, 3000);
+    };
+
+    ws.onerror = () => {
+      ws.close();
+    };
+  }, [isVoiceActive, startMediaStream]);
+
+  useEffect(() => {
+    connectWebSocket();
     const auditTimer = setInterval(async () => {
       try {
         const res = await fetch('/api/audit');
         const data = await res.json();
         if (data.success && data.logs) {
-          const newLogs = data.logs;
-          // Check if latest log is a security threat and is new
-          const lastLog = newLogs[newLogs.length - 1];
-          if (lastLog && (lastLog.text.includes('SECURITY ALERT') || lastLog.text.includes('CRITICAL'))) {
-            // Only toast if it's within the last 5 seconds
-            const logTime = new Date(lastLog.timestamp).getTime();
-            if (Date.now() - logTime < 6000) {
-              addToast({
-                type: 'error',
-                title: 'Firewall Blockage',
-                message: 'A critical system modification was intercepted and blocked.'
-              });
-            }
-          }
-          setState(p => ({ ...p, auditTrail: newLogs }));
+          setState(p => ({ ...p, auditTrail: data.logs }));
         }
       } catch (e) { }
     }, 5000);
 
     return () => {
-      ws.close();
+      if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
       clearInterval(auditTimer);
     };
-  }, []);
+  }, [connectWebSocket]);
 
   // Save theme to localStorage whenever it changes
   useEffect(() => {
@@ -735,6 +673,7 @@ const AppContent: React.FC = () => {
         <AppHeader 
           isDark={isDark} 
           isVoiceActive={isVoiceActive} 
+          isConnected={isConnected}
           emotionState={state.emotionState || 'normal'} 
           audioLevel={audioLevel}
           onThemeToggle={() => setIsDark(!isDark)}
