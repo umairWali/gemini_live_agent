@@ -137,20 +137,20 @@ const AppContent: React.FC = () => {
   const activeAudioSourcesRef = useRef<AudioBufferSourceNode[]>([]);
   const isUserSpeakingRef = useRef<boolean>(false);
   const aiGainNodeRef = useRef<GainNode | null>(null);
+  const workletModuleLoadedRef = useRef<boolean>(false); // Prevent double-loading AudioWorklet
 
   const stopAllPlayback = useCallback(() => {
-    // 1. Mute the master gain instantly
-    if (aiGainNodeRef.current) {
-      aiGainNodeRef.current.gain.setValueAtTime(0, audioContextRef.current?.currentTime || 0);
+    if (aiGainNodeRef.current && audioContextRef.current) {
+      // Instantly mute
+      aiGainNodeRef.current.gain.cancelScheduledValues(audioContextRef.current.currentTime);
+      aiGainNodeRef.current.gain.setValueAtTime(0, audioContextRef.current.currentTime);
     }
-    // 2. Kill all active source nodes
     activeAudioSourcesRef.current.forEach(source => {
-      try { source.stop(); } catch (e) { }
+      try { source.stop(); source.disconnect(); } catch (e) { }
     });
     activeAudioSourcesRef.current = [];
-    // 3. Reset the schedule
+    // Reset schedule so next AI chunk plays immediately, not after stale queue
     playbackScheduleRef.current = 0;
-    console.log('[CLIENT]: All AI playback killed and master-muted.');
   }, []);
 
   const [isScreenSharing, setIsScreenSharing] = useState(false);
@@ -321,16 +321,24 @@ const AppContent: React.FC = () => {
         // Clean up old worklet if still hanging
         if (workletNodeRef.current) {
           try { workletNodeRef.current.disconnect(); } catch (e) { }
+          workletNodeRef.current = null;
         }
 
-        // Initialize AI Master Gain Node if not exists
+        // Ensure AI Gain Node exists and is at full volume
         if (!aiGainNodeRef.current) {
           aiGainNodeRef.current = ctx.createGain();
-          aiGainNodeRef.current.gain.value = 1;
           aiGainNodeRef.current.connect(ctx.destination);
         }
+        // Always reset gain to 1 on new session start (avoid stuck-muted state)
+        aiGainNodeRef.current.gain.cancelScheduledValues(ctx.currentTime);
+        aiGainNodeRef.current.gain.setValueAtTime(1, ctx.currentTime);
 
-        await ctx.audioWorklet.addModule('/audio-processor.js');
+        // Load AudioWorklet module ONLY ONCE (re-adding causes hang/error)
+        if (!workletModuleLoadedRef.current) {
+          await ctx.audioWorklet.addModule('/audio-processor.js');
+          workletModuleLoadedRef.current = true;
+        }
+
         const source = ctx.createMediaStreamSource(stream);
         const workletNode = new AudioWorkletNode(ctx, 'audio-processor');
         workletNodeRef.current = workletNode;
@@ -341,7 +349,7 @@ const AppContent: React.FC = () => {
         let audioBuffer: Int16Array[] = [];
         let bufferLength = 0;
 
-        // Pure audio streamer - no client-side VAD, Gemini handles turn-taking
+        // Pure audio streamer — Gemini's server VAD handles all turn-taking
         workletNode.port.onmessage = (e) => {
           if (ws.readyState === WebSocket.OPEN && e.data.event === 'data') {
             const inputData = e.data.buffer;
@@ -353,7 +361,8 @@ const AppContent: React.FC = () => {
             audioBuffer.push(pcmData);
             bufferLength += pcmData.length;
 
-            if (bufferLength >= 2048) {
+            // 512 samples = ~32ms at 16kHz (was 2048=128ms) — much lower latency
+            if (bufferLength >= 512) {
               const combined = new Int16Array(bufferLength);
               let offset = 0;
               for (const chunk of audioBuffer) {
@@ -372,11 +381,10 @@ const AppContent: React.FC = () => {
           }
         };
 
-        // Do NOT connect worklet to destination (no local echo)
         setIsVoiceConnecting(false);
         setIsVoiceActive(true);
         addToast({ type: 'success', title: 'Voice Live', message: 'Gemini is listening...' });
-        console.log('[CLIENT]: Pure-stream audio pipeline started. Server-Side VAD active.');
+        console.log('[CLIENT]: Audio pipeline ready. 32ms chunks, Server-Side VAD.');
       })
       .catch(err => {
         setIsVoiceConnecting(false);
@@ -526,15 +534,14 @@ const AppContent: React.FC = () => {
         const data = JSON.parse(event.data);
         if (data.type === 'VOICE_RESPONSE') {
           if (isUserSpeakingRef.current) return;
-          console.log(`[WS]: AI Audio Arrived (${Math.round(data.data.length / 1.33)} bytes)`);
           try {
             const ctx = audioContextRef.current;
             if (!ctx) return;
             if (ctx.state === 'suspended') await ctx.resume();
             
-            // ALWAYS ensure gain is 1 when AI starts speaking a new turn
             if (aiGainNodeRef.current) {
-               aiGainNodeRef.current.gain.setTargetAtTime(1, ctx.currentTime, 0.01);
+              aiGainNodeRef.current.gain.cancelScheduledValues(ctx.currentTime);
+              aiGainNodeRef.current.gain.setValueAtTime(1, ctx.currentTime);
             }
 
             const binaryString = atob(data.data);
@@ -550,10 +557,16 @@ const AppContent: React.FC = () => {
             source.connect(aiGainNodeRef.current!);
             source.connect(analyzerRef.current!);
             source.onended = () => {
+              try { source.disconnect(); } catch (e) {}
               activeAudioSourcesRef.current = activeAudioSourcesRef.current.filter(s => s !== source);
             };
             activeAudioSourcesRef.current.push(source);
-            const startAt = Math.max(ctx.currentTime, playbackScheduleRef.current || 0);
+
+            // Cap the schedule: if queue is more than 2s ahead, reset to now to avoid hang
+            const now = ctx.currentTime;
+            const schedAt = playbackScheduleRef.current || 0;
+            const startAt = (schedAt > now + 2.0) ? now : Math.max(now, schedAt);
+            
             source.start(startAt);
             playbackScheduleRef.current = startAt + buffer.duration;
           } catch (err: any) {
