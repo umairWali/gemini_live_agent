@@ -146,22 +146,22 @@ wss.on('connection', (ws) => {
                 // Track current session ID on the WebSocket itself
                 (ws as any).currentVoiceSessionId = sessionId;
 
-                // KILL ALL PREVIOUS SESSIONS GLOBALLY
+                // KILL PREVIOUS GLOBAL SESSION ONLY
                 if (globalActiveSession) {
-                    console.log('[AI_LIVE]: Killing previous global session to prevent double voices.');
+                    console.log('[AI_LIVE]: Killing previous global session.');
                     try { globalActiveSession.close(); } catch (e) { }
                     globalActiveSession = null;
                     globalActiveWs = null;
                 }
                 
-                // Cleanup MAP as well
-                for (const [sWs, session] of liveSessions.entries()) {
-                    try { session.close(); } catch(e) {}
+                // Cleanup current socket's entry in MAP
+                const existing = liveSessions.get(ws);
+                if (existing) {
+                    try { existing.close(); } catch(e) {}
+                    liveSessions.delete(ws);
                 }
-                liveSessions.clear();
                 interruptedSessions.clear();
                 globalActiveClientId = clientId;
-                interruptedSessions.clear();
 
                 if (!process.env.API_KEY) {
                     connectingSockets.delete(ws);
@@ -339,11 +339,11 @@ wss.on('connection', (ws) => {
 
                     // Global state already set in onopen
                     liveSessions.set(ws, session);
-
                 } catch (e: any) {
-                    connectingSockets.delete(ws); // Release mutex
-                    console.error('[AI_LIVE]: Connect error', e);
-                    ws.send(JSON.stringify({ type: 'VOICE_ERROR', error: 'Init Failed: ' + e.message }));
+                    connectingSockets.delete(ws);
+                    console.error('[AI_LIVE_CRITICAL]: Failed to connect to Gemini Provider:', e.message);
+                    ws.send(JSON.stringify({ type: 'VOICE_ERROR', error: 'Gemini Connect Failed: ' + e.message }));
+                    // Don't close the WS, just report the error
                 }
 
             } else if (message.type === 'STOP_VOICE') {

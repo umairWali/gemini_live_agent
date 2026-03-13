@@ -353,19 +353,16 @@ const AppContent: React.FC = () => {
         source.connect(workletNode);
 
         let audioBuffer: Int16Array[] = [];
-        let bufferLength = 0;
-
-        // Pure audio streamer — Gemini's server VAD handles all turn-taking
+        let bufferLength = 0;        // Pure audio streamer — Gemini's server VAD handles all turn-taking
         workletNode.port.onmessage = (e) => {
           if (ws.readyState === WebSocket.OPEN && e.data.event === 'data') {
             // MUTE PROTECTION: If AI is speaking, don't send mic data (stops Echo loop)
             if (isAiSpeakingRef.current) {
-                // If it's been more than 500ms since last AI chunk, maybe it's safe to talk?
-                // But for now, just gate it.
-                audioBuffer = [];
-                bufferLength = 0;
-                return;
+              audioBuffer = [];
+              bufferLength = 0;
+              return;
             }
+
             const inputData = e.data.buffer;
             const pcmData = new Int16Array(inputData.length);
             for (let i = 0; i < inputData.length; i++) {
@@ -375,7 +372,7 @@ const AppContent: React.FC = () => {
             audioBuffer.push(pcmData);
             bufferLength += pcmData.length;
 
-            // 512 samples = ~32ms at 16kHz (was 2048=128ms) — much lower latency
+            // 512 samples = ~32ms at 16kHz — much lower latency
             if (bufferLength >= 512) {
               const combined = new Int16Array(bufferLength);
               let offset = 0;
@@ -388,13 +385,14 @@ const AppContent: React.FC = () => {
               for (let i = 0; i < bytes.length; i += 8192) {
                 binary += String.fromCharCode(...bytes.subarray(i, i + 8192));
               }
-              ws.send(JSON.stringify({ type: 'VOICE_AUDIO', data: btoa(binary) }));
+              if (ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ type: 'VOICE_AUDIO', data: btoa(binary) }));
+              }
               audioBuffer = [];
               bufferLength = 0;
             }
           }
         };
-
         setIsVoiceConnecting(false);
         setIsVoiceActive(true);
         addToast({ type: 'success', title: 'Voice Live', message: 'Gemini is listening...' });
@@ -579,7 +577,7 @@ const AppContent: React.FC = () => {
           }
 
           isAiSpeakingRef.current = true;
-          // if (isUserSpeakingRef.current) return; // Removed this line to allow AI to speak even if user is speaking
+          if (isUserSpeakingRef.current) return;
 
           console.log(`[CLIENT]: Playing AI audio chunk (Session: ${msgId || 'legacy'})`);
           
