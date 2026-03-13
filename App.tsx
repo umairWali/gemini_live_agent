@@ -622,10 +622,10 @@ const AppContent: React.FC = () => {
                 }
             }, 5000);
 
-            // Cap the schedule: if queue is more than 2s ahead, reset to now to avoid hang
+            // Ensure consecutive chunks play seamlessly
             const now = ctx.currentTime;
-            const schedAt = playbackScheduleRef.current || 0;
-            const startAt = (schedAt > now + 2.0) ? now : Math.max(now, schedAt);
+            let startAt = playbackScheduleRef.current || now;
+            if (startAt < now) startAt = now; // If lagging, catch up to current time
             
             source.start(startAt);
             playbackScheduleRef.current = startAt + buffer.duration;
