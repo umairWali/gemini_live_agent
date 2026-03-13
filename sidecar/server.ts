@@ -358,15 +358,6 @@ wss.on('connection', (ws) => {
                 // Sending manual turnComplete can disrupt voice activity detection.
                 // We intentionally ignore this message for the native audio model.
                 console.log('[AI_LIVE]: VOICE_TURN_COMPLETE received (ignored — using server VAD).');
-            } else if (message.type === 'STOP_VOICE') {
-                const session = liveSessions.get(ws);
-                if (session) {
-                    liveSessions.delete(ws);
-                    try { session.close(); } catch { }
-                }
-                // Clean stop — no error message needed
-                console.log('[AI_LIVE]: Session stopped cleanly by user.');
-
             } else if (message.type === 'SET_INTERRUPT_SENSITIVITY') {
                 const session = liveSessions.get(ws);
                 if (session) {
