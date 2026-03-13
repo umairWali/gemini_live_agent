@@ -137,8 +137,10 @@ const AppContent: React.FC = () => {
   const activeAudioSourcesRef = useRef<AudioBufferSourceNode[]>([]);
   const isUserSpeakingRef = useRef<boolean>(false);
   const aiGainNodeRef = useRef<GainNode | null>(null);
-  const workletModuleLoadedRef = useRef<boolean>(false); // Prevent double-loading AudioWorklet
+  const workletModuleLoadedRef = useRef<boolean>(false);
   const voiceSessionCounterRef = useRef<number>(0);
+  const isAiSpeakingRef = useRef<boolean>(false); // NEW: Track if AI is talking
+  const clientId = useRef<string>(Math.random().toString(36).substring(7));
 
   const stopAllPlayback = useCallback(() => {
     if (aiGainNodeRef.current && audioContextRef.current) {
@@ -152,6 +154,7 @@ const AppContent: React.FC = () => {
     activeAudioSourcesRef.current = [];
     // Reset schedule so next AI chunk plays immediately, not after stale queue
     playbackScheduleRef.current = 0;
+    isAiSpeakingRef.current = false;
   }, []);
 
   const [isScreenSharing, setIsScreenSharing] = useState(false);
@@ -303,7 +306,7 @@ const AppContent: React.FC = () => {
     (ws as any).voiceSessionId = sessionId;
     
     console.log('[CLIENT]: Requesting START_VOICE, local sessionId:', sessionId);
-    ws.send(JSON.stringify({ type: 'START_VOICE', sessionId }));
+    ws.send(JSON.stringify({ type: 'START_VOICE', sessionId, clientId: clientId.current }));
   }, [isVoiceActive, isVoiceConnecting, isVoiceReady, isConnected, addToast]);
 
   const startMediaStream = useCallback(() => {
@@ -355,6 +358,13 @@ const AppContent: React.FC = () => {
         // Pure audio streamer — Gemini's server VAD handles all turn-taking
         workletNode.port.onmessage = (e) => {
           if (ws.readyState === WebSocket.OPEN && e.data.event === 'data') {
+            // MUTE PROTECTION: If AI is speaking, don't send mic data (stops Echo loop)
+            if (isAiSpeakingRef.current) {
+                audioBuffer = [];
+                bufferLength = 0;
+                return;
+            }
+
             const inputData = e.data.buffer;
             const pcmData = new Int16Array(inputData.length);
             for (let i = 0; i < inputData.length; i++) {
@@ -557,14 +567,14 @@ const AppContent: React.FC = () => {
           // Absolute session validation: must match the most recent ID
           const currentId = (ws as any).voiceSessionId;
           const msgId = data.sessionId;
-          
-          if (msgId && currentId && String(msgId) !== String(currentId)) {
-            console.warn(`[CLIENT]: Ignoring audio from zombie session (expected ${currentId}, got ${msgId})`);
-            return;
-          }
+                    if (msgId && currentId && String(msgId) !== String(currentId)) {
+              console.warn(`[CLIENT]: Ignoring audio from zombie session (expected ${currentId}, got ${msgId})`);
+              return;
+            }
 
-          if (isUserSpeakingRef.current) return;
-          try {
+            isAiSpeakingRef.current = true; // AI is now speaking
+            if (isUserSpeakingRef.current) return;
+            try {
             const ctx = audioContextRef.current;
             if (!ctx) return;
             if (ctx.state === 'suspended') await ctx.resume();
@@ -589,6 +599,10 @@ const AppContent: React.FC = () => {
             source.onended = () => {
               try { source.disconnect(); } catch (e) {}
               activeAudioSourcesRef.current = activeAudioSourcesRef.current.filter(s => s !== source);
+              // If no more sources, AI has finished speaking
+              if (activeAudioSourcesRef.current.length === 0) {
+                isAiSpeakingRef.current = false;
+              }
             };
             activeAudioSourcesRef.current.push(source);
 
@@ -609,6 +623,7 @@ const AppContent: React.FC = () => {
           // Gemini's VAD detected user started speaking → kill AI audio immediately
           console.log('[CLIENT]: Gemini VAD: User interrupted AI.');
           stopAllPlayback();
+          isAiSpeakingRef.current = false; // Reset speaker state
           isUserSpeakingRef.current = true;
           // Also signal server to stop sending AI audio chunks
           const wsRef = (window as any).operatorWs as any;
@@ -619,6 +634,7 @@ const AppContent: React.FC = () => {
           // Gemini finished speaking → ready to listen again
           console.log('[CLIENT]: AI turn complete — listening.');
           isUserSpeakingRef.current = false;
+          isAiSpeakingRef.current = false; // Just in case
           if (aiGainNodeRef.current) {
             aiGainNodeRef.current.gain.setValueAtTime(1, audioContextRef.current?.currentTime || 0);
           }

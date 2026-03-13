@@ -122,8 +122,13 @@ const watcher = new WatcherEngine(path.resolve(__dirname, '..'));
 let clients: WebSocket[] = [];
 const liveSessions = new Map<WebSocket, any>();
 const interruptedSessions = new Set<WebSocket>();
-const connectingSockets = new Set<WebSocket>(); // Mutex for START_VOICE race conditions
+const connectingSockets = new Set<WebSocket>();
 
+// GLOBAL SINGLETON: Force only one voice session ever across all connections
+let globalActiveSession: any = null;
+let globalActiveWs: WebSocket | null = null;
+let globalSessionId: string | null = null;
+let globalActiveClientId: string | null = null;
 wss.on('connection', (ws) => {
     clients.push(ws);
     console.log('[SIDE CAR]: UI Connected to Event Bus');
@@ -134,24 +139,29 @@ wss.on('connection', (ws) => {
             const message = JSON.parse(raw);
 
             if (message.type === 'START_VOICE') {
-                if (connectingSockets.has(ws)) {
-                    console.log('[WS]: START_VOICE ignored (connection already in progress)');
-                    return;
-                }
-                connectingSockets.add(ws);
-
                 const sessionId = message.sessionId || Date.now().toString();
-                console.log('[WS]: Starting Voice Session:', sessionId);
+                const clientId = message.clientId || 'default';
+                console.log(`[WS]: Voice Request: Client=${clientId}, Session=${sessionId}`);
+                
+                // Track current session ID on the WebSocket itself
                 (ws as any).currentVoiceSessionId = sessionId;
 
-                try {
-                    const existingSession = liveSessions.get(ws);
-                    if (existingSession) {
-                        console.log('[AI_LIVE]: Killing stale Gemini session.');
-                        try { await existingSession.close(); } catch { }
-                        liveSessions.delete(ws);
-                    }
-                } catch (e) { }
+                // KILL ALL PREVIOUS SESSIONS GLOBALLY
+                if (globalActiveSession) {
+                    console.log('[AI_LIVE]: Killing previous global session to prevent double voices.');
+                    try { globalActiveSession.close(); } catch (e) { }
+                    globalActiveSession = null;
+                    globalActiveWs = null;
+                }
+                
+                // Cleanup MAP as well
+                for (const [sWs, session] of liveSessions.entries()) {
+                    try { session.close(); } catch(e) {}
+                }
+                liveSessions.clear();
+                interruptedSessions.clear();
+                globalActiveClientId = clientId;
+                interruptedSessions.clear();
 
                 if (!process.env.API_KEY) {
                     connectingSockets.delete(ws);
@@ -194,9 +204,9 @@ wss.on('connection', (ws) => {
                         } as any,
                         callbacks: {
                             onmessage: async (msg: any) => {
-                                // CRITICAL: Only process if this is the active session
-                                if ((ws as any).currentVoiceSessionId !== sessionId) {
-                                    console.log('[AI_LIVE]: Zombie session message detected — closing old session.');
+                                // CRITICAL: Only process if this is the GLOBAL ACTIVE session
+                                if (globalSessionId !== sessionId || globalActiveWs !== ws) {
+                                    console.log('[AI_LIVE]: Zombie session detected — closing.');
                                     try { session.close(); } catch {}
                                     return;
                                 }
@@ -320,6 +330,9 @@ wss.on('connection', (ws) => {
                         }
                     });
 
+                    globalActiveSession = session;
+                    globalActiveWs = ws;
+                    globalSessionId = sessionId;
                     liveSessions.set(ws, session);
 
                 } catch (e: any) {
@@ -340,17 +353,9 @@ wss.on('connection', (ws) => {
                 console.log('[WS]: Interrupt signal received — Marking session as interrupted');
                 interruptedSessions.add(ws);
             } else if (message.type === 'TURN_COMPLETE') {
-                const session = liveSessions.get(ws);
-                interruptedSessions.delete(ws); // Turn finished, AI can speak again
-                if (session) {
-                    console.log('[WS]: TURN_COMPLETE received from client.');
-                    try {
-                        session.sendRealtimeInput({ turnComplete: true });
-                        console.log('[AI_LIVE]: Flow confirmed -> turnComplete sent to Gemini.');
-                    } catch (e: any) {
-                        console.error('[AI_LIVE_ERROR]: Failed to send turnComplete:', e.message);
-                    }
-                }
+                // We rely on Server-Side VAD for the native audio model.
+                // Manual turnComplete can cause double responses or hangs.
+                console.log('[WS]: TURN_COMPLETE ignored — Relying on Server-Side VAD.');
             } else if (message.type === 'VOICE_AUDIO') {
                 const session = liveSessions.get(ws);
                 if (session && message.data) {
@@ -451,10 +456,18 @@ wss.on('connection', (ws) => {
 
     ws.on('close', () => {
         clients = clients.filter(c => c !== ws);
+        interruptedSessions.delete(ws);
         const session = liveSessions.get(ws);
         if (session) {
             try { session.close(); } catch { }
             liveSessions.delete(ws);
+        }
+        if (globalActiveWs === ws) {
+            console.log('[AI_LIVE]: Global active client disconnected.');
+            try { globalActiveSession?.close(); } catch(e) {}
+            globalActiveSession = null;
+            globalActiveWs = null;
+            globalSessionId = null;
         }
     });
 });
