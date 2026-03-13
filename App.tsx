@@ -140,6 +140,7 @@ const AppContent: React.FC = () => {
   const workletModuleLoadedRef = useRef<boolean>(false);
   const voiceSessionCounterRef = useRef<number>(0);
   const isAiSpeakingRef = useRef<boolean>(false); // NEW: Track if AI is talking
+  const muteUntilRef = useRef<number>(0); // NEW: Track when it's safe to unmute mic (cooldown after AI stops)
   const clientId = useRef<string>(Math.random().toString(36).substring(7));
 
   const stopAllPlayback = useCallback(() => {
@@ -154,6 +155,7 @@ const AppContent: React.FC = () => {
     activeAudioSourcesRef.current = [];
     playbackScheduleRef.current = 0;
     isAiSpeakingRef.current = false;
+    muteUntilRef.current = Date.now() + 1000; // 1-second cooldown after stopping
     console.log('[CLIENT]: All playback stopped and speaker flag reset.');
   }, []);
 
@@ -356,8 +358,8 @@ const AppContent: React.FC = () => {
         let bufferLength = 0;        // Pure audio streamer — Gemini's server VAD handles all turn-taking
         workletNode.port.onmessage = (e) => {
           if (ws.readyState === WebSocket.OPEN && e.data.event === 'data') {
-            // MUTE PROTECTION: If AI is speaking, don't send mic data (stops Echo loop)
-            if (isAiSpeakingRef.current) {
+            // MUTE PROTECTION: If AI is speaking OR we are in the cooldown period, drop mic data
+            if (isAiSpeakingRef.current || Date.now() < muteUntilRef.current) {
               audioBuffer = [];
               bufferLength = 0;
               return;
@@ -577,6 +579,7 @@ const AppContent: React.FC = () => {
           }
 
           isAiSpeakingRef.current = true;
+          muteUntilRef.current = Date.now() + 2000; // continually push mute window while chunks arrive
 
           // Log only 1 in 50 chunks to reduce console noise
           if (Math.random() < 0.02) {
@@ -609,6 +612,7 @@ const AppContent: React.FC = () => {
               activeAudioSourcesRef.current = activeAudioSourcesRef.current.filter(s => s !== source);
               if (activeAudioSourcesRef.current.length === 0) {
                 isAiSpeakingRef.current = false;
+                muteUntilRef.current = Date.now() + 1500; // 1.5s echo flush window after finishing
               }
             };
             activeAudioSourcesRef.current.push(source);
