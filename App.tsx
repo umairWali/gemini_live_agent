@@ -545,13 +545,17 @@ const AppContent: React.FC = () => {
         const data = JSON.parse(event.data);
         if (data.type === 'VOICE_RESPONSE') {
           if (isUserSpeakingRef.current) return;
+          console.log(`[WS]: AI Audio Arrived (${Math.round(data.data.length / 1.33)} bytes)`);
           try {
             const ctx = audioContextRef.current;
             if (!ctx) return;
             if (ctx.state === 'suspended') await ctx.resume();
-            if (aiGainNodeRef.current && aiGainNodeRef.current.gain.value === 0 && !isUserSpeakingRef.current) {
-              aiGainNodeRef.current.gain.setValueAtTime(1, ctx.currentTime);
+            
+            // ALWAYS ensure gain is 1 when AI starts speaking a new turn
+            if (aiGainNodeRef.current) {
+               aiGainNodeRef.current.gain.setTargetAtTime(1, ctx.currentTime, 0.01);
             }
+
             const binaryString = atob(data.data);
             const bytes = new Uint8Array(binaryString.length);
             for (let i = 0; i < binaryString.length; i++) bytes[i] = binaryString.charCodeAt(i);
@@ -600,7 +604,7 @@ const AppContent: React.FC = () => {
     ws.onerror = () => {
       ws.close();
     };
-  }, [isVoiceActive, startMediaStream]);
+  }, []); // Stable callback, no dependency on state to prevent resets
 
   useEffect(() => {
     connectWebSocket();
