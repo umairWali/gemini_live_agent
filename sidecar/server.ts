@@ -173,7 +173,7 @@ wss.on('connection', (ws) => {
                         model: 'models/gemini-2.0-flash-exp',
                         config: {
                             responseModalities: ["AUDIO"],
- Broadway                           // Enable Gemini's built-in turn-taking (like Google Gemini app)
+                            // Enable Gemini's built-in turn-taking (like Google Gemini app)
                             realtimeInputConfig: {
                                 automaticActivityDetection: {
                                     disabled: false, // Let Gemini detect speech automatically
@@ -307,13 +307,8 @@ wss.on('connection', (ws) => {
                             onopen: () => {
                                 connectingSockets.delete(ws); // Release mutex
                                 
-                                // SET GLOBAL STATE IMMEDIATELY ON OPEN
-                                globalActiveSession = session;
-                                globalActiveWs = ws;
-                                globalSessionId = sessionId;
-
                                 if ((ws as any).currentVoiceSessionId !== sessionId) {
-                                    try { session.close(); } catch {}
+                                    try { (session as any).close(); } catch {}
                                     return;
                                 }
                                 console.log('[AI_LIVE]: Session Active:', sessionId);
@@ -333,7 +328,9 @@ wss.on('connection', (ws) => {
                         }
                     });
 
-                    // Global state already set in onopen
+                    globalActiveSession = session;
+                    globalActiveWs = ws;
+                    globalSessionId = sessionId;
                     liveSessions.set(ws, session);
                 } catch (e: any) {
                     connectingSockets.delete(ws);
@@ -1570,8 +1567,8 @@ app.all('/api/*', (req, res) => {
 
 app.get('/', (req, res) => res.redirect('/dashboard/'));
 
-server.listen(port, () => {
-    console.log(`[SIDECAR]: Server listening on port ${port}`);
+server.listen(port, '0.0.0.0', () => {
+    console.log(`[SIDECAR]: Server listening on port ${port} (Network: 0.0.0.0)`);
     watcher.start();
     startMonitoring();
 
