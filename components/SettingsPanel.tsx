@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Settings, X, Save, Key, Palette, Volume2, Globe, Shield, Database, RefreshCw } from 'lucide-react';
+import { Settings, X, Save, Key, Palette, Volume2, Globe, Shield, Database, RefreshCw, Mail, Calendar } from 'lucide-react';
 
 interface SettingsPanelProps {
   isOpen: boolean;
@@ -16,6 +16,11 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose, isDark, 
   const [voiceEnabled, setVoiceEnabled] = useState(() => localStorage.getItem('operator_voice') === 'true');
   const [language, setLanguage] = useState(() => localStorage.getItem('operator_language') || 'en');
   const [debugMode, setDebugMode] = useState(() => localStorage.getItem('operator_debug') === 'true');
+  
+  // Email & Calendar Settings
+  const [gmailEmail, setGmailEmail] = useState(() => localStorage.getItem('operator_gmail_email') || '');
+  const [gmailAppPassword, setGmailAppPassword] = useState(() => localStorage.getItem('operator_gmail_password') || '');
+  const [calendarEnabled, setCalendarEnabled] = useState(() => localStorage.getItem('operator_calendar_enabled') === 'true');
 
   const handleSave = () => {
     // Save to localStorage
@@ -26,9 +31,29 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose, isDark, 
     localStorage.setItem('operator_language', language);
     localStorage.setItem('operator_debug', debugMode.toString());
     
+    // Save email & calendar settings
+    localStorage.setItem('operator_gmail_email', gmailEmail);
+    localStorage.setItem('operator_gmail_password', gmailAppPassword);
+    localStorage.setItem('operator_calendar_enabled', calendarEnabled.toString());
+    
+    // Send to server
+    if (gmailEmail && gmailAppPassword) {
+      fetch('/api/email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'connect',
+          provider: 'gmail',
+          credentials: { email: gmailEmail, password: gmailAppPassword }
+        })
+      }).then(res => res.json()).then(data => {
+        console.log('Email connected:', data);
+      });
+    }
+    
     // Show success message
     if (apiKey) {
-      console.log('✅ API Key saved successfully');
+      console.log('✅ Settings saved successfully');
     }
     
     // Close panel
@@ -42,6 +67,9 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose, isDark, 
     setVoiceEnabled(true);
     setLanguage('en');
     setDebugMode(false);
+    setGmailEmail('');
+    setGmailAppPassword('');
+    setCalendarEnabled(false);
   };
 
   if (!isOpen) return null;
@@ -85,6 +113,43 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose, isDark, 
             </p>
           </div>
 
+          {/* Gmail Email */}
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <Mail className="w-4 h-4 text-red-500" />
+              <label className={`text-sm font-medium ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                Gmail Address
+              </label>
+            </div>
+            <input
+              type="email"
+              value={gmailEmail}
+              onChange={(e) => setGmailEmail(e.target.value)}
+              placeholder="your.email@gmail.com"
+              className={`w-full px-3 py-2 rounded-lg text-sm outline-none transition-colors ${isDark ? 'bg-white/5 border border-white/10 text-white placeholder:text-slate-600 focus:border-violet-500/50' : 'bg-slate-50 border border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-violet-400'}`}
+            />
+          </div>
+
+          {/* Gmail App Password */}
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <Key className="w-4 h-4 text-red-500" />
+              <label className={`text-sm font-medium ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                Gmail App Password
+              </label>
+            </div>
+            <input
+              type="password"
+              value={gmailAppPassword}
+              onChange={(e) => setGmailAppPassword(e.target.value)}
+              placeholder="Enter 16-char app password"
+              className={`w-full px-3 py-2 rounded-lg text-sm outline-none transition-colors ${isDark ? 'bg-white/5 border border-white/10 text-white placeholder:text-slate-600 focus:border-violet-500/50' : 'bg-slate-50 border border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-violet-400'}`}
+            />
+            <p className={`text-xs mt-1 ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>
+              Get app password from Google Account → Security → App Passwords
+            </p>
+          </div>
+
           {/* Language */}
           <div>
             <div className="flex items-center gap-2 mb-2">
@@ -118,6 +183,22 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose, isDark, 
               className={`w-full px-3 py-2 rounded-lg text-sm font-medium transition-colors ${isDark ? 'bg-white/10 text-white hover:bg-white/20' : 'bg-slate-100 text-slate-900 hover:bg-slate-200'}`}
             >
               {isDark ? '🌙 Dark Mode' : '☀️ Light Mode'}
+            </button>
+          </div>
+
+          {/* Calendar Toggle */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Calendar className="w-4 h-4 text-emerald-500" />
+              <label className={`text-sm font-medium ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                Google Calendar
+              </label>
+            </div>
+            <button
+              onClick={() => setCalendarEnabled(!calendarEnabled)}
+              className={`w-12 h-6 rounded-full transition-colors ${calendarEnabled ? 'bg-violet-500' : 'bg-slate-600'}`}
+            >
+              <div className={`w-5 h-5 bg-white rounded-full transition-transform ${calendarEnabled ? 'translate-x-6' : 'translate-x-0.5'}`} />
             </button>
           </div>
 

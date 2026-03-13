@@ -326,6 +326,7 @@ const AppContent: React.FC = () => {
         // Initialize AI Master Gain Node if not exists
         if (!aiGainNodeRef.current) {
           aiGainNodeRef.current = ctx.createGain();
+          aiGainNodeRef.current.gain.value = 1;
           aiGainNodeRef.current.connect(ctx.destination);
         }
 
@@ -340,63 +341,42 @@ const AppContent: React.FC = () => {
         let audioBuffer: Int16Array[] = [];
         let bufferLength = 0;
 
+        // Pure audio streamer - no client-side VAD, Gemini handles turn-taking
         workletNode.port.onmessage = (e) => {
-          if (ws.readyState === WebSocket.OPEN) {
-            if (e.data.event === 'speech_start') {
-              console.log('[CLIENT]: User Speech Detected - Interrupting AI.');
-              isUserSpeakingRef.current = true;
-              stopAllPlayback();
-              ws.send(JSON.stringify({ type: 'STOP_AI_SPEECH' }));
-            } else if (e.data.event === 'turnComplete') {
-              console.log('[CLIENT]: Turn complete - Signaling Gemini.');
-              isUserSpeakingRef.current = false;
-              ws.send(JSON.stringify({ type: 'TURN_COMPLETE' }));
-            } else if (e.data.event === 'speech_end') {
-              isUserSpeakingRef.current = false;
-            } else if (e.data.event === 'data') {
-              const inputData = e.data.buffer; // Float32Array
-              const pcmData = new Int16Array(inputData.length);
-              for (let i = 0; i < inputData.length; i++) {
-                pcmData[i] = Math.max(-1, Math.min(1, inputData[i])) * 32767;
+          if (ws.readyState === WebSocket.OPEN && e.data.event === 'data') {
+            const inputData = e.data.buffer;
+            const pcmData = new Int16Array(inputData.length);
+            for (let i = 0; i < inputData.length; i++) {
+              pcmData[i] = Math.max(-1, Math.min(1, inputData[i])) * 32767;
+            }
+
+            audioBuffer.push(pcmData);
+            bufferLength += pcmData.length;
+
+            if (bufferLength >= 2048) {
+              const combined = new Int16Array(bufferLength);
+              let offset = 0;
+              for (const chunk of audioBuffer) {
+                combined.set(chunk, offset);
+                offset += chunk.length;
               }
-
-              audioBuffer.push(pcmData);
-              bufferLength += pcmData.length;
-
-              // Only send if VOICE_READY received from server
-              if (bufferLength >= 2048) {
-                const combined = new Int16Array(bufferLength);
-                let offset = 0;
-                for (const chunk of audioBuffer) {
-                  combined.set(chunk, offset);
-                  offset += chunk.length;
-                }
-
-                const bytes = new Uint8Array(combined.buffer);
-                let binary = '';
-                for (let i = 0; i < bytes.length; i += 8192) {
-                  binary += String.fromCharCode(...bytes.subarray(i, i + 8192));
-                }
-
-                // CRITICAL Handshake Check
-                // Log occasionally to confirm data flow
-                if (Math.random() < 0.02) console.log('[CLIENT_DEBUG]: Audio Streaming Active');
-                ws.send(JSON.stringify({ type: 'VOICE_AUDIO', data: btoa(binary) }));
-
-                audioBuffer = [];
-                bufferLength = 0;
+              const bytes = new Uint8Array(combined.buffer);
+              let binary = '';
+              for (let i = 0; i < bytes.length; i += 8192) {
+                binary += String.fromCharCode(...bytes.subarray(i, i + 8192));
               }
+              ws.send(JSON.stringify({ type: 'VOICE_AUDIO', data: btoa(binary) }));
+              audioBuffer = [];
+              bufferLength = 0;
             }
           }
         };
 
-        source.connect(workletNode);
-        // Do NOT connect worklet to destination (we don't want local echo)
-
+        // Do NOT connect worklet to destination (no local echo)
         setIsVoiceConnecting(false);
         setIsVoiceActive(true);
-        addToast({ type: 'success', title: 'Voice Online', message: 'You are now live with Gemini.' });
-        console.log('[CLIENT]: Stream initialized on top of resumed context.');
+        addToast({ type: 'success', title: 'Voice Live', message: 'Gemini is listening...' });
+        console.log('[CLIENT]: Pure-stream audio pipeline started. Server-Side VAD active.');
       })
       .catch(err => {
         setIsVoiceConnecting(false);
@@ -404,6 +384,7 @@ const AppContent: React.FC = () => {
         addToast({ type: 'error', title: 'Microphone Error', message: err.message });
       });
   }, [addToast]);
+
 
   const toggleScreenShare = useCallback(async () => {
     const ws = (window as any).operatorWs as WebSocket;
@@ -581,6 +562,18 @@ const AppContent: React.FC = () => {
         } else if (data.type === 'VOICE_READY') {
           setIsVoiceReady(true);
           startMediaStream();
+        } else if (data.type === 'USER_INTERRUPTED') {
+          // Gemini's VAD detected user started speaking → kill AI audio immediately
+          console.log('[CLIENT]: Gemini VAD: User interrupted AI.');
+          stopAllPlayback();
+          isUserSpeakingRef.current = true;
+        } else if (data.type === 'AI_TURN_COMPLETE') {
+          // Gemini finished speaking → ready to listen again
+          console.log('[CLIENT]: AI turn complete — listening.');
+          isUserSpeakingRef.current = false;
+          if (aiGainNodeRef.current) {
+            aiGainNodeRef.current.gain.setValueAtTime(1, audioContextRef.current?.currentTime || 0);
+          }
         } else if (data.type === 'VOICE_ERROR') {
           addToast({ type: 'error', title: 'Gemini Error', message: data.error });
           setIsVoiceActive(false);

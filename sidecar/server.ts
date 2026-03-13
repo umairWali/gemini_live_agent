@@ -149,23 +149,33 @@ wss.on('connection', (ws) => {
                 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
                 try {
-                    console.log('[AI_LIVE]: Initializing Gemini session...');
+                    console.log('[AI_LIVE]: Initializing Gemini session with Server-Side VAD...');
                     const session = await ai.live.connect({
                         model: 'models/gemini-2.5-flash-native-audio-latest',
                         config: {
                             responseModalities: ["AUDIO"],
+                            // Enable Gemini's built-in turn-taking (like Google Gemini app)
+                            realtimeInputConfig: {
+                                automaticActivityDetection: {
+                                    disabled: false, // Let Gemini detect speech automatically
+                                    startOfSpeechSensitivity: "START_SENSITIVITY_HIGH",
+                                    endOfSpeechSensitivity: "END_SENSITIVITY_HIGH",
+                                    prefixPaddingMs: 200,
+                                    silenceDurationMs: 800, // 0.8s silence = turn complete
+                                }
+                            },
+                            inputAudioTranscription: {},   // Transcribe user speech (for logging)
+                            outputAudioTranscription: {},  // Transcribe AI speech (for logging)
                             systemInstruction: {
-                                parts: [{ text: 'You are Personal Operator, an elite AI orchestrator. You have advanced tools to summarize URLs, set reminders, export documents, execute system actions, and review code. When the user asks you to do these tasks, ALWAYS use the provided tool and then immediately confirm it verbally. Speak naturally and concisely. CRITICAL: If the user interrupts you while you are speaking, STOP IMMEDIATELY and listen to their new input. Do not finish your previous sentence if interrupted.' }]
+                                parts: [{ text: 'You are Personal Operator, an elite AI assistant. Respond naturally and conversationally. You have tools to help users with tasks. When the user speaks, listen carefully. When they pause, respond helpfully and concisely. Speak naturally like a human assistant.' }]
                             },
                             tools: [{
                                 functionDeclarations: [
                                     { name: "summarize_url", description: "Summarize a YouTube video or webpage URL.", parameters: { type: "OBJECT", properties: { url: { type: "STRING" } } } },
                                     { name: "set_reminder", description: "Set a smart reminder.", parameters: { type: "OBJECT", properties: { task: { type: "STRING" }, time_in_minutes: { type: "NUMBER" } } } },
-                                    { name: "export_to_docs", description: "Export the generated meeting minutes, lists, or any structured content to a Google Doc or Excel sheet. For Excel, the content MUST be a JSON array of objects.", parameters: { type: "OBJECT", properties: { title: { type: "STRING" }, content: { type: "STRING", description: "The content to export. If format is excel, this must be a valid JSON array string." }, format: { type: "STRING", description: "'doc' or 'excel'" } } } },
-                                    { name: "execute_action", description: "Execute a live system action or command.", parameters: { type: "OBJECT", properties: { command_description: { type: "STRING" } } } },
-                                    { name: "code_review", description: "Perform a code review via voice.", parameters: { type: "OBJECT", properties: { filename: { type: "STRING" } } } },
-                                    { name: "update_memory", description: "Add a fact about the user or the environment to the real-time Memory Knowledge Graph. Use this proactively.", parameters: { type: "OBJECT", properties: { subject: { type: "STRING" }, relation: { type: "STRING" }, object: { type: "STRING" } } } },
-                                    { name: "update_sentiment", description: "Update the UI emotion state based on the user's vocal tone or text. Empathy engine.", parameters: { type: "OBJECT", properties: { emotion: { type: "STRING", description: "'happy', 'angry', or 'normal'" } } } }
+                                    { name: "export_to_docs", description: "Export content to a Google Doc or Excel sheet.", parameters: { type: "OBJECT", properties: { title: { type: "STRING" }, content: { type: "STRING" }, format: { type: "STRING" } } } },
+                                    { name: "execute_action", description: "Execute a live system action.", parameters: { type: "OBJECT", properties: { command_description: { type: "STRING" } } } },
+                                    { name: "code_review", description: "Perform a code review.", parameters: { type: "OBJECT", properties: { filename: { type: "STRING" } } } },
                                 ]
                             }]
                         } as any,
@@ -173,114 +183,85 @@ wss.on('connection', (ws) => {
                             onmessage: async (msg: any) => {
                                 // Log all non-audio messages for debugging
                                 if (!msg.serverContent?.modelTurn) {
-                                    console.log('[AI_DEBUG_MSG]:', Object.keys(msg).join(', '));
+                                    console.log('[AI_DEBUG_MSG]:', JSON.stringify(Object.keys(msg)));
                                 }
 
                                 if (msg.setupComplete) {
-                                    console.log('[AI_LIVE]: Setup complete — session ready for audio input.');
+                                    console.log('[AI_LIVE]: Setup complete — Gemini VAD active.');
                                 }
 
+                                // AI is speaking - stream audio to client
                                 if (msg.serverContent?.modelTurn) {
-                                    let hasAudio = false;
                                     for (const part of (msg.serverContent.modelTurn.parts || [])) {
                                         if (part.inlineData?.data) {
                                             if (interruptedSessions.has(ws)) {
-                                                console.log('[AI_LIVE]: Dropping audio chunk due to interruption.');
+                                                console.log('[AI_LIVE]: Dropping audio (interrupted).');
                                                 continue;
                                             }
-                                            hasAudio = true;
                                             ws.send(JSON.stringify({ type: 'VOICE_RESPONSE', data: part.inlineData.data }));
                                         }
-                                        if (part.text) {
-                                            if (interruptedSessions.has(ws)) continue;
-                                            console.log('[AI_LIVE_REPLY]:', part.text.substring(0, 80) + '...');
-                                            ws.send(JSON.stringify({ type: 'VOICE_TEXT', text: part.text }));
-                                        }
                                     }
-                                    if (hasAudio) console.log('[AI_LIVE]: Sending audio chunk to client.');
                                 }
 
-                                if (msg.serverContent?.outputTranscription?.text) {
-                                    ws.send(JSON.stringify({ type: 'VOICE_TEXT', text: msg.serverContent.outputTranscription.text }));
+                                // Gemini's VAD detected user started speaking → interrupt AI
+                                if (msg.serverContent?.interrupted === true) {
+                                    console.log('[AI_LIVE]: Gemini detected user interruption.');
+                                    interruptedSessions.add(ws);
+                                    ws.send(JSON.stringify({ type: 'USER_INTERRUPTED' }));
                                 }
 
-                                if (msg.serverContent?.turnComplete) {
-                                    console.log('[AI_LIVE]: Turn complete — waiting for next input.');
+                                // AI finished its turn
+                                if (msg.serverContent?.turnComplete === true) {
+                                    console.log('[AI_LIVE]: AI turn complete — listening for user.');
                                     interruptedSessions.delete(ws);
+                                    ws.send(JSON.stringify({ type: 'AI_TURN_COMPLETE' }));
                                 }
 
-                                //  LIVE FUNCTION CALLING HANDLING 
+                                // User speech transcription (for display/logging)
+                                if (msg.serverContent?.inputTranscription?.text) {
+                                    const text = msg.serverContent.inputTranscription.text;
+                                    console.log('[USER_SAID]:', text);
+                                    ws.send(JSON.stringify({ type: 'USER_TRANSCRIPT', text }));
+                                }
+
+                                // AI speech transcription
+                                if (msg.serverContent?.outputTranscription?.text) {
+                                    const text = msg.serverContent.outputTranscription.text;
+                                    console.log('[AI_SAID]:', text);
+                                    ws.send(JSON.stringify({ type: 'AI_TRANSCRIPT', text }));
+                                }
+
+                                // Function calling
                                 if (msg.toolCall) {
                                     console.log('[AI_LIVE_TOOL_CALL]:', JSON.stringify(msg.toolCall.functionCalls));
                                     const functionResponses: any[] = [];
 
                                     for (const call of msg.toolCall.functionCalls) {
                                         let resultInfo = "Action executed successfully.";
-                                        let uiLabel = ` Executed: ${call.name}`;
 
                                         if (call.name === 'summarize_url') {
-                                            resultInfo = `Successfully accessed and analyzed the URL: ${call.args?.url || 'provided URL'}.`;
-                                            uiLabel = ` URL Summarizer: Analyzing ${call.args?.url}...`;
-                                        }
-                                        else if (call.name === 'set_reminder') {
-                                            resultInfo = `Reminder set for ${call.args?.time_in_minutes} minutes from now to: ${call.args?.task}`;
-                                            uiLabel = ` Smart Reminder: ${call.args?.task} set for ${call.args?.time_in_minutes || 10} mins.`;
-                                        }
-                                        else if (call.name === 'export_to_docs') {
+                                            resultInfo = `Analyzed URL: ${call.args?.url}`;
+                                        } else if (call.name === 'set_reminder') {
+                                            resultInfo = `Reminder set: ${call.args?.task} in ${call.args?.time_in_minutes} minutes.`;
+                                        } else if (call.name === 'execute_action') {
+                                            const execResult = await executeAction('run_command', call.args?.command_description);
+                                            resultInfo = execResult.success
+                                                ? `Command output: ${execResult.output?.substring(0, 500)}`
+                                                : `Command failed: ${execResult.error}`;
+                                        } else if (call.name === 'export_to_docs') {
                                             const format = (call.args?.format || 'doc').toLowerCase();
-                                            const title = call.args?.title || 'Export';
-                                            const content = call.args?.content || '';
-
                                             if (format === 'excel') {
-                                                const excelResult = await executeAction('generate_excel', title, content);
-                                                if (excelResult.success) {
-                                                    resultInfo = `Excel file generated successfully: ${excelResult.metadata.filename}. Download link: ${excelResult.metadata.downloadUrl}`;
-                                                    uiLabel = ` ✅ Excel Created: ${excelResult.metadata.filename}`;
-                                                    ws.send(JSON.stringify({ 
-                                                        type: 'VOICE_TEXT', 
-                                                        text: `SYSTEM: [Download Excel File](${excelResult.metadata.downloadUrl})` 
-                                                    }));
-                                                } else {
-                                                    resultInfo = `Excel generation failed: ${excelResult.error}`;
-                                                    uiLabel = ` ❌ Excel Error`;
-                                                }
+                                                const excelResult = await executeAction('generate_excel', call.args?.title, call.args?.content);
+                                                resultInfo = excelResult.success
+                                                    ? `Excel file created: ${excelResult.metadata?.filename}`
+                                                    : `Excel failed: ${excelResult.error}`;
                                             } else {
-                                                const docResult = await executeAction('write_file', `${title}.txt`, content);
-                                                resultInfo = `Content exported as text file: ${title}.txt`;
-                                                uiLabel = ` 📄 Exported: ${title}.txt`;
+                                                await executeAction('write_file', `${call.args?.title}.txt`, call.args?.content);
+                                                resultInfo = `Exported as ${call.args?.title}.txt`;
                                             }
+                                        } else if (call.name === 'code_review') {
+                                            resultInfo = `Code review ready for ${call.args?.filename}`;
                                         }
-                                        else if (call.name === 'execute_action') {
-                                            const cmd = call.args?.command_description;
-                                            uiLabel = ` ⚡ System Exec: ${cmd}`;
-                                            console.log(`[AI_LIVE]: Executing REAL command: ${cmd}`);
-
-                                            // Call the existing executor module
-                                            const execResult = await executeAction('run_command', cmd);
-
-                                            if (execResult.success) {
-                                                resultInfo = `Command output: ${execResult.output?.substring(0, 500) || 'Command completed successfully.'}`;
-                                            } else {
-                                                resultInfo = `Command failed: ${execResult.error || 'Unknown error'}`;
-                                            }
-                                        }
-                                        else if (call.name === 'code_review') {
-                                            resultInfo = `Scanned ${call.args?.filename}. Code review ready to present.`;
-                                            uiLabel = ` Voice Code Review: Analyzing ${call.args?.filename || 'code'}...`;
-                                        }
-                                        else if (call.name === 'update_memory') {
-                                            resultInfo = `Memory added: ${call.args?.subject} -> ${call.args?.relation} -> ${call.args?.object}`;
-                                            uiLabel = `🧠 Memory Synced: ${call.args?.subject} ${call.args?.relation} ${call.args?.object}`;
-                                            ws.send(JSON.stringify({ type: 'UPDATE_MEMORY', data: call.args }));
-                                        }
-                                        else if (call.name === 'update_sentiment') {
-                                            resultInfo = `Empathy engine shifted state to ${call.args?.emotion}.`;
-                                            uiLabel = `🎭 Sentiment Shift: ${call.args?.emotion?.toUpperCase()}`;
-                                            ws.send(JSON.stringify({ type: 'UPDATE_SENTIMENT', emotion: call.args?.emotion }));
-                                        }
-
-                                        // Broadcast the action to UI so user can see what Gemini is doing in real-time
-                                        ws.send(JSON.stringify({ type: 'VOICE_TEXT', text: uiLabel }));
 
                                         functionResponses.push({
                                             id: call.id,
@@ -289,7 +270,6 @@ wss.on('connection', (ws) => {
                                         });
                                     }
 
-                                    // Send the tool response back so Gemini can continue speaking the result
                                     if (typeof (session as any).sendToolResponse === 'function') {
                                         (session as any).sendToolResponse({ functionResponses });
                                     } else if (typeof (session as any).send === 'function') {
@@ -298,7 +278,7 @@ wss.on('connection', (ws) => {
                                 }
                             },
                             onopen: () => {
-                                console.log('[AI_LIVE]: Provider session active.');
+                                console.log('[AI_LIVE]: Provider session active with Server-Side VAD.');
                                 ws.send(JSON.stringify({ type: 'VOICE_READY' }));
                             },
                             onerror: (err: any) => {
