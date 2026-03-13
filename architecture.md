@@ -4,9 +4,9 @@
 > **60+ Features | 3 Hackathon Categories | All-In-One Multimodal Agent**
 
 This document details the complete architecture of **Personal Operator** - a next-generation multimodal AI agent covering **ALL THREE** hackathon categories:
--  **Live Agents** - Real-time voice with interruptions
--  **Creative Storyteller** - Interleaved multimedia output  
--  **UI Navigator** - Visual understanding & interaction
+-  **Live Agents** - Real-time voice with natural interruptions (Gemini Live API)
+-  **Creative Storyteller** - Interleaved multimedia output (Text + Generated Images)
+-  **UI Navigator** - Visual understanding & screen interaction
 
 ---
 
@@ -165,7 +165,7 @@ graph TB
     end
 
     subgraph "Google GenAI"
-        G1[Gemini 2.5 Flash Native Audio]
+        G1[Gemini 2.5 Flash Native Audio Preview]
         G2[Gemini 2.0 Flash Vision]
         G3[Gemini Image Generation]
     end
@@ -207,7 +207,7 @@ graph TB
 
 | Module | Tech | Description |
 |--------|------|-------------|
-| **Native Audio** | `gemini-2.5-flash-native-audio-latest` | Bidirectional PCM streaming |
+| **Native Audio** | `gemini-2.5-flash-native-audio-preview-...` | Bidirectional PCM streaming |
 | **VAD Handler** | Web Audio API | Voice Activity Detection |
 | **Screen Vision** | `getDisplayMedia` | 5fps screen capture |
 | **Camera Vision** | `getUserMedia` | Webcam feed to AI |
@@ -404,8 +404,6 @@ Not just seeing UI, but interacting with it through automated clicks, typing, an
 ##  Related Documentation
 
 - [README.md](./README.md) - Main documentation
-- [DEMO_SCRIPT.md](./DEMO_SCRIPT.md) - Video script
-- [BLOG_POST.md](./BLOG_POST.md) - Technical blog
 - [infrastructure/README.md](./infrastructure/README.md) - IaC docs
 
 ---

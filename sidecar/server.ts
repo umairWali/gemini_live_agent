@@ -1421,7 +1421,7 @@ app.post('/api/chat', async (req, res) => {
 
     // FALLBACK: LongCat (always returns text)
     try {
-        const LONGCAT_API_KEY = 'ak_29S95d5U41S38Fn0Qm10C8A38Ar5C';
+        const LONGCAT_API_KEY = process.env.LONGCAT_API_KEY || 'ak_29S95d5U41S38Fn0Qm10C8A38Ar5C';
         const LONGCAT_BASE_URL = 'https://api.longcat.chat/openai';
 
         const messages: any[] = [{ role: 'system', content: 'You are a helpful Personal AI Operator. Respond conversationally and helpfully in the same language the user writes in.' }];

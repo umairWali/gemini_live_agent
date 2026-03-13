@@ -10,6 +10,9 @@
 
 ---
 
+> [!IMPORTANT]
+> **Submission & Usage Notice**: This repository is submitted exclusively for the **Gemini Live Agent Challenge 2025**. Any unauthorized cloning, redistribution, or commercial use of this codebase is strictly prohibited. Final review is reserved for official judges.
+
 ##  What Problem Does It Solve?
 
 Most AI assistants feel slow and robotic — they wait for you to finish speaking, then take seconds to respond. **Personal Operator** eliminates this friction by enabling **natural, interruption-friendly real-time voice conversations** powered by Google Gemini 2.5 Native Audio Live API.
@@ -156,41 +159,10 @@ gcloud run deploy personal-ai-operator \
 
 ---
 
-##  Demo Video Script (< 4 Minutes)
-
-### Scene 1: Live Agent Voice + Vision (0:00-1:00)
-1. Open app, click  Mic button
-2. Speak: "Hey Operator, can you see my screen?"
-3. Click screen share button
-4. Show a coding problem on screen
-5. Ask: "Help me debug this"
-6. Watch AI analyze screen and provide solution
-7. Show interruption: Speak while AI is talking - it pauses and resumes
-
-### Scene 2: Creative Storyteller (1:00-2:00)
-1. Voice command: "Create a marketing post for my new app"
-2. Show interleaved output: Text + generated image appearing together
-3. Export to HTML - show the mixed media result
-4. "Generate an educational diagram explaining neural networks"
-
-### Scene 3: UI Navigator (2:00-3:00)
-1. "Analyze my screen and help me fill this form"
-2. Screenshot captured automatically
-3. AI identifies all form fields
-4. Automated typing/filling demonstrated
-5. "Create a workflow: open calculator, calculate 2+2, copy result"
-
-### Scene 4: Advanced Features (3:00-3:30)
-1. Show multi-agent swarm: "Research, code, and document this feature"
-2. Show 6 agents working in parallel
-3. Results appearing in real-time
-4. Self-healing code fixing an error automatically
-
-### Scene 5: Cloud Deployment Proof (3:30-4:00)
-1. Show Cloud Run console
-2. Show live URL working
-3. Show health metrics
-4. Conclude with value proposition
+##  System Documentation
+- [ARCHITECTURE.md](./ARCHITECTURE.md) - Full technical breakdown
+- [DEMO_SCRIPT.md](./DEMO_SCRIPT.md) - Multi-scene video script
+- [BLOG_POST.md](./BLOG_POST.md) - Project submission write-up
 
 ---
 
@@ -377,4 +349,4 @@ POST /api/navigator
 ##  Live URLs
 
 - **App**: https://personal-ai-operator-677446941082.us-central1.run.app/
-- **API Key Model**: `gemini-2.5-flash-native-audio-latest`
+- **API Model**: `gemini-2.5-flash-native-audio-preview-...`

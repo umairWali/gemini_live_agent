@@ -42,6 +42,14 @@ if [ -n "$API_KEY" ]; then
     ENV_VARS_FLAG="--set-env-vars=API_KEY=${API_KEY}"
 fi
 
+if [ -n "$LONGCAT_API_KEY" ]; then
+    if [ -n "$ENV_VARS_FLAG" ]; then
+        ENV_VARS_FLAG="${ENV_VARS_FLAG},LONGCAT_API_KEY=${LONGCAT_API_KEY}"
+    else
+        ENV_VARS_FLAG="--set-env-vars=LONGCAT_API_KEY=${LONGCAT_API_KEY}"
+    fi
+fi
+
 gcloud run deploy "$SERVICE_NAME" \
   --source "$ENTRY_POINT" \
   --region "$REGION" \
