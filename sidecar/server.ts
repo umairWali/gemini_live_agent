@@ -143,6 +143,13 @@ wss.on('connection', (ws) => {
                 const clientId = message.clientId || 'default';
                 console.log(`[WS]: Voice Request: Client=${clientId}, Session=${sessionId}`);
                 
+                // Mutex: prevent duplicate START_VOICE from racing
+                if (connectingSockets.has(ws)) {
+                    console.log('[WS]: Already connecting, ignoring duplicate START_VOICE');
+                    return;
+                }
+                connectingSockets.add(ws);
+                
                 (ws as any).currentVoiceSessionId = sessionId;
 
                 // Stop previous global session if exists
@@ -159,8 +166,14 @@ wss.on('connection', (ws) => {
                 liveSessions.delete(ws);
                 interruptedSessions.clear();
                 globalActiveClientId = clientId;
+                
+                // SET GLOBAL STATE BEFORE connect() to prevent race condition
+                // (onmessage fires immediately and checks globalSessionId)
+                globalActiveWs = ws;
+                globalSessionId = sessionId;
 
                 if (!process.env.API_KEY) {
+                    connectingSockets.delete(ws);
                     ws.send(JSON.stringify({ type: 'VOICE_ERROR', error: 'API Key missing' }));
                     return;
                 }
@@ -168,9 +181,9 @@ wss.on('connection', (ws) => {
                 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
                 try {
-                    console.log(`[AI_LIVE]: Connecting to Gemini Provider (Model: gemini-2.0-flash-exp)...`);
+                    console.log('[AI_LIVE]: Connecting to Gemini Live API (gemini-2.5-flash-native-audio-preview-12-2025)...');
                     const session = await ai.live.connect({
-                        model: 'models/gemini-2.0-flash-exp',
+                        model: 'models/gemini-2.5-flash-native-audio-preview-12-2025',
                         config: {
                             responseModalities: ["AUDIO"],
                             // Enable Gemini's built-in turn-taking (like Google Gemini app)
@@ -200,11 +213,9 @@ wss.on('connection', (ws) => {
                         } as any,
                         callbacks: {
                             onmessage: async (msg: any) => {
-                                // CRITICAL: Only process if this is the GLOBAL ACTIVE session
-                                // RELAXED: If global ID isn't set yet (race condition), allow this session to become global
-                                if (globalSessionId && (globalSessionId !== sessionId || globalActiveWs !== ws)) {
-                                    console.log('[AI_LIVE]: Zombie session detected — closing.');
-                                    try { session.close(); } catch {}
+                                // Only process if this WS is still the global active one
+                                if (globalActiveWs && globalActiveWs !== ws) {
+                                    console.log('[AI_LIVE]: Stale session message — ignoring.');
                                     return;
                                 }
 
@@ -306,11 +317,6 @@ wss.on('connection', (ws) => {
                             },
                             onopen: () => {
                                 connectingSockets.delete(ws); // Release mutex
-                                
-                                if ((ws as any).currentVoiceSessionId !== sessionId) {
-                                    try { (session as any).close(); } catch {}
-                                    return;
-                                }
                                 console.log('[AI_LIVE]: Session Active:', sessionId);
                                 ws.send(JSON.stringify({ type: 'VOICE_READY', sessionId }));
                             },
@@ -320,17 +326,22 @@ wss.on('connection', (ws) => {
                             },
                             onclose: (status: any) => {
                                 console.log('[AI_LIVE]: Provider session closed.', status?.code, status?.reason);
-                                if (liveSessions.has(ws)) {
-                                    ws.send(JSON.stringify({ type: 'VOICE_ERROR', error: 'Session closed. Please reconnect.' }));
-                                    liveSessions.delete(ws);
+                                liveSessions.delete(ws);
+                                // Send graceful end signal instead of error
+                                try {
+                                    ws.send(JSON.stringify({ type: 'VOICE_ENDED', reason: status?.reason || 'Session ended' }));
+                                } catch(e) {}
+                                // Clear global state if this was the active session
+                                if (globalActiveWs === ws) {
+                                    globalActiveSession = null;
+                                    globalActiveWs = null;
+                                    globalSessionId = null;
                                 }
                             }
                         }
                     });
 
                     globalActiveSession = session;
-                    globalActiveWs = ws;
-                    globalSessionId = sessionId;
                     liveSessions.set(ws, session);
                 } catch (e: any) {
                     connectingSockets.delete(ws);
@@ -1567,8 +1578,8 @@ app.all('/api/*', (req, res) => {
 
 app.get('/', (req, res) => res.redirect('/dashboard/'));
 
-server.listen(port, '0.0.0.0', () => {
-    console.log(`[SIDECAR]: Server listening on port ${port} (Network: 0.0.0.0)`);
+server.listen(Number(port), '0.0.0.0', () => {
+    console.log(`[SIDECAR]: Server listening on port ${port} (0.0.0.0)`);
     watcher.start();
     startMonitoring();
 

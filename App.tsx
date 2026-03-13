@@ -577,9 +577,11 @@ const AppContent: React.FC = () => {
           }
 
           isAiSpeakingRef.current = true;
-          if (isUserSpeakingRef.current) return;
 
-          console.log(`[CLIENT]: Playing AI audio chunk (Session: ${msgId || 'legacy'})`);
+          // Log only 1 in 50 chunks to reduce console noise
+          if (Math.random() < 0.02) {
+            console.log(`[CLIENT]: Playing AI audio chunk (Session: ${msgId || 'legacy'})`);
+          }
           
           try {
             const ctx = audioContextRef.current;
@@ -652,6 +654,15 @@ const AppContent: React.FC = () => {
           if (aiGainNodeRef.current) {
             aiGainNodeRef.current.gain.setValueAtTime(1, audioContextRef.current?.currentTime || 0);
           }
+        } else if (data.type === 'VOICE_ENDED') {
+          // Gemini session ended gracefully (not an error)
+          console.log('[CLIENT]: Voice session ended:', data.reason);
+          stopAllPlayback();
+          isAiSpeakingRef.current = false;
+          isUserSpeakingRef.current = false;
+          setIsVoiceActive(false);
+          setIsVoiceReady(false);
+          addToast({ type: 'info', title: 'Voice Ended', message: 'Session ended. Press mic to reconnect.' });
         } else if (data.type === 'VOICE_ERROR') {
           addToast({ type: 'error', title: 'Gemini Error', message: data.error });
           setIsVoiceActive(false);
