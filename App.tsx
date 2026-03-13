@@ -498,6 +498,17 @@ const AppContent: React.FC = () => {
   const connectWebSocket = useCallback(() => {
     if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
 
+    // CRITICAL: Close existing socket if it exists to prevent double voices
+    const existingWs = (window as any).operatorWs as WebSocket;
+    if (existingWs) {
+      console.log('[WS]: Closing stale connection...');
+      if (existingWs.heartbeat) clearInterval(existingWs.heartbeat);
+      existingWs.onclose = null; // Prevent trigger of reconnect logic
+      existingWs.onerror = null;
+      existingWs.onmessage = null;
+      existingWs.close();
+    }
+
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsUrl = `${protocol}//${window.location.host}/ws/`;
     const ws = new WebSocket(wsUrl);
