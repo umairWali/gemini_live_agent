@@ -554,8 +554,15 @@ const AppContent: React.FC = () => {
         }
 
         if (data.type === 'VOICE_RESPONSE') {
-          // Double check: is this still the active voice session?
-          if ((ws as any).voiceSessionId !== voiceSessionCounterRef.current) return;
+          // Absolute session validation: must match the most recent ID
+          const currentId = (ws as any).voiceSessionId;
+          const msgId = data.sessionId;
+          
+          if (msgId && currentId && String(msgId) !== String(currentId)) {
+            console.warn(`[CLIENT]: Ignoring audio from zombie session (expected ${currentId}, got ${msgId})`);
+            return;
+          }
+
           if (isUserSpeakingRef.current) return;
           try {
             const ctx = audioContextRef.current;

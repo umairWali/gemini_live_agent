@@ -122,6 +122,7 @@ const watcher = new WatcherEngine(path.resolve(__dirname, '..'));
 let clients: WebSocket[] = [];
 const liveSessions = new Map<WebSocket, any>();
 const interruptedSessions = new Set<WebSocket>();
+const connectingSockets = new Set<WebSocket>(); // Mutex for START_VOICE race conditions
 
 wss.on('connection', (ws) => {
     clients.push(ws);
@@ -133,21 +134,27 @@ wss.on('connection', (ws) => {
             const message = JSON.parse(raw);
 
             if (message.type === 'START_VOICE') {
+                if (connectingSockets.has(ws)) {
+                    console.log('[WS]: START_VOICE ignored (connection already in progress)');
+                    return;
+                }
+                connectingSockets.add(ws);
+
                 const sessionId = message.sessionId || Date.now().toString();
-                console.log('[WS]: Received START_VOICE, Session ID:', sessionId);
-                
-                // Track current session ID on the WebSocket itself
+                console.log('[WS]: Starting Voice Session:', sessionId);
                 (ws as any).currentVoiceSessionId = sessionId;
 
-                const existingSession = liveSessions.get(ws);
-                if (existingSession) {
-                    console.log('[AI_LIVE]: Closing existing session for this client.');
-                    try { existingSession.close(); } catch { }
-                    liveSessions.delete(ws);
-                }
+                try {
+                    const existingSession = liveSessions.get(ws);
+                    if (existingSession) {
+                        console.log('[AI_LIVE]: Killing stale Gemini session.');
+                        try { await existingSession.close(); } catch { }
+                        liveSessions.delete(ws);
+                    }
+                } catch (e) { }
 
                 if (!process.env.API_KEY) {
-                    console.error('[WS]: API_KEY missing');
+                    connectingSockets.delete(ws);
                     ws.send(JSON.stringify({ type: 'VOICE_ERROR', error: 'API Key missing' }));
                     return;
                 }
@@ -155,7 +162,7 @@ wss.on('connection', (ws) => {
                 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
                 try {
-                    console.log('[AI_LIVE]: Initializing Gemini session with Server-Side VAD...');
+                    console.log('[AI_LIVE]: Connecting to Gemini Provider...');
                     const session = await ai.live.connect({
                         model: 'models/gemini-2.5-flash-native-audio-latest',
                         config: {
@@ -211,7 +218,7 @@ wss.on('connection', (ws) => {
                                                 console.log('[AI_LIVE]: Dropping audio (interrupted).');
                                                 continue;
                                             }
-                                            ws.send(JSON.stringify({ type: 'VOICE_RESPONSE', data: part.inlineData.data }));
+                                            ws.send(JSON.stringify({ type: 'VOICE_RESPONSE', data: part.inlineData.data, sessionId }));
                                         }
                                     }
                                 }
@@ -291,12 +298,13 @@ wss.on('connection', (ws) => {
                                 }
                             },
                             onopen: () => {
+                                connectingSockets.delete(ws); // Release mutex
                                 if ((ws as any).currentVoiceSessionId !== sessionId) {
                                     try { session.close(); } catch {}
                                     return;
                                 }
-                                console.log('[AI_LIVE]: Provider session active with Server-Side VAD.');
-                                ws.send(JSON.stringify({ type: 'VOICE_READY' }));
+                                console.log('[AI_LIVE]: Session Active:', sessionId);
+                                ws.send(JSON.stringify({ type: 'VOICE_READY', sessionId }));
                             },
                             onerror: (err: any) => {
                                 console.error('[AI_LIVE_ERROR]:', err);
@@ -315,6 +323,7 @@ wss.on('connection', (ws) => {
                     liveSessions.set(ws, session);
 
                 } catch (e: any) {
+                    connectingSockets.delete(ws); // Release mutex
                     console.error('[AI_LIVE]: Connect error', e);
                     ws.send(JSON.stringify({ type: 'VOICE_ERROR', error: 'Init Failed: ' + e.message }));
                 }
