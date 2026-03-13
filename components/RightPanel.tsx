@@ -85,7 +85,7 @@ const RightPanel: React.FC<RightPanelProps> = ({ state }) => {
             {/* Live Audit Trail */}
             <div className="space-y-4">
               <p className="text-[10px] font-black uppercase text-slate-500 tracking-widest pl-2 flex items-center gap-2">
-                <Zap className="w-3 h-3 text-amber-500" /> Active_Firewall_Logs
+                <Zap className="w-3 h-3 text-amber-500" /> Active Firewall Logs
               </p>
               <div className="bg-black/60 border border-white/5 rounded-3xl p-4 font-mono text-[10px] space-y-3 max-h-[400px] overflow-y-auto custom-scrollbar">
                 {state.auditTrail.length === 0 ? (
@@ -162,7 +162,7 @@ const RightPanel: React.FC<RightPanelProps> = ({ state }) => {
             </div>
 
             <div className="space-y-6 pt-10 border-t border-slate-900">
-              <h3 className="text-[9px] font-black text-slate-700 uppercase tracking-widest flex items-center gap-2"><BarChart3 className="w-4 h-4" /> Telemetry_Matrix</h3>
+              <h3 className="text-[9px] font-black text-slate-700 uppercase tracking-widest flex items-center gap-2"><BarChart3 className="w-4 h-4" /> Telemetry Matrix</h3>
               <div className="space-y-3">
                 {state.telemetry.slice(0, 6).map(t => (
                   <div key={t.id} className="p-4 bg-white/5 border border-white/5 rounded-2xl flex items-center justify-between hover:bg-white/10 transition-all">

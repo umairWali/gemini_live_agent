@@ -363,60 +363,6 @@ wss.on('connection', (ws) => {
                                     const functionResponses: any[] = [];
                                     for (const call of msg.toolCall.functionCalls) {
                                         const resultInfo = await handleOperatorFunctionCall(call);
-                                            const { action, title, progress, status } = call.args;
-                                            const state = stateManager.getState();
-                                            if (action === 'add') {
-                                                state.goals.push({
-                                                    id: Math.random().toString(36).substr(2, 9),
-                                                    title: title || "New Mission",
-                                                    description: title || "New Mission",
-                                                    status: status || 'pending',
-                                                    progress: progress || 0,
-                                                    tasks: [],
-                                                    createdAt: Date.now()
-                                                });
-                                                resultInfo = `Mission "${title}" added to the board.`;
-                                            } else if (action === 'update') {
-                                                const goal = state.goals.find((g: any) => g.title === title || g.id === title);
-                                                if (goal) {
-                                                    if (progress !== undefined) goal.progress = progress;
-                                                    if (status) goal.status = status;
-                                                    resultInfo = `Mission "${title}" updated.`;
-                                                } else {
-                                                    resultInfo = `Mission "${title}" not found.`;
-                                                }
-                                            }
-                                            stateManager.save();
-                                            // Broadcast goal update
-                                            broadcast({ type: 'GOALS_UPDATED', goals: state.goals });
-                                        } else if (call.name === 'manage_knowledge_graph') {
-                                            const { action, label, type, source, target } = call.args;
-                                            const state = stateManager.getState();
-                                            if (action === 'add_node') {
-                                                state.knowledgeGraph.nodes.push({
-                                                    id: Math.random().toString(36).substr(2, 9),
-                                                    label: label || "New Node",
-                                                    type: type || 'fact',
-                                                    relevance: 0.8
-                                                });
-                                                resultInfo = `Knowledge node "${label}" added.`;
-                                            } else if (action === 'add_link') {
-                                                state.knowledgeGraph.links.push({ source, target });
-                                                resultInfo = `Knowledge link established between ${source} and ${target}.`;
-                                            }
-                                            stateManager.save();
-                                            broadcast({ type: 'KNOWLEDGE_UPDATED', graph: state.knowledgeGraph });
-                                        } else if (call.name === 'system_security') {
-                                            const { action, threshold } = call.args;
-                                            if (action === 'lockdown') {
-                                                stateManager.addAuditEntry(`[SECURITY ALERT]: Global lockdown initiated by Operator. All external ports throttled.`, 'ai');
-                                                resultInfo = `System in LOCKDOWN mode. All protocols secured.`;
-                                            } else if (action === 'audit') {
-                                                resultInfo = `Security Audit complete. 0 threats detected. 5 protocols verified.`;
-                                            }
-                                            broadcast({ type: 'SECURITY_ALERT', text: resultInfo });
-                                        }
-
                                         functionResponses.push({
                                             id: call.id,
                                             name: call.name,
