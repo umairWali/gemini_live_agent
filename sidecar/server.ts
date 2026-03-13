@@ -133,9 +133,15 @@ wss.on('connection', (ws) => {
             const message = JSON.parse(raw);
 
             if (message.type === 'START_VOICE') {
-                console.log('[WS]: Received START_VOICE');
+                const sessionId = message.sessionId || Date.now().toString();
+                console.log('[WS]: Received START_VOICE, Session ID:', sessionId);
+                
+                // Track current session ID on the WebSocket itself
+                (ws as any).currentVoiceSessionId = sessionId;
+
                 const existingSession = liveSessions.get(ws);
                 if (existingSession) {
+                    console.log('[AI_LIVE]: Closing existing session for this client.');
                     try { existingSession.close(); } catch { }
                     liveSessions.delete(ws);
                 }
@@ -181,6 +187,13 @@ wss.on('connection', (ws) => {
                         } as any,
                         callbacks: {
                             onmessage: async (msg: any) => {
+                                // CRITICAL: Only process if this is the active session
+                                if ((ws as any).currentVoiceSessionId !== sessionId) {
+                                    console.log('[AI_LIVE]: Zombie session message detected — closing old session.');
+                                    try { session.close(); } catch {}
+                                    return;
+                                }
+
                                 // Log all non-audio messages for debugging
                                 if (!msg.serverContent?.modelTurn) {
                                     console.log('[AI_DEBUG_MSG]:', JSON.stringify(Object.keys(msg)));
@@ -278,6 +291,10 @@ wss.on('connection', (ws) => {
                                 }
                             },
                             onopen: () => {
+                                if ((ws as any).currentVoiceSessionId !== sessionId) {
+                                    try { session.close(); } catch {}
+                                    return;
+                                }
                                 console.log('[AI_LIVE]: Provider session active with Server-Side VAD.');
                                 ws.send(JSON.stringify({ type: 'VOICE_READY' }));
                             },
