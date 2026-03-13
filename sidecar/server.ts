@@ -350,6 +350,8 @@ wss.on('connection', (ws) => {
                         console.error('[AI_AUDIO_SEND_ERR]:', err.message);
                     }
                 }
+            } else if (message.type === 'PING') {
+                ws.send(JSON.stringify({ type: 'PONG' }));
             } else if (message.type === 'VOICE_TEXT_INPUT') {
                 const session = liveSessions.get(ws);
                 if (session && message.text) {

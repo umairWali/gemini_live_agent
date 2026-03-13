@@ -301,7 +301,7 @@ const AppContent: React.FC = () => {
     addToast({ type: 'info', title: 'Voice Link', message: 'Requesting Gemini stream...' });
     console.log('[CLIENT]: Requesting START_VOICE');
     ws.send(JSON.stringify({ type: 'START_VOICE' }));
-  }, [isVoiceActive, isVoiceConnecting, isVoiceReady, addToast]);
+  }, [isVoiceActive, isVoiceConnecting, isVoiceReady, isConnected, addToast]);
 
   const startMediaStream = useCallback(() => {
     const ws = (window as any).operatorWs as WebSocket;
@@ -522,6 +522,14 @@ const AppContent: React.FC = () => {
       setIsConnected(true);
       setState(p => ({ ...p, osState: { ...p.osState, connected: true } }));
       
+      // Heartbeat to keep connection alive on Cloud Run
+      const heartbeatInterval = setInterval(() => {
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ type: 'PING' }));
+        }
+      }, 15000);
+      (ws as any).heartbeat = heartbeatInterval;
+      
       // Fetch goals
       fetch('/api/execute', {
         method: 'POST',
@@ -581,6 +589,7 @@ const AppContent: React.FC = () => {
 
     ws.onclose = () => {
       console.log('[WS]: Disconnected. Retrying in 3s...');
+      if ((ws as any).heartbeat) clearInterval((ws as any).heartbeat);
       setIsConnected(false);
       setIsVoiceActive(false);
       setIsVoiceReady(false);
