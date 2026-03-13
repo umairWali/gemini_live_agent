@@ -139,8 +139,7 @@ const AppContent: React.FC = () => {
   const aiGainNodeRef = useRef<GainNode | null>(null);
   const workletModuleLoadedRef = useRef<boolean>(false);
   const voiceSessionCounterRef = useRef<number>(0);
-  const isAiSpeakingRef = useRef<boolean>(false); // NEW: Track if AI is talking
-  const muteUntilRef = useRef<number>(0); // NEW: Track when it's safe to unmute mic (cooldown after AI stops)
+  const isAiSpeakingRef = useRef<boolean>(false); // Track if AI is talking
   const clientId = useRef<string>(Math.random().toString(36).substring(7));
 
   const stopAllPlayback = useCallback(() => {
@@ -155,8 +154,7 @@ const AppContent: React.FC = () => {
     activeAudioSourcesRef.current = [];
     playbackScheduleRef.current = 0;
     isAiSpeakingRef.current = false;
-    muteUntilRef.current = Date.now() + 1000; // 1-second cooldown after stopping
-    console.log('[CLIENT]: All playback stopped and speaker flag reset.');
+    console.log('[CLIENT]: All playback stopped.');
   }, []);
 
   const [isScreenSharing, setIsScreenSharing] = useState(false);
@@ -564,24 +562,12 @@ const AppContent: React.FC = () => {
           const currentId = (ws as any).voiceSessionId;
           const msgId = data.sessionId;
           
-          // Debug log for every chunk to help identify issues
-          if (Math.random() < 0.01) {
-            console.log(`[CLIENT_DEBUG]: Receive chunk. ClientSession=${currentId}, MsgSession=${msgId}`);
-          }
-
-          // Strict block only if IDs explicitly mismatch
           if (msgId && currentId && String(msgId) !== String(currentId)) {
             return;
           }
 
           isAiSpeakingRef.current = true;
-          muteUntilRef.current = Date.now() + 2000; // continually push mute window while chunks arrive
 
-          // Log only 1 in 50 chunks to reduce console noise
-          if (Math.random() < 0.02) {
-            console.log(`[CLIENT]: Playing AI audio chunk (Session: ${msgId || 'legacy'})`);
-          }
-          
           try {
             const ctx = audioContextRef.current;
             if (!ctx) return;
@@ -608,24 +594,13 @@ const AppContent: React.FC = () => {
               activeAudioSourcesRef.current = activeAudioSourcesRef.current.filter(s => s !== source);
               if (activeAudioSourcesRef.current.length === 0) {
                 isAiSpeakingRef.current = false;
-                muteUntilRef.current = Date.now() + 1500; // 1.5s echo flush window after finishing
               }
             };
             activeAudioSourcesRef.current.push(source);
 
-            // Safety fallback: if AI hasn't spoken in 5 seconds of chunks, something is wrong
-            if ((window as any).aiMuteTimeout) clearTimeout((window as any).aiMuteTimeout);
-            (window as any).aiMuteTimeout = setTimeout(() => {
-                if (isAiSpeakingRef.current && activeAudioSourcesRef.current.length === 0) {
-                    console.log('[CLIENT]: Safety reset of AiSpeaking flag.');
-                    isAiSpeakingRef.current = false;
-                }
-            }, 5000);
-
-            // Ensure consecutive chunks play seamlessly
             const now = ctx.currentTime;
             let startAt = playbackScheduleRef.current || now;
-            if (startAt < now) startAt = now; // If lagging, catch up to current time
+            if (startAt < now) startAt = now; 
             
             source.start(startAt);
             playbackScheduleRef.current = startAt + buffer.duration;
@@ -636,21 +611,16 @@ const AppContent: React.FC = () => {
           setIsVoiceReady(true);
           startMediaStream();
         } else if (data.type === 'USER_INTERRUPTED') {
-          // Gemini's VAD detected user started speaking → kill AI audio immediately
           console.log('[CLIENT]: Gemini VAD: User interrupted AI.');
           stopAllPlayback();
-          isAiSpeakingRef.current = false; // Reset speaker state
-          isUserSpeakingRef.current = true;
-          // Also signal server to stop sending AI audio chunks
+          isAiSpeakingRef.current = false; 
           const wsRef = (window as any).operatorWs as any;
           if (wsRef?.readyState === WebSocket.OPEN) {
             wsRef.send(JSON.stringify({ type: 'STOP_AI_SPEECH' }));
           }
         } else if (data.type === 'AI_TURN_COMPLETE') {
-          // Gemini finished speaking → ready to listen again
           console.log('[CLIENT]: AI turn complete — listening.');
-          isUserSpeakingRef.current = false;
-          isAiSpeakingRef.current = false; // Just in case
+          isAiSpeakingRef.current = false; 
           if (aiGainNodeRef.current) {
             aiGainNodeRef.current.gain.setValueAtTime(1, audioContextRef.current?.currentTime || 0);
           }

@@ -237,10 +237,6 @@ wss.on('connection', (ws) => {
                                     if (Math.random() < 0.05) console.log('[AI_AUDIO_OUT]: Gemini is speaking...');
                                     for (const part of (msg.serverContent.modelTurn.parts || [])) {
                                         if (part.inlineData?.data) {
-                                            if (interruptedSessions.has(ws)) {
-                                                console.log('[AI_LIVE]: Dropping audio (interrupted).');
-                                                continue;
-                                            }
                                             ws.send(JSON.stringify({ type: 'VOICE_RESPONSE', data: part.inlineData.data, sessionId }));
                                         }
                                     }
@@ -249,14 +245,12 @@ wss.on('connection', (ws) => {
                                 // Gemini's VAD detected user started speaking → interrupt AI
                                 if (msg.serverContent?.interrupted === true) {
                                     console.log('[AI_LIVE]: Gemini detected user interruption.');
-                                    interruptedSessions.add(ws);
                                     ws.send(JSON.stringify({ type: 'USER_INTERRUPTED' }));
                                 }
 
                                 // AI finished its turn
                                 if (msg.serverContent?.turnComplete === true) {
                                     console.log('[AI_LIVE]: AI turn complete — listening for user.');
-                                    interruptedSessions.delete(ws);
                                     ws.send(JSON.stringify({ type: 'AI_TURN_COMPLETE' }));
                                 }
 
@@ -364,8 +358,7 @@ wss.on('connection', (ws) => {
                     console.log('[AI_LIVE]: Session explicitly stopped.');
                 }
             } else if (message.type === 'STOP_AI_SPEECH') {
-                console.log('[WS]: Interrupt signal received — Marking session as interrupted');
-                interruptedSessions.add(ws);
+                console.log('[WS]: Interrupt signal received');
             } else if (message.type === 'TURN_COMPLETE') {
                 // We rely on Server-Side VAD for the native audio model.
                 // Manual turnComplete can cause double responses or hangs.
