@@ -350,3 +350,8 @@ POST /api/navigator
 
 - **App**: https://personal-ai-operator-677446941082.us-central1.run.app/
 - **API Model**: `gemini-2.5-flash-native-audio-preview-...`
+
+
+###  Let's Connect!
+For more professional projects and AI innovations, visit my GitHub profile:
+ [**Musab1khan on GitHub**](https://github.com/Musab1khan)
