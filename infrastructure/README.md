@@ -7,49 +7,49 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                      Google Cloud Project                         │
-│                                                                   │
+│                      Google Cloud Project                       │
+│                                                                 │
 │  ┌──────────────────────────────────────────────────────────┐   │
-│  │                    Cloud Run Service                      │   │
+│  │                    Cloud Run Service                     │   │
 │  │  ┌────────────────────────────────────────────────────┐  │   │
-│  │  │  Container: personal-ai-operator:latest           │  │   │
+│  │  │  Container: personal-ai-operator:latest            │  │   │
 │  │  │  Port: 8080                                        │  │   │
 │  │  │  Memory: 2GB                                       │  │   │
 │  │  │  CPU: 2 vCPUs                                      │  │   │
 │  │  │  Min Instances: 1 (warm start)                     │  │   │
-│  │  │  Max Instances: 100 (auto-scale)                 │  │   │
+│  │  │  Max Instances: 100 (auto-scale)                   │  │   │
 │  │  └────────────────────────────────────────────────────┘  │   │
-│  │                                                           │   │
-│  │  Environment:                                             │   │
-│  │    - API_KEY (from Secret Manager)                        │   │
-│  │    - PORT=8080                                            │   │
-│  │                                                           │   │
-│  │  Networking:                                              │   │
-│  │    - Allow Unauthenticated (public access)              │   │
-│  │    - HTTPS only                                           │   │
+│  │                                                          │   │
+│  │  Environment:                                            │   │
+│  │    - API_KEY (from Secret Manager)                       │   │
+│  │    - PORT=8080                                           │   │
+│  │                                                          │   │
+│  │  Networking:                                             │   │
+│  │    - Allow Unauthenticated (public access)               │   │
+│  │    - HTTPS only                                          │   │
 │  └──────────────────────────────────────────────────────────┘   │
-│                                                                   │
+│                                                                 │
 │  ┌──────────────────────────────────────────────────────────┐   │
-│  │                  Cloud Build Trigger                      │   │
+│  │                  Cloud Build Trigger                     │   │
 │  │  - Source: GitHub push to main branch                    │   │
-│  │  - Build: Dockerfile build                                 │   │
-│  │  - Push: Container Registry                               │   │
+│  │  - Build: Dockerfile build                               │   │
+│  │  - Push: Container Registry                              │   │
 │  │  - Deploy: Cloud Run                                     │   │
 │  └──────────────────────────────────────────────────────────┘   │
-│                                                                   │
+│                                                                 │
 │  ┌──────────────────────────────────────────────────────────┐   │
-│  │              Secret Manager - API Keys                     │   │
+│  │              Secret Manager - API Keys                   │   │
 │  │  - gemini-api-key (latest)                               │   │
 │  │  - Encrypted at rest                                     │   │
 │  └──────────────────────────────────────────────────────────┘   │
-│                                                                   │
+│                                                                 │
 │  ┌──────────────────────────────────────────────────────────┐   │
-│  │           Cloud Monitoring & Logging                      │   │
+│  │           Cloud Monitoring & Logging                     │   │
 │  │  - Error Reporting                                       │   │
 │  │  - Request Logging                                       │   │
 │  │  - Health Checks                                         │   │
 │  └──────────────────────────────────────────────────────────┘   │
-│                                                                   │
+│                                                                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
