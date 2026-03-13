@@ -52,13 +52,6 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({ onNewChat, isDark, savedSessi
                 )}
             </div>
 
-            <div className={`p-4 border-t ${isDark ? 'border-slate-800' : 'border-slate-200'} mt-auto`}>
-                <div className="flex items-center gap-3 px-2 py-2">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-violet-500 to-fuchsia-500 flex items-center justify-center shadow-lg ring-2 ring-white/10">
-                        <Sparkles size={14} className="text-white" />
-                    </div>
-                </div>
-            </div>
         </aside>
     );
 };
