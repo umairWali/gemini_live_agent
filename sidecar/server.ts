@@ -1531,6 +1531,12 @@ const startMonitoring = () => {
 app.use('/dashboard', express.static(distPath));
 app.use(express.static(distPath));
 
+// Serve download files
+const downloadsPath = '/var/www/html/operator/downloads';
+if (fs.existsSync(downloadsPath)) {
+    app.use('/downloads', express.static(downloadsPath));
+}
+
 app.get('/dashboard/*', (req, res) => {
     const indexPath = path.join(distPath, 'index.html');
     if (fs.existsSync(indexPath)) res.sendFile(indexPath);
