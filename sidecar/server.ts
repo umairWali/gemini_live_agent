@@ -302,6 +302,14 @@ wss.on('connection', (ws) => {
                     ws.send(JSON.stringify({ type: 'VOICE_ERROR', error: 'Init Failed: ' + e.message }));
                 }
 
+            } else if (message.type === 'STOP_VOICE') {
+                console.log('[WS]: STOP_VOICE signal received');
+                const session = liveSessions.get(ws);
+                if (session) {
+                    try { session.close(); } catch { }
+                    liveSessions.delete(ws);
+                    console.log('[AI_LIVE]: Session explicitly stopped.');
+                }
             } else if (message.type === 'STOP_AI_SPEECH') {
                 console.log('[WS]: Interrupt signal received — Marking session as interrupted');
                 interruptedSessions.add(ws);

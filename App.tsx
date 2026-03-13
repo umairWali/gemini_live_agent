@@ -138,6 +138,7 @@ const AppContent: React.FC = () => {
   const isUserSpeakingRef = useRef<boolean>(false);
   const aiGainNodeRef = useRef<GainNode | null>(null);
   const workletModuleLoadedRef = useRef<boolean>(false); // Prevent double-loading AudioWorklet
+  const voiceSessionCounterRef = useRef<number>(0);
 
   const stopAllPlayback = useCallback(() => {
     if (aiGainNodeRef.current && audioContextRef.current) {
@@ -296,8 +297,13 @@ const AppContent: React.FC = () => {
 
     setIsVoiceConnecting(true);
     addToast({ type: 'info', title: 'Voice Link', message: 'Requesting Gemini stream...' });
-    console.log('[CLIENT]: Requesting START_VOICE');
-    ws.send(JSON.stringify({ type: 'START_VOICE' }));
+    
+    // Increment session counter to invalidate previous ones
+    const sessionId = ++voiceSessionCounterRef.current;
+    (ws as any).voiceSessionId = sessionId;
+    
+    console.log('[CLIENT]: Requesting START_VOICE, local sessionId:', sessionId);
+    ws.send(JSON.stringify({ type: 'START_VOICE', sessionId }));
   }, [isVoiceActive, isVoiceConnecting, isVoiceReady, isConnected, addToast]);
 
   const startMediaStream = useCallback(() => {
@@ -499,7 +505,7 @@ const AppContent: React.FC = () => {
     if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
 
     // CRITICAL: Close existing socket if it exists to prevent double voices
-    const existingWs = (window as any).operatorWs as WebSocket;
+    const existingWs = (window as any).operatorWs as any;
     if (existingWs) {
       console.log('[WS]: Closing stale connection...');
       if (existingWs.heartbeat) clearInterval(existingWs.heartbeat);
@@ -540,7 +546,16 @@ const AppContent: React.FC = () => {
     ws.onmessage = async (event) => {
       if (typeof event.data === 'string') {
         const data = JSON.parse(event.data);
+        
+        // CRITICAL: Ensure only the absolute latest socket processes messages
+        if ((window as any).operatorWs !== ws) {
+          try { ws.close(); } catch(e) {}
+          return;
+        }
+
         if (data.type === 'VOICE_RESPONSE') {
+          // Double check: is this still the active voice session?
+          if ((ws as any).voiceSessionId !== voiceSessionCounterRef.current) return;
           if (isUserSpeakingRef.current) return;
           try {
             const ctx = audioContextRef.current;
@@ -589,7 +604,7 @@ const AppContent: React.FC = () => {
           stopAllPlayback();
           isUserSpeakingRef.current = true;
           // Also signal server to stop sending AI audio chunks
-          const wsRef = (window as any).operatorWs as WebSocket;
+          const wsRef = (window as any).operatorWs as any;
           if (wsRef?.readyState === WebSocket.OPEN) {
             wsRef.send(JSON.stringify({ type: 'STOP_AI_SPEECH' }));
           }
@@ -640,6 +655,13 @@ const AppContent: React.FC = () => {
     return () => {
       if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
       clearInterval(auditTimer);
+      // Clean up WebSocket on sidecar unmount
+      const ws = (window as any).operatorWs as WebSocket;
+      if (ws) {
+        ws.onclose = null;
+        ws.close();
+        (window as any).operatorWs = null;
+      }
     };
   }, [connectWebSocket]);
 
