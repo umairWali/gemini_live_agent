@@ -358,12 +358,8 @@ const AppContent: React.FC = () => {
         let bufferLength = 0;        // Pure audio streamer — Gemini's server VAD handles all turn-taking
         workletNode.port.onmessage = (e) => {
           if (ws.readyState === WebSocket.OPEN && e.data.event === 'data') {
-            // MUTE PROTECTION: If AI is speaking OR we are in the cooldown period, drop mic data
-            if (isAiSpeakingRef.current || Date.now() < muteUntilRef.current) {
-              audioBuffer = [];
-              bufferLength = 0;
-              return;
-            }
+            // WE MUST SEND AUDIO TO SERVER TO ALLOW INTERRUPTION.
+            // DO NOT drop the data chunks here, or barge-in won't work.
 
             const inputData = e.data.buffer;
             const pcmData = new Int16Array(inputData.length);
