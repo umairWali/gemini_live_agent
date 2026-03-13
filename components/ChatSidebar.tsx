@@ -45,10 +45,6 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({ onNewChat, isDark, savedSessi
                     <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-violet-500 to-fuchsia-500 flex items-center justify-center shadow-lg ring-2 ring-white/10">
                         <Sparkles size={14} className="text-white" />
                     </div>
-                    <div className="flex flex-col">
-                        <span className="text-[11px] font-black uppercase tracking-widest text-violet-500">Elite Edition</span>
-                        <span className={`text-[10px] font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Personal Operator</span>
-                    </div>
                 </div>
             </div>
         </aside>

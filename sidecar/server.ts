@@ -60,6 +60,10 @@ app.get('/health', (req, res) => {
     res.json({ success: true, status: 'HEALTHY', uptime: process.uptime() });
 });
 
+app.get('/api/status', (req, res) => {
+    res.json({ success: true, hasApiKey: !!process.env.API_KEY });
+});
+
 app.get('/api/audit', (_req, res) => {
     const auditPath = path.resolve(process.cwd(), 'audit_trail.json');
     try {
@@ -129,6 +133,7 @@ let globalActiveSession: any = null;
 let globalActiveWs: WebSocket | null = null;
 let globalSessionId: string | null = null;
 let globalActiveClientId: string | null = null;
+let globalSessionGeneration = 0; // Incremented on each new session to kill stale callbacks
 wss.on('connection', (ws) => {
     clients.push(ws);
     console.log('[SIDE CAR]: UI Connected to Event Bus');
@@ -171,6 +176,7 @@ wss.on('connection', (ws) => {
                 // (onmessage fires immediately and checks globalSessionId)
                 globalActiveWs = ws;
                 globalSessionId = sessionId;
+                const thisGeneration = ++globalSessionGeneration; // Unique ID for THIS session
 
                 if (!process.env.API_KEY) {
                     connectingSockets.delete(ws);
@@ -213,10 +219,9 @@ wss.on('connection', (ws) => {
                         } as any,
                         callbacks: {
                             onmessage: async (msg: any) => {
-                                // Only process if this WS is still the global active one
-                                if (globalActiveWs && globalActiveWs !== ws) {
-                                    console.log('[AI_LIVE]: Stale session message — ignoring.');
-                                    return;
+                                // CRITICAL: Drop messages from stale sessions (prevents double voice)
+                                if (thisGeneration !== globalSessionGeneration) {
+                                    return; // Silently drop — this is from an old session
                                 }
 
                                 // Log all non-audio messages for debugging

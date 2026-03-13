@@ -22,6 +22,19 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose, isDark, 
   const [gmailAppPassword, setGmailAppPassword] = useState(() => localStorage.getItem('operator_gmail_password') || '');
   const [calendarEnabled, setCalendarEnabled] = useState(() => localStorage.getItem('operator_calendar_enabled') === 'true');
 
+  const [backendHasApiKey, setBackendHasApiKey] = useState(false);
+
+  React.useEffect(() => {
+    fetch('/api/status')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          setBackendHasApiKey(data.hasApiKey);
+        }
+      })
+      .catch(err => console.error('Failed to fetch status:', err));
+  }, []);
+
   const handleSave = () => {
     // Save to localStorage
     localStorage.setItem('operator_api_key', apiKey);
@@ -95,11 +108,18 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose, isDark, 
         <div className="p-6 space-y-6 max-h-[70vh] overflow-y-auto">
           {/* API Key */}
           <div>
-            <div className="flex items-center gap-2 mb-2">
-              <Key className="w-4 h-4 text-amber-500" />
-              <label className={`text-sm font-medium ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
-                Gemini API Key
-              </label>
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <Key className="w-4 h-4 text-amber-500" />
+                <label className={`text-sm font-medium ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                  Gemini API Key
+                </label>
+              </div>
+              {backendHasApiKey && (
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                  Backend Confirmed
+                </span>
+              )}
             </div>
             <input
               type="password"
